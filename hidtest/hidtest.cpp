@@ -92,5 +92,7 @@ int main(int argc, char* argv[])
 	for (i = 0; i < 4; i++)
 		printf("buf[%d]: %d\n", i, buf[i]);
 
+	system("pause");
+
 	return 0;
 }

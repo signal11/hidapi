@@ -61,6 +61,7 @@
 				AdditionalDependencies="hidapi.lib"
 				AdditionalLibraryDirectories="..\hidapi\objfre_wxp_x86\i386"
 				GenerateDebugInformation="true"
+				SubSystem="1"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -83,6 +84,8 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
+				Description="Copying hidapi.dll to the local direcotry."
+				CommandLine="xcopy /Y /F /R ..\hidapi\objfre_wxp_x86\i386\*.dll .\"
 			/>
 		</Configuration>
 		<Configuration
@@ -132,6 +135,7 @@
 				AdditionalDependencies="hidapi.lib"
 				AdditionalLibraryDirectories="..\hidapi\objfre_wxp_x86\i386"
 				GenerateDebugInformation="true"
+				SubSystem="1"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
 				TargetMachine="1"
@@ -156,6 +160,8 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
+				Description="Copying hidapi.dll to the local direcotry."
+				CommandLine="xcopy /Y /F /R ..\hidapi\objfre_wxp_x86\i386\*.dll .\"
 			/>
 		</Configuration>
 	</Configurations>
