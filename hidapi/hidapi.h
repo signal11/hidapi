@@ -37,7 +37,7 @@ extern "C" {
 				This function returns a small integer handle on success
 				and -1 on failure.
 		*/
-        int  HID_API_EXPORT HID_API_CALL hid_open(unsigned short vendor_id, unsigned short product_id, wchar_t *serial_number);
+		int  HID_API_EXPORT HID_API_CALL hid_open(unsigned short vendor_id, unsigned short product_id, wchar_t *serial_number);
 
 		/** Write an Output report to a HID device. The first byte of data[]
 		    must contain the Report ID. For devices which only support a single
@@ -63,8 +63,8 @@ extern "C" {
 				This function returns the actual number of bytes written and
 				-1 on error.
 		*/
-        int  HID_API_EXPORT HID_API_CALL hid_write(int device, const unsigned char *data, size_t length);
-        
+		int  HID_API_EXPORT HID_API_CALL hid_write(int device, const unsigned char *data, size_t length);
+
 		/** Read a report from a HID device. The first byte will contain the
 		    Report number, if multiple reports are supported by the device.
 
@@ -103,7 +103,7 @@ extern "C" {
 			Params:
 				device: A device handle returned from hid_open().
 		*/
-        void HID_API_EXPORT HID_API_CALL hid_close(int device);
+		void HID_API_EXPORT HID_API_CALL hid_close(int device);
 
 		/** Get The Manufacturer String from a HID device.
 
