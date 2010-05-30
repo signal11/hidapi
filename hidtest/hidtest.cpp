@@ -36,7 +36,8 @@ int main(int argc, char* argv[])
 	buf[1] = 0x81;
 	
 
-	// Open the device.
+	// Open the device using the VID, PID,
+	// and optionally the Serial number.
 	////handle = hid_open(0x4d8, 0x3f, L"12345");
 	handle = hid_open(0x4d8, 0x3f, NULL);
 	if (handle < 0) {
@@ -65,7 +66,7 @@ int main(int argc, char* argv[])
 		printf("Unable to read serial number string\n");
 	wprintf(L"Serial Number String: (%d) %s\n", wstr[0], wstr);
 
-	// Read Indexed String 0
+	// Read Indexed String 1
 	wstr[0] = 0x0000;
 	res = hid_get_indexed_string(handle, 1, wstr, MAX_STR);
 	if (res < 0)
@@ -79,7 +80,8 @@ int main(int argc, char* argv[])
 	// data here, but execution should not block.
 	res = hid_read(handle, buf, 17);
 
-	// Toggle LED (cmd 0x80)
+	// Toggle LED (cmd 0x80). The first byte is the report number (0x1).
+	buf[0] = 0x1;
 	buf[1] = 0x80;
 	res = hid_write(handle, buf, 17);
 	if (res < 0) {
@@ -88,7 +90,8 @@ int main(int argc, char* argv[])
 	}
 	
 
-	// Request state (cmd 0x81)
+	// Request state (cmd 0x81). The first byte is the report number (0x1).
+	buf[0] = 0x1;
 	buf[1] = 0x81;
 	hid_write(handle, buf, 17);
 	if (res < 0)
