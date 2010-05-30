@@ -28,7 +28,9 @@ extern "C" {
 struct Device {
 		int valid;
 		HANDLE device_handle;
-		void *last_error;
+		BOOL blocking;
+		void *last_error_str;
+		DWORD last_error_num;
 };
 
 
@@ -48,13 +50,10 @@ static void register_error(Device *device, const char *op)
 		(LPTSTR)&msg, 0/*sz*/,
 		NULL);
 	
-	printf("%s: ", op);
-    wprintf(L"%s\n", msg);
-
 	// Store the message off in the Device entry so that 
 	// the hid_error() function can pick it up.
-	LocalFree(device->last_error);
-	device->last_error = msg;
+	LocalFree(device->last_error_str);
+	device->last_error_str = msg;
 }
 
 
@@ -83,7 +82,9 @@ int HID_API_EXPORT hid_open(unsigned short vendor_id, unsigned short product_id,
 		for (i = 0; i < MAX_DEVICES; i++) {
 			devices[i].valid = 0;
 			devices[i].device_handle = INVALID_HANDLE_VALUE;
-			devices[i].last_error = NULL;
+			devices[i].blocking = true;
+			devices[i].last_error_str = NULL;
+			devices[i].last_error_num = 0;
 		}
 		devices_initialized = true;
 	}
@@ -146,13 +147,13 @@ int HID_API_EXPORT hid_open(unsigned short vendor_id, unsigned short product_id,
 			NULL);
 
 		if (!res) {
-			printf("Unable to call SetupDiGetDeviceInterfaceDetail");
+			register_error(dev, "Unable to call SetupDiGetDeviceInterfaceDetail");
 			free(device_interface_detail_data);
 			// Continue to the next device.
 			goto cont;
 		}
 
-		wprintf(L"HandleName: %s\n", device_interface_detail_data->DevicePath);
+		//wprintf(L"HandleName: %s\n", device_interface_detail_data->DevicePath);
 
 		// Open a handle to the device
 		HANDLE write_handle = CreateFile(device_interface_detail_data->DevicePath,
@@ -160,7 +161,7 @@ int HID_API_EXPORT hid_open(unsigned short vendor_id, unsigned short product_id,
 			0x0, /*share mode*/
 			NULL,
 			OPEN_EXISTING,
-			0,//FILE_ATTRIBUTE_NORMAL,
+			FILE_FLAG_OVERLAPPED,//FILE_ATTRIBUTE_NORMAL,
 			0);
 
 		// We no longer need the detail data. It can be freed
@@ -179,7 +180,7 @@ int HID_API_EXPORT hid_open(unsigned short vendor_id, unsigned short product_id,
 		HIDD_ATTRIBUTES attrib;
 		attrib.Size = sizeof(HIDD_ATTRIBUTES);
 		HidD_GetAttributes(write_handle, &attrib);
-		wprintf(L"Product/Vendor: %x %x\n", attrib.ProductID, attrib.VendorID);
+		//wprintf(L"Product/Vendor: %x %x\n", attrib.ProductID, attrib.VendorID);
 
 		// Check if this is our device.
 		if (attrib.VendorID == vendor_id &&
@@ -197,7 +198,6 @@ int HID_API_EXPORT hid_open(unsigned short vendor_id, unsigned short product_id,
 					goto cont;
 				}
 				else {
-					wprintf(L"Ser: %s\n", ser);
 					// Compare the serial number
 					if (::wcscmp(ser, serial_number) == 0) {
 						// Serial is good. This is our device.
@@ -222,7 +222,7 @@ int HID_API_EXPORT hid_open(unsigned short vendor_id, unsigned short product_id,
 	}
 
 	// Close the device information handle.
-	CloseHandle(device_info_set);
+	SetupDiDestroyDeviceInfoList(device_info_set);
 
 	// If we have a good handle, return it.
 	if (dev->device_handle != INVALID_HANDLE_VALUE) {
@@ -239,7 +239,7 @@ int HID_API_EXPORT hid_open(unsigned short vendor_id, unsigned short product_id,
 int HID_API_EXPORT hid_write(int device, const unsigned char *data, size_t length)
 {
 	Device *dev = NULL;
-	DWORD bytes_read;
+	DWORD bytes_written;
 	BOOL res;
 
 	// Get the handle 
@@ -249,14 +249,32 @@ int HID_API_EXPORT hid_write(int device, const unsigned char *data, size_t lengt
 		return -1;
 	dev = &devices[device];
 
-	res = WriteFile(dev->device_handle, data, length, &bytes_read, NULL);
+	OVERLAPPED ol;
+	ol.Internal = 0x0;
+	ol.InternalHigh = 0x0;
+	ol.Pointer = 0x0;
+	ol.hEvent = 0x0;
 
+	res = WriteFile(dev->device_handle, data, length, NULL, &ol);
+	
 	if (!res) {
+		if (GetLastError() != ERROR_IO_PENDING) {
+			// WriteFile() failed. Return error.
+			register_error(dev, "WriteFile");
+			return -1;
+		}
+	}
+
+	// Wait here until the write is done. This makes
+	// hid_write() synchronous.
+	res = GetOverlappedResult(dev->device_handle, &ol, &bytes_written, TRUE/*wait*/);
+	if (!res) {
+		// The Write operation failed.
 		register_error(dev, "WriteFile");
 		return -1;
 	}
 
-	return bytes_read;
+	return bytes_written;
 }
 
 
@@ -273,14 +291,66 @@ int HID_API_EXPORT hid_read(int device, unsigned char *data, size_t length)
 		return -1;
 	dev = &devices[device];
 
-	res = ReadFile(dev->device_handle, data, length, &bytes_read, NULL);
+	HANDLE ev;
+	ev = CreateEvent(NULL, FALSE, FALSE /*inital state f=nonsignaled*/, NULL);
 
+	OVERLAPPED ol;
+	ol.Internal = 0x0;
+	ol.InternalHigh = 0x0;
+	ol.Pointer = 0x0;
+	ol.hEvent = ev;
+
+	res = ReadFile(dev->device_handle, data, length, &bytes_read, &ol);
+	
+	
+	if (!res) {
+		if (GetLastError() != ERROR_IO_PENDING) {
+			// ReadFile() has failed.
+			// Clean up and return error.
+			CloseHandle(ev);
+			goto end_of_function;
+		}
+	}
+
+	if (!dev->blocking) {
+		// See if there is any data yet.
+		res = WaitForSingleObject(ev, 0);
+		CloseHandle(ev);
+		if (res != WAIT_OBJECT_0) {
+			// There was no data. Cancel this read and return.
+			CancelIo(dev->device_handle);
+			// Zero bytes available.
+			return 0;
+		}
+	}
+
+	// Either WaitForSingleObject() told us that ReadFile has completed, or
+	// we are in non-blocking mode. Get the number of bytes read. The actual
+	// data has been copied to the data[] array which was passed to ReadFile().
+	res = GetOverlappedResult(dev->device_handle, &ol, &bytes_read, TRUE/*wait*/);
+	
+end_of_function:
 	if (!res) {
 		register_error(dev, "ReadFile");
 		return -1;
 	}
 	
 	return bytes_read;
+}
+
+int HID_API_EXPORT hid_set_nonblocking(int device, int nonblock)
+{
+	Device *dev = NULL;
+
+	// Get the handle 
+	if (device < 0 || device >= MAX_DEVICES)
+		return -1;
+	if (devices[device].valid == 0)
+		return -1;
+	dev = &devices[device];
+	
+	dev->blocking = !nonblock;
+	return 0; /* Success */
 }
 
 void HID_API_EXPORT hid_close(int device)
@@ -296,6 +366,8 @@ void HID_API_EXPORT hid_close(int device)
 
 	CloseHandle(dev->device_handle);
 	dev->device_handle = INVALID_HANDLE_VALUE;
+	LocalFree(dev->last_error_str);
+	dev->last_error_str = NULL;
 	dev->valid = 0;
 }
 
@@ -388,7 +460,7 @@ int HID_API_EXPORT_CALL hid_get_indexed_string(int device, int string_index, wch
 }
 
 
-HID_API_EXPORT const wchar_t * HID_API_CALL  hid_error(int device)
+HID_API_EXPORT const char * HID_API_CALL  hid_error(int device)
 {
 	Device *dev = NULL;
 
@@ -399,7 +471,7 @@ HID_API_EXPORT const wchar_t * HID_API_CALL  hid_error(int device)
 		return NULL;
 	dev = &devices[device];
 
-	return (wchar_t*) dev->last_error;
+	return (const char *)dev->last_error_str;
 }
 
 
