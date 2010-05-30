@@ -32,15 +32,17 @@ int main(int argc, char* argv[])
 
 	// Set up the command buffer.
 	memset(buf,0x00,sizeof(buf));
-	buf[0] = 0;
+	buf[0] = 0x01;
 	buf[1] = 0x81;
 	
 
 	// Open the device.
 	////handle = hid_open(0x4d8, 0x3f, L"12345");
 	handle = hid_open(0x4d8, 0x3f, NULL);
-	if (handle < 0)
+	if (handle < 0) {
 		printf("unable to open device\n");
+		wprintf(L"Error: %s\n", hid_error(handle));
+	}
 
 	// Read the Manufacturer String
 	wstr[0] = 0x0000;
@@ -70,27 +72,44 @@ int main(int argc, char* argv[])
 		printf("Unable to read indexed string 1\n");
 	wprintf(L"Indexed String 1: %s\n", wstr);
 
+	// Set the hid_read() function to be non-blocking.
+	hid_set_nonblocking(handle, 1);
+	
+	// Try to read from the device. There shoud be no
+	// data here, but execution should not block.
+	res = hid_read(handle, buf, 17);
 
 	// Toggle LED (cmd 0x80)
 	buf[1] = 0x80;
-	res = hid_write(handle, buf, 65);
-	if (res < 0)
+	res = hid_write(handle, buf, 17);
+	if (res < 0) {
 		printf("Unable to write()\n");
+		printf("Error: %s\n", hid_error(handle));
+	}
+	
 
 	// Request state (cmd 0x81)
 	buf[1] = 0x81;
-	hid_write(handle, buf, 65);
+	hid_write(handle, buf, 17);
 	if (res < 0)
 		printf("Unable to write() (2)\n");
 
-	// Read requested state
-	hid_read(handle, buf, 65);
-	if (res < 0)
-		printf("Unable to read()\n");
+	// Read requested state. hid_read() has been set to be
+	// non-blocking by the call to hid_set_nonblocking() above.
+	// This loop demonstrates the non-blocking nature of hid_read().
+	res = 0;
+	while (res == 0) {
+		res = hid_read(handle, buf, 17);
+		if (res == 0)
+			printf("waiting...\n");
+		if (res < 0)
+			printf("Unable to read()\n");
+	}
 
 	// Print out the returned buffer.
-	for (i = 0; i < 4; i++)
-		printf("buf[%d]: %d\n", i, buf[i]);
+	for (i = 0; i < res; i++)
+		printf("%02hhx ", buf[i]);
+	printf("\n");
 
 	system("pause");
 
