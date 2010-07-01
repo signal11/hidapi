@@ -10,3 +10,5 @@ EXPORTS
    hid_get_indexed_string @8
    hid_error @9
    hid_set_nonblocking @10
+   hid_enumerate @11
+   hid_open_path @12

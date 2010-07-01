@@ -56,14 +56,14 @@ static void register_error(Device *device, const char *op)
 	device->last_error_str = msg;
 }
 
-
-
-int HID_API_EXPORT hid_open(unsigned short vendor_id, unsigned short product_id, wchar_t *serial_number)
+struct hid_device HID_API_EXPORT * hid_enumerate(unsigned short vendor_id, unsigned short product_id)
 {
-  	int i;
+	int i;
 	int handle = -1;
-	Device *dev = NULL;
 	BOOL res;
+	struct hid_device *root = NULL; // return object
+	struct hid_device *cur_dev = NULL;
+
 
 	// Windows objects for interacting with the driver.
 	GUID InterfaceClassGuid = {0x4d1e55b2, 0xf16f, 0x11cf, 0x88, 0xcb, 0x00, 0x11, 0x11, 0x00, 0x00, 0x30};
@@ -76,32 +76,6 @@ int HID_API_EXPORT hid_open(unsigned short vendor_id, unsigned short product_id,
 	devinfo_data.cbSize = sizeof(SP_DEVINFO_DATA);
 	device_interface_data.cbSize = sizeof(SP_DEVICE_INTERFACE_DATA);
 
-	// Initialize the Device array if it hasn't been done.
-	if (!devices_initialized) {
-		int i;
-		for (i = 0; i < MAX_DEVICES; i++) {
-			devices[i].valid = 0;
-			devices[i].device_handle = INVALID_HANDLE_VALUE;
-			devices[i].blocking = true;
-			devices[i].last_error_str = NULL;
-			devices[i].last_error_num = 0;
-		}
-		devices_initialized = true;
-	}
-
-	// Find an available handle to use;
-	for (i = 0; i < MAX_DEVICES; i++) {
-		if (!devices[i].valid) {
-			devices[i].valid = 1;
-			handle = i;
-			dev = &devices[i];
-			break;
-		}
-	}
-
-	if (handle < 0) {
-		return -1;
-	}
 
 	// Get information for all the devices belonging to the HID class.
 	device_info_set = SetupDiGetClassDevs(&InterfaceClassGuid, NULL, NULL, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
@@ -147,8 +121,7 @@ int HID_API_EXPORT hid_open(unsigned short vendor_id, unsigned short product_id,
 			NULL);
 
 		if (!res) {
-			register_error(dev, "Unable to call SetupDiGetDeviceInterfaceDetail");
-			free(device_interface_detail_data);
+			//register_error(dev, "Unable to call SetupDiGetDeviceInterfaceDetail");
 			// Continue to the next device.
 			goto cont;
 		}
@@ -164,13 +137,10 @@ int HID_API_EXPORT hid_open(unsigned short vendor_id, unsigned short product_id,
 			FILE_FLAG_OVERLAPPED,//FILE_ATTRIBUTE_NORMAL,
 			0);
 
-		// We no longer need the detail data. It can be freed
-		free(device_interface_detail_data);
-
 		// Check validity of write_handle.
 		if (write_handle == INVALID_HANDLE_VALUE) {
 			// Unable to open the device.
-			register_error(dev, "CreateFile");
+			//register_error(dev, "CreateFile");
 			CloseHandle(write_handle);
 			goto cont;
 		}		
@@ -182,58 +152,178 @@ int HID_API_EXPORT hid_open(unsigned short vendor_id, unsigned short product_id,
 		HidD_GetAttributes(write_handle, &attrib);
 		//wprintf(L"Product/Vendor: %x %x\n", attrib.ProductID, attrib.VendorID);
 
-		// Check if this is our device.
-		if (attrib.VendorID == vendor_id &&
-		    attrib.ProductID == product_id) {
+		// Check the VID/PID to see if we should add this
+		// device to the enumeration list.
+		if ((vendor_id == 0x0 && product_id == 0x0) || 
+			(attrib.VendorID == vendor_id && attrib.ProductID == product_id)) {
 
-			// Check the serial number (if one was provided)
-			if (serial_number) {
-				wchar_t ser[256];
-				memset(ser, 0, sizeof(ser));
+			const char *str;
+			struct hid_device *tmp;
+			wchar_t ser[512]; // TODO: Determine Size
+			size_t len;
 
-				res = HidD_GetSerialNumberString(write_handle, ser, sizeof(ser));
-				if (!res) {
-					register_error(dev, "HidD_GetSerialNumberString");
-					// Can't get a serial and one was specified, continue.
-					goto cont;
-				}
-				else {
-					// Compare the serial number
-					if (::wcscmp(ser, serial_number) == 0) {
-						// Serial is good. This is our device.
-						dev->device_handle = write_handle;
-						break;
-					}
-				}
+			/* VID/PID match. Create the record. */
+			tmp = (hid_device*) malloc(sizeof(struct hid_device));
+			if (cur_dev) {
+				cur_dev->next = tmp;
 			}
 			else {
-				// This is our device. Break out of this loop and return it.
-				dev->device_handle = write_handle;
-				break;
+				root = tmp;
 			}
-		}
-		else {
-			CloseHandle(write_handle);
-			goto cont;
+			cur_dev = tmp;
+			
+			/* Fill out the record */
+			cur_dev->next = NULL;
+			str = device_interface_detail_data->DevicePath;
+			if (str) {
+				len = strlen(str);
+				cur_dev->path = (char*) calloc(len+1, sizeof(char));
+				strncpy(cur_dev->path, str, len+1);
+				cur_dev->path[len] = '\0';
+			}
+			else
+				cur_dev->path = NULL;
+
+			/* Serial Number */
+			res = HidD_GetSerialNumberString(write_handle, ser, sizeof(ser));
+			if (!res) {
+				cur_dev->serial_number = NULL;
+			}
+			else {
+				len = wcslen(ser);
+				if (len == 0)
+					cur_dev->serial_number = NULL;
+				else {
+					cur_dev->serial_number = (wchar_t*) calloc(len+1, sizeof(wchar_t));
+					wcsncpy(cur_dev->serial_number, ser, len+1);
+					cur_dev->serial_number[len] = 0x0000;
+				}
+			}
+
+			/* VID/PID */
+			cur_dev->vendor_id = attrib.VendorID;
+			cur_dev->product_id = attrib.ProductID;
 		}
 
-		cont:
+cont:
+		CloseHandle(write_handle);
+
+		// We no longer need the detail data. It can be freed
+		free(device_interface_detail_data);
+
 		device_index++;
+
 	}
 
 	// Close the device information handle.
 	SetupDiDestroyDeviceInfoList(device_info_set);
 
-	// If we have a good handle, return it.
-	if (dev->device_handle != INVALID_HANDLE_VALUE) {
-		return handle;
+	return root;
+
+}
+
+void  HID_API_EXPORT hid_free_enumeration(struct hid_device *devs)
+{
+	// TODO: Merge this with the Linux version. This function is platform-independent.
+	struct hid_device *d = devs;
+	while (d) {
+		struct hid_device *next = d->next;
+		free(d->path);
+		free(d->serial_number);
+		free(d);
+		d = next;
 	}
-	else {
-		// Unable to open any devices.
+}
+
+
+int HID_API_EXPORT hid_open(unsigned short vendor_id, unsigned short product_id, wchar_t *serial_number)
+{
+	// TODO: Merge this functions with the Linux version. This function should be platform independent.
+	struct hid_device *devs, *cur_dev;
+	const char *path_to_open = NULL;
+	int handle = -1;
+	
+	devs = hid_enumerate(vendor_id, product_id);
+	cur_dev = devs;
+	while (cur_dev) {
+		if (cur_dev->vendor_id == vendor_id &&
+		    cur_dev->product_id == product_id) {
+			if (serial_number) {
+				if (wcscmp(serial_number, cur_dev->serial_number) == 0) {
+					path_to_open = cur_dev->path;
+					break;
+				}
+			}
+			else {
+				path_to_open = cur_dev->path;
+				break;
+			}
+		}
+		cur_dev = cur_dev->next;
+	}
+
+	if (path_to_open) {
+		/* Open the device */
+		handle = hid_open_path(path_to_open);
+	}
+
+	hid_free_enumeration(devs);
+	
+	return handle;
+}
+
+int HID_API_EXPORT hid_open_path(const char *path)
+{
+  	int i;
+	int handle = -1;
+	struct Device *dev = NULL;
+
+	// Initialize the Device array if it hasn't been done.
+	if (!devices_initialized) {
+		int i;
+		for (i = 0; i < MAX_DEVICES; i++) {
+			devices[i].valid = 0;
+			devices[i].device_handle = INVALID_HANDLE_VALUE;
+			devices[i].blocking = true;
+			devices[i].last_error_str = NULL;
+			devices[i].last_error_num = 0;
+		}
+		devices_initialized = true;
+	}
+
+	// Find an available handle to use;
+	for (i = 0; i < MAX_DEVICES; i++) {
+		if (!devices[i].valid) {
+			devices[i].valid = 1;
+			handle = i;
+			dev = &devices[i];
+			break;
+		}
+	}
+
+	if (handle < 0) {
+		return -1;
+	}
+
+	// Open a handle to the device
+	dev->device_handle = CreateFile(path,
+			GENERIC_WRITE |GENERIC_READ,
+			0x0, /*share mode*/
+			NULL,
+			OPEN_EXISTING,
+			FILE_FLAG_OVERLAPPED,//FILE_ATTRIBUTE_NORMAL,
+			0);
+
+	// Check validity of write_handle.
+	if (dev->device_handle == INVALID_HANDLE_VALUE) {
+		// Unable to open the device.
+		register_error(dev, "CreateFile");
+		CloseHandle(dev->device_handle);
 		dev->valid = 0;
 		return -1;
 	}
 
+	return handle;
 }
 
 int HID_API_EXPORT hid_write(int device, const unsigned char *data, size_t length)

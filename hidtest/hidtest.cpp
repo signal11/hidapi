@@ -38,7 +38,8 @@ int main(int argc, char* argv[])
 	devs = hid_enumerate(0x0, 0x0);
 	cur_dev = devs;	
 	while (cur_dev) {
-		printf("Device type %04hx %04hx at %s, ser: %ls\n", cur_dev->vendor_id, cur_dev->product_id, cur_dev->path, cur_dev->serial_number);
+		printf("Device Found\n  type: %04hx %04hx\n  path: %s\n  serial_number: %ls", cur_dev->vendor_id, cur_dev->product_id, cur_dev->path, cur_dev->serial_number);
+		printf("\n\n");
 		cur_dev = cur_dev->next;
 	}
 	hid_free_enumeration(devs);
