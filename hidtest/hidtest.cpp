@@ -12,8 +12,9 @@
  long as this copyright notice remains intact.
 ********************************************************/
 
-#include <windows.h>
 #include <stdio.h>
+#include <wchar.h>
+#include <string.h>
 #include <stdlib.h>
 #include "hidapi.h"
 
@@ -27,8 +28,20 @@ int main(int argc, char* argv[])
 	int handle;
 	int i;
 
+#ifdef WIN32
 	UNREFERENCED_PARAMETER(argc);
 	UNREFERENCED_PARAMETER(argv);
+#endif
+
+	struct hid_device *devs, *cur_dev;
+	
+	devs = hid_enumerate(0x0, 0x0);
+	cur_dev = devs;	
+	while (cur_dev) {
+		printf("Device type %04hx %04hx at %s, ser: %ls\n", cur_dev->vendor_id, cur_dev->product_id, cur_dev->path, cur_dev->serial_number);
+		cur_dev = cur_dev->next;
+	}
+	hid_free_enumeration(devs);
 
 	// Set up the command buffer.
 	memset(buf,0x00,sizeof(buf));
@@ -114,7 +127,9 @@ int main(int argc, char* argv[])
 		printf("%02hhx ", buf[i]);
 	printf("\n");
 
+#ifdef WIN32
 	system("pause");
+#endif
 
 	return 0;
 }
