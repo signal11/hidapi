@@ -12,20 +12,70 @@
  long as this copyright notice remains intact.
 ********************************************************/
 
-#include <stdlib.h>
+#include <wchar.h>
 
 #ifdef WIN32
       #define HID_API_EXPORT __declspec(dllexport)
       #define HID_API_CALL  _stdcall
-#define HID_API_EXPORT_CALL HID_API_EXPORT HID_API_CALL
+#else
+      #define HID_API_EXPORT
+      #define HID_API_CALL
 #endif
+
+#define HID_API_EXPORT_CALL HID_API_EXPORT HID_API_CALL
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+		struct hid_device {
+			/** Platform-specific device path */
+			char *path;
+			/** Device Vendor ID */
+			unsigned short vendor_id;
+			/** Device Product ID */
+			unsigned short product_id;
+			/** Serial Number */
+			wchar_t *serial_number;
+			
+			/** Pointer to the next device */
+			struct hid_device *next;
+		};
+		
+
+		/** Enumerate the HID Devices.
+		    This function returns a linked list of all the HID devices
+		    attached to the system which match vendor_id and product_id.
+		    If vendor_id and product_id are both set to 0, then all HID
+		    devices will be returned.
+		    
+		    Params:
+		    	vendor_id: The Vendor ID (VID) of the types of device to open.
+		    	product_id: The Product ID (PID) of the types of device to open.
+		    
+		    Return:
+		    	This function returns a pointer to a linked list of type
+		    	struct hid_device, containing information about the HID devices
+		    	attached to the system, or NULL in the case of failure. Free
+		    	this linked list by calling hid_free_enumeration().
+		*/
+		struct hid_device  HID_API_EXPORT HID_API_CALL *hid_enumerate(unsigned short vendor_id, unsigned short product_id);
+		
+		/** Free an enumeration Linked List
+		    This function frees a linked list created by hid_enumerate().
+		    
+		    Params:
+		    	devs: Pointer to a list of struct_device returned from
+		    	      hid_enumerate().
+			
+			Return:
+				This function does not return a value.
+		
+		*/
+		void  HID_API_EXPORT HID_API_CALL hid_free_enumeration(struct hid_device *devs);
+		
 		/** Open a HID device using a Vendor ID (VID), Product ID (PID) and
 		    optionally a serial number. If serial_number is NULL, the first
-			device with the specified VID and PID is opened.
+		    device with the specified VID and PID is opened.
 
 			Params:
 				vendor_id: The Vendor ID (VID) of the device to open.
@@ -38,6 +88,19 @@ extern "C" {
 				and -1 on failure.
 		*/
 		int  HID_API_EXPORT HID_API_CALL hid_open(unsigned short vendor_id, unsigned short product_id, wchar_t *serial_number);
+
+		/** Open a HID device by its path name. The path name be determined
+		    by calling hid_enumerate(), or a platform-specific path name can
+		    be used (eg: /dev/hidraw0 on Linux).
+		    
+		    Params:
+		    	path: The path name of the device to open
+			
+			Return:
+				This function returns a small integer handle on success
+				and -1 on failure.
+		*/
+		int  HID_API_EXPORT HID_API_CALL hid_open_path(const char *path);
 
 		/** Write an Output report to a HID device. The first byte of data[]
 		    must contain the Report ID. For devices which only support a single
