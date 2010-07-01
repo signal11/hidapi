@@ -230,6 +230,8 @@ void  HID_API_EXPORT hid_free_enumeration(struct hid_device *devs)
 		struct hid_device *next = d->next;
 		free(d->path);
 		free(d->serial_number);
+		free(d->manufacturer_string);
+		free(d->product_string);
 		free(d);
 		d = next;
 	}

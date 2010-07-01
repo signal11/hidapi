@@ -36,6 +36,10 @@ extern "C" {
 			unsigned short product_id;
 			/** Serial Number */
 			wchar_t *serial_number;
+			/** Manufacturer String */
+			wchar_t *manufacturer_string;
+			/** Product string */
+			wchar_t *product_string;
 			
 			/** Pointer to the next device */
 			struct hid_device *next;
