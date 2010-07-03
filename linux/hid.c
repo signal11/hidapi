@@ -13,18 +13,25 @@
  long as this copyright notice remains intact.
 ********************************************************/
 
+/* C */
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <locale.h>
+#include <errno.h>
 
 /* Unix */
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/ioctl.h>
+#include <sys/utsname.h>
 #include <fcntl.h>
 
-#include "libudev.h"
+/* Linux */
+#include <linux/hidraw.h>
+#include <linux/version.h>
+#include <libudev.h>
 
 #include "hidapi.h"
 
@@ -32,12 +39,14 @@ struct Device {
 	int valid;
 	int device_handle;
 	int blocking;
+	int uses_numbered_reports;
 };
 
 
 #define MAX_DEVICES 64
 static struct Device devices[MAX_DEVICES];
 static int devices_initialized = 0;
+static __u32 kernel_version = 0;
 
 static void register_error(struct Device *device, const char *op)
 {
@@ -60,6 +69,68 @@ static wchar_t *copy_udev_string(struct udev_device *dev, const char *udev_name)
 	}
 	
 	return ret;
+}
+
+/* uses_numbered_reports() returns 1 if report_descriptor describes a device
+   which contains numbered reports. */ 
+static int uses_numbered_reports(__u8 *report_descriptor, __u32 size) {
+	int i = 0;
+	int size_code;
+	int data_len, key_size;
+	
+	while (i < size) {
+		int key = report_descriptor[i];
+
+		/* Check for the Report ID key */
+		if (key == 0x85/*Report ID*/) {
+			/* This devices has a Report ID, which means it uses
+			   numbered reports. */
+			return 1;
+		}
+		
+		//printf("key: %02hhx\n", key);
+		
+		if ((key & 0xf0) == 0xf0) {
+			/* This is a Long Item. The next byte contains the
+			   length of the data section (value) for this key.
+			   See the HID specification, version 1.11, section
+			   6.2.2.3, titled "Long Items." */
+			if (i+1 < size)
+				data_len = report_descriptor[i+1];
+			else
+				data_len = 0; /* malformed report */
+			key_size = 3;
+		}
+		else {
+			/* This is a Short Item. The bottom two bits of the
+			   key contain the size code for the data section
+			   (value) for this key.  Refer to the HID
+			   specification, version 1.11, section 6.2.2.2,
+			   titled "Short Items." */
+			size_code = key & 0x3;
+			switch (size_code) {
+			case 0:
+			case 1:
+			case 2:
+				data_len = size_code;
+				break;
+			case 3:
+				data_len = 4;
+				break;
+			default:
+				/* Can't ever happen since size_code is & 0x3 */
+				data_len = 0;
+				break;
+			};
+			key_size = 1;
+		}
+		
+		/* Skip over this key and it's associated data */
+		i += data_len + key_size;
+	}
+	
+	/* Didn't find a Report ID key. Device doesn't use numbered reports. */
+	return 0;
 }
 
 struct hid_device  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, unsigned short product_id)
@@ -239,6 +310,7 @@ int HID_API_EXPORT hid_open_path(const char *path)
 			devices[i].valid = 0;
 			devices[i].device_handle = -1;
 			devices[i].blocking = 1;
+			devices[i].uses_numbered_reports = 0;
 		}
 		devices_initialized = 1;
 	}
@@ -247,6 +319,9 @@ int HID_API_EXPORT hid_open_path(const char *path)
 	for (i = 0; i < MAX_DEVICES; i++) {
 		if (!devices[i].valid) {
 			devices[i].valid = 1;
+			devices[i].device_handle = -1;
+			devices[i].blocking = 1;
+			devices[i].uses_numbered_reports = 0;
 			handle = i;
 			dev = &devices[i];
 			break;
@@ -256,12 +331,54 @@ int HID_API_EXPORT hid_open_path(const char *path)
 	if (handle < 0) {
 		return -1;
 	}
+	
+	if (kernel_version == 0) {
+		struct utsname name;
+		int major, minor, release;
+		int ret;
+		uname(&name);
+		ret = sscanf(name.release, "%d.%d.%d", &major, &minor, &release);
+		if (ret == 3) {
+			kernel_version = major << 16 | minor << 8 | release;
+			//printf("Kernel Version: %d\n", kernel_version);
+		}
+		else {
+			printf("Couldn't sscanf() version string %s\n", name.release);
+		}
+	}
 
 	// OPEN HERE //
 	dev->device_handle = open(path, O_RDWR);
 
 	// If we have a good handle, return it.
 	if (dev->device_handle > 0) {
+
+		/* Get the report descriptor */
+		int i, res, desc_size = 0;
+		struct hidraw_report_descriptor rpt_desc;
+
+		memset(&rpt_desc, 0x0, sizeof(rpt_desc));
+
+		/* Get Report Descriptor Size */
+		res = ioctl(dev->device_handle, HIDIOCGRDESCSIZE, &desc_size);
+		if (res < 0)
+			perror("HIDIOCGRDESCSIZE");
+		else
+			printf("Report Descriptor Size: %d\n", desc_size);
+
+
+		/* Get Report Descriptor */
+		rpt_desc.size = desc_size;
+		res = ioctl(dev->device_handle, HIDIOCGRDESC, &rpt_desc);
+		if (res < 0) {
+			perror("HIDIOCGRDESC");
+		} else {
+			/* Determine if this device uses numbered reports. */
+			dev->uses_numbered_reports =
+				uses_numbered_reports(rpt_desc.value,
+				                      rpt_desc.size);
+		}
+		
 		return handle;
 	}
 	else {
@@ -269,7 +386,6 @@ int HID_API_EXPORT hid_open_path(const char *path)
 		dev->valid = 0;
 		return -1;
 	}
-
 }
 
 
@@ -304,6 +420,16 @@ int HID_API_EXPORT hid_read(int device, unsigned char *data, size_t length)
 	dev = &devices[device];
 
 	bytes_read = read(dev->device_handle, data, length);
+	if (bytes_read < 0 && errno == EAGAIN)
+		bytes_read = 0;
+	
+	if (bytes_read >= 0 &&
+	    kernel_version < KERNEL_VERSION(2,6,34) &&
+	    dev->uses_numbered_reports) {
+		/* Work around a kernel bug. Chop off the first byte. */
+		memmove(data, data+1, bytes_read);
+		bytes_read--;
+	}
 
 	return bytes_read;
 }
