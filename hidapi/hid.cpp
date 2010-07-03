@@ -157,13 +157,14 @@ struct hid_device HID_API_EXPORT * hid_enumerate(unsigned short vendor_id, unsig
 		if ((vendor_id == 0x0 && product_id == 0x0) || 
 			(attrib.VendorID == vendor_id && attrib.ProductID == product_id)) {
 
+			#define WSTR_LEN 512
 			const char *str;
 			struct hid_device *tmp;
-			wchar_t ser[512]; // TODO: Determine Size
+			wchar_t wstr[WSTR_LEN]; // TODO: Determine Size
 			size_t len;
 
 			/* VID/PID match. Create the record. */
-			tmp = (hid_device*) malloc(sizeof(struct hid_device));
+			tmp = (hid_device*) calloc(1, sizeof(struct hid_device));
 			if (cur_dev) {
 				cur_dev->next = tmp;
 			}
@@ -185,19 +186,24 @@ struct hid_device HID_API_EXPORT * hid_enumerate(unsigned short vendor_id, unsig
 				cur_dev->path = NULL;
 
 			/* Serial Number */
-			res = HidD_GetSerialNumberString(write_handle, ser, sizeof(ser));
-			if (!res) {
-				cur_dev->serial_number = NULL;
+			res = HidD_GetSerialNumberString(write_handle, wstr, sizeof(wstr));
+			wstr[WSTR_LEN-1] = 0x0000;
+			if (res) {
+				cur_dev->serial_number = _wcsdup(wstr);
 			}
-			else {
-				len = wcslen(ser);
-				if (len == 0)
-					cur_dev->serial_number = NULL;
-				else {
-					cur_dev->serial_number = (wchar_t*) calloc(len+1, sizeof(wchar_t));
-					wcsncpy(cur_dev->serial_number, ser, len+1);
-					cur_dev->serial_number[len] = 0x0000;
-				}
+
+			/* Manufacturer String */
+			res = HidD_GetManufacturerString(write_handle, wstr, sizeof(wstr));
+			wstr[WSTR_LEN-1] = 0x0000;
+			if (res) {
+				cur_dev->manufacturer_string = _wcsdup(wstr);
+			}
+
+			/* Product String */
+			res = HidD_GetProductString(write_handle, wstr, sizeof(wstr));
+			wstr[WSTR_LEN-1] = 0x0000;
+			if (res) {
+				cur_dev->product_string = _wcsdup(wstr);
 			}
 
 			/* VID/PID */
