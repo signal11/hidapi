@@ -119,7 +119,7 @@ int main(int argc, char* argv[])
 	// This loop demonstrates the non-blocking nature of hid_read().
 	res = 0;
 	while (res == 0) {
-		res = hid_read(handle, buf, 17);
+		res = hid_read(handle, buf, sizeof(buf));
 		if (res == 0)
 			printf("waiting...\n");
 		if (res < 0)
