@@ -97,6 +97,33 @@ int main(int argc, char* argv[])
 	// data here, but execution should not block.
 	res = hid_read(handle, buf, 17);
 
+	// Send a Feature Report to the device
+	buf[0] = 0x2;
+	buf[1] = 0xa0;
+	buf[2] = 0x0a;
+	buf[3] = 0x00;
+	buf[4] = 0x00;
+	res = hid_send_feature_report(handle, buf, 17);
+	if (res < 0) {
+		printf("Unable to send a feature report.\n");
+	}
+
+	memset(buf,0,sizeof(buf));
+
+	// Read a Feature Report from the device
+	buf[0] = 0x2;
+	res = hid_get_feature_report(handle, buf, sizeof(buf));
+	if (res < 0) {
+		printf("Unable to get a feature report.\n");
+	}
+
+	// Print out the returned buffer.
+	printf("Feature Report\n   ");
+	for (i = 0; i < 17; i++)
+		printf("%02hhx ", buf[i]);
+	printf("\n");
+
+
 	// Toggle LED (cmd 0x80). The first byte is the report number (0x1).
 	buf[0] = 0x1;
 	buf[1] = 0x80;
@@ -119,13 +146,14 @@ int main(int argc, char* argv[])
 	// This loop demonstrates the non-blocking nature of hid_read().
 	res = 0;
 	while (res == 0) {
-		res = hid_read(handle, buf, 17);
+		res = hid_read(handle, buf, sizeof(buf));
 		if (res == 0)
 			printf("waiting...\n");
 		if (res < 0)
 			printf("Unable to read()\n");
 	}
 
+	printf("Data read:\n   ");
 	// Print out the returned buffer.
 	for (i = 0; i < res; i++)
 		printf("%02hhx ", buf[i]);
