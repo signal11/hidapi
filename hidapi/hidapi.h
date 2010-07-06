@@ -132,8 +132,9 @@ extern "C" {
 		*/
 		int  HID_API_EXPORT HID_API_CALL hid_write(int device, const unsigned char *data, size_t length);
 
-		/** Read a report from a HID device. The first byte will contain the
-		    Report number, if multiple reports are supported by the device.
+		/** Read an Input report from a HID device. Input reports are returned
+		    to the host through the INTERRUPT IN endpoint. The first byte will
+			contain the Report number if the device uses numbered reports.
 
 			Params:
 				device: A device handle returned from hid_open().
@@ -164,6 +165,49 @@ extern "C" {
 				This function returns 0 on success and -1 on error.
 		*/
 		int  HID_API_EXPORT HID_API_CALL hid_set_nonblocking(int device, int nonblock);
+
+		/** Send a Feature report to the device. Feature reports are sent
+		    over the Control endpoint as a Set_Report transfer.  The first
+			byte of data[] must contain the Report ID. For devices which only
+			support a single report, this must be set to 0x0. The remaining
+			bytes contain the report data. Since the Report ID is mandatory,
+			calls to hid_send_feature_report() will always contain one more
+			byte than the report contains. For example, if a hid report is 16
+			bytes long, 17 bytes must be passed to hid_send_feature_report():
+			the Report ID (or 0x0, for devices which do not use numbered
+			reports), followed by the report data (16 bytes). In this example,
+			the length passed in would be 17.
+
+			Params:
+				device: A device handle returned from hid_open().
+				data: The data to send, including the report number as
+				      the first byte.
+				length: The length in bytes of the data to send, including
+				        the report number.
+
+			Return Value:
+				This function returns the actual number of bytes written and
+				-1 on error.
+		*/
+		int HID_API_EXPORT HID_API_CALL hid_send_feature_report(int device, const unsigned char *data, size_t length);
+
+		/** Get a feature report from a HID device. Make sure to set the
+		    first byte of data[] to the Report ID of the report to be read.
+			Make sure to allow space for this extra byte in data[].
+
+			Params:
+				device: A device handle returned from hid_open().
+				data: A buffer to put the read data into, including the
+			          Report ID. Set the first byte of data[] to the Report
+			          ID of the report to be read.
+				length: The number of bytes to read, including an extra byte
+				        for the report ID. The buffer can be longer than the
+						actual report.
+			
+			Return Value:
+				This function returns 0 on success and -1 on error.
+		*/
+		int HID_API_EXPORT HID_API_CALL hid_get_feature_report(int device, unsigned char *data, size_t length);
 
 		/** Close a HID device.
 			

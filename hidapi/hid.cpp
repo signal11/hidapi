@@ -451,6 +451,47 @@ int HID_API_EXPORT hid_set_nonblocking(int device, int nonblock)
 	return 0; /* Success */
 }
 
+int HID_API_EXPORT hid_send_feature_report(int device, const unsigned char *data, size_t length)
+{
+	Device *dev = NULL;
+
+	// Get the handle 
+	if (device < 0 || device >= MAX_DEVICES)
+		return -1;
+	if (devices[device].valid == 0)
+		return -1;
+	dev = &devices[device];
+
+	BOOL res = HidD_SetFeature(dev->device_handle, (PVOID)data, length);
+	if (!res) {
+		register_error(dev, "HidD_SetFeature");
+		return -1;
+	}
+
+	return length;
+}
+
+
+int HID_API_EXPORT hid_get_feature_report(int device, unsigned char *data, size_t length)
+{
+	Device *dev = NULL;
+
+	// Get the handle 
+	if (device < 0 || device >= MAX_DEVICES)
+		return -1;
+	if (devices[device].valid == 0)
+		return -1;
+	dev = &devices[device];
+
+	BOOL res = HidD_GetFeature(dev->device_handle, data, length);
+	if (!res) {
+		register_error(dev, "HidD_GetFeature");
+		return -1;
+	}
+
+	return 0; /* Windows doesn't give us an actual length, unfortunately */
+}
+
 void HID_API_EXPORT hid_close(int device)
 {
 	Device *dev = NULL;
