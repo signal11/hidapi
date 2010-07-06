@@ -478,21 +478,12 @@ return_error:
 	return -1;
 }
 
-
-int HID_API_EXPORT hid_write(int device, const unsigned char *data, size_t length)
+static int set_report(struct Device *dev, IOHIDReportType type, const unsigned char *data, size_t length)
 {
-	struct Device *dev = NULL;
 	const unsigned char *data_to_send;
 	size_t length_to_send;
 	IOReturn res;
 
-	// Get the handle 
-	if (device < 0 || device >= MAX_DEVICES)
-		return -1;
-	if (devices[device].valid == 0)
-		return -1;
-	dev = &devices[device];
-	
 	if (data[0] == 0x0) {
 		/* Not using numbered Reports.
 		   Don't send the report number. */
@@ -507,7 +498,7 @@ int HID_API_EXPORT hid_write(int device, const unsigned char *data, size_t lengt
 	}
 	
 	res = IOHIDDeviceSetReport(dev->device_handle,
-	                           kIOHIDReportTypeOutput,
+	                           type,
 	                           data[0], /* Report ID*/
 	                           data_to_send, length_to_send);
 	
@@ -516,6 +507,21 @@ int HID_API_EXPORT hid_write(int device, const unsigned char *data, size_t lengt
 	}
 	else
 		return -1;
+
+}
+
+int HID_API_EXPORT hid_write(int device, const unsigned char *data, size_t length)
+{
+	struct Device *dev = NULL;
+
+	// Get the handle 
+	if (device < 0 || device >= MAX_DEVICES)
+		return -1;
+	if (devices[device].valid == 0)
+		return -1;
+	dev = &devices[device];
+	
+	return set_report(dev, kIOHIDReportTypeOutput, data, length);
 }
 
 /* Helper function, so that this isn't duplicated in hid_read(). */
@@ -591,7 +597,6 @@ int HID_API_EXPORT hid_read(int device, unsigned char *data, size_t length)
 
 int HID_API_EXPORT hid_set_nonblocking(int device, int nonblock)
 {
-	int flags, res;
 	struct Device *dev = NULL;
 
 	// Get the handle 
@@ -606,6 +611,44 @@ int HID_API_EXPORT hid_set_nonblocking(int device, int nonblock)
 	
 	return 0;
 }
+
+int HID_API_EXPORT hid_send_feature_report(int device, const unsigned char *data, size_t length)
+{
+	struct Device *dev = NULL;
+
+	// Get the handle 
+	if (device < 0 || device >= MAX_DEVICES)
+		return -1;
+	if (devices[device].valid == 0)
+		return -1;
+	dev = &devices[device];
+
+	return set_report(dev, kIOHIDReportTypeFeature, data, length);
+}
+
+int HID_API_EXPORT hid_get_feature_report(int device, unsigned char *data, size_t length)
+{
+	struct Device *dev = NULL;
+	CFIndex len = length;
+	IOReturn res;
+
+	// Get the handle 
+	if (device < 0 || device >= MAX_DEVICES)
+		return -1;
+	if (devices[device].valid == 0)
+		return -1;
+	dev = &devices[device];
+
+	res = IOHIDDeviceGetReport(dev->device_handle,
+	                           kIOHIDReportTypeFeature,
+	                           data[0], /* Report ID */
+	                           data, &len);
+	if (res == kIOReturnSuccess)
+		return length;
+	else
+		return -1;
+}
+
 
 void HID_API_EXPORT hid_close(int device)
 {
