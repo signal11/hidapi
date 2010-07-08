@@ -133,6 +133,53 @@ static int uses_numbered_reports(__u8 *report_descriptor, __u32 size) {
 	return 0;
 }
 
+static int get_device_string(struct Device *dev, const char *key, wchar_t *string, size_t maxlen)
+{
+	struct udev *udev;
+	struct udev_device *udev_dev, *parent;
+	struct stat s;
+	int ret = -1;
+	
+	setlocale(LC_ALL,"");
+
+	/* Create the udev object */
+	udev = udev_new();
+	if (!udev) {
+		printf("Can't create udev\n");
+		return -1;
+	}
+
+	/* Get the dev_t (major/minor numbers) from the file handle. */
+	fstat(dev->device_handle, &s);
+	/* Open a udev device from the dev_t. 'c' means character device. */
+	udev_dev = udev_device_new_from_devnum(udev, 'c', s.st_rdev);
+	if (udev_dev) {
+		const char *str;
+		/* Find the parent USB Device */
+		parent = udev_device_get_parent_with_subsystem_devtype(
+		       udev_dev,
+		       "usb",
+		       "usb_device");
+		if (parent) {
+			str = udev_device_get_sysattr_value(parent, key);
+			if (str) {
+				/* Convert the string from UTF-8 to wchar_t */
+				ret = mbstowcs(string, str, maxlen);
+				goto end;
+			}
+		}
+	}
+
+end:
+	udev_device_unref(parent);
+	// udev_dev doesn't need unref'd. Not sure why, but
+	// it'll throw "double free" errors.
+	udev_unref(udev);
+
+	return ret;
+}
+
+
 struct hid_device  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, unsigned short product_id)
 {
 	struct udev *udev;
@@ -354,7 +401,7 @@ int HID_API_EXPORT hid_open_path(const char *path)
 	if (dev->device_handle > 0) {
 
 		/* Get the report descriptor */
-		int i, res, desc_size = 0;
+		int res, desc_size = 0;
 		struct hidraw_report_descriptor rpt_desc;
 
 		memset(&rpt_desc, 0x0, sizeof(rpt_desc));
@@ -465,6 +512,36 @@ int HID_API_EXPORT hid_set_nonblocking(int device, int nonblock)
 	}
 }
 
+
+int HID_API_EXPORT hid_send_feature_report(int device, const unsigned char *data, size_t length)
+{
+	struct Device *dev = NULL;
+
+	// Get the handle 
+	if (device < 0 || device >= MAX_DEVICES)
+		return -1;
+	if (devices[device].valid == 0)
+		return -1;
+	dev = &devices[device];
+
+	return -1;
+}
+
+int HID_API_EXPORT hid_get_feature_report(int device, unsigned char *data, size_t length)
+{
+	struct Device *dev = NULL;
+
+	// Get the handle 
+	if (device < 0 || device >= MAX_DEVICES)
+		return -1;
+	if (devices[device].valid == 0)
+		return -1;
+	dev = &devices[device];
+
+	return -1;
+}
+
+
 void HID_API_EXPORT hid_close(int device)
 {
 	struct Device *dev = NULL;
@@ -481,10 +558,10 @@ void HID_API_EXPORT hid_close(int device)
 	dev->valid = 0;
 }
 
+
 int HID_API_EXPORT_CALL hid_get_manufacturer_string(int device, wchar_t *string, size_t maxlen)
 {
 	struct Device *dev = NULL;
-	int res;
 
 	// Get the handle 
 	if (device < 0 || device >= MAX_DEVICES)
@@ -493,15 +570,12 @@ int HID_API_EXPORT_CALL hid_get_manufacturer_string(int device, wchar_t *string,
 		return -1;
 	dev = &devices[device];
 
-	// TODO:
-
-	return 0;
+	return get_device_string(dev, "manufacturer", string, maxlen);
 }
 
 int HID_API_EXPORT_CALL hid_get_product_string(int device, wchar_t *string, size_t maxlen)
 {
 	struct Device *dev = NULL;
-	int res;
 
 	// Get the handle 
 	if (device < 0 || device >= MAX_DEVICES)
@@ -510,15 +584,13 @@ int HID_API_EXPORT_CALL hid_get_product_string(int device, wchar_t *string, size
 		return -1;
 	dev = &devices[device];
 
-	// TODO:
+	return get_device_string(dev, "product", string, maxlen);
 
-	return 0;
 }
 
 int HID_API_EXPORT_CALL hid_get_serial_number_string(int device, wchar_t *string, size_t maxlen)
 {
 	struct Device *dev = NULL;
-	int res;
 
 	// Get the handle 
 	if (device < 0 || device >= MAX_DEVICES)
@@ -527,7 +599,7 @@ int HID_API_EXPORT_CALL hid_get_serial_number_string(int device, wchar_t *string
 		return -1;
 	dev = &devices[device];
 
-	// TODO:
+	return get_device_string(dev, "serial", string, maxlen);
 
 	return 0;
 }
@@ -535,7 +607,6 @@ int HID_API_EXPORT_CALL hid_get_serial_number_string(int device, wchar_t *string
 int HID_API_EXPORT_CALL hid_get_indexed_string(int device, int string_index, wchar_t *string, size_t maxlen)
 {
 	struct Device *dev = NULL;
-	int res;
 
 	// Get the handle 
 	if (device < 0 || device >= MAX_DEVICES)
@@ -546,7 +617,7 @@ int HID_API_EXPORT_CALL hid_get_indexed_string(int device, int string_index, wch
 
 	// TODO:
 
-	return 0;
+	return -1;
 }
 
 
