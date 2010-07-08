@@ -12,6 +12,7 @@ Signal 11 Software
 #include <IOKit/hid/IOHIDKeys.h>
 #include <wchar.h>
 #include <locale.h>
+#include <pthread.h>
 
 #include "hidapi.h"
 
@@ -30,6 +31,7 @@ struct Device {
 	CFStringRef run_loop_mode;
 	uint8_t *input_report_buf;
 	struct input_report *input_reports;
+	pthread_mutex_t mutex;
 };
 
 
@@ -463,6 +465,8 @@ int HID_API_EXPORT hid_open_path(const char *path)
 					os_dev, dev->input_report_buf, max_input_report_len,
 					&hid_report_callback, dev);
 				
+				pthread_mutex_init(&dev->mutex, NULL);
+				
 				return handle;
 			}
 			else {
@@ -541,7 +545,7 @@ static int return_data(struct Device *dev, unsigned char *data, size_t length)
 int HID_API_EXPORT hid_read(int device, unsigned char *data, size_t length)
 {
 	struct Device *dev = NULL;
-	int bytes_read = -1;
+	int ret_val = -1;
 
 	// Get the handle 
 	if (device < 0 || device >= MAX_DEVICES)
@@ -549,12 +553,22 @@ int HID_API_EXPORT hid_read(int device, unsigned char *data, size_t length)
 	if (devices[device].valid == 0)
 		return -1;
 	dev = &devices[device];
+
+	/* Lock this function */
+	pthread_mutex_lock(&dev->mutex);
 	
 	/* There's an input report queued up. Return it. */
 	if (dev->input_reports) {
 		/* Return the first one */
-		return return_data(dev, data, length);
+		ret_val = return_data(dev, data, length);
+		goto ret;
 	}
+	
+	/* There are no input reports queued up.
+	   Need to get some from the OS. */
+
+	/* Move the device's run loop to this thread. */
+	IOHIDDeviceScheduleWithRunLoop(dev->device_handle, CFRunLoopGetCurrent(), dev->run_loop_mode);
 	
 	if (dev->blocking) {
 		/* Run the Run Loop until it stops timing out. In other
@@ -573,12 +587,16 @@ int HID_API_EXPORT hid_read(int device, unsigned char *data, size_t length)
 			    code != kCFRunLoopRunHandledSource)
 				break;
 		}
-				
+		
+		/* See if the run loop and callback gave us any reports. */
 		if (dev->input_reports) {
-			return return_data(dev, data, length);	
+			ret_val = return_data(dev, data, length);
+			goto ret;
 		}
-		else
-			return -1; /* An error occured (maybe CTRL-C?). */
+		else {
+			ret_val = -1; /* An error occured (maybe CTRL-C?). */
+			goto ret;
+		}
 	}
 	else {
 		/* Non-blocking. See if the OS has any reports to give. */
@@ -586,13 +604,19 @@ int HID_API_EXPORT hid_read(int device, unsigned char *data, size_t length)
 		code = CFRunLoopRunInMode(dev->run_loop_mode, 0, TRUE);
 		if (dev->input_reports) {
 			/* Return the first one */
-			return return_data(dev, data, length);
+			ret_val = return_data(dev, data, length);
+			goto ret;
 		}
-		else
-			return 0; /* No data*/
+		else {
+			ret_val = 0; /* No data*/
+			goto ret;
+		}
 	}
-	
-	return bytes_read;
+
+ret:
+	/* Unlock */
+	pthread_mutex_unlock(&dev->mutex);
+	return ret_val;
 }
 
 int HID_API_EXPORT hid_set_nonblocking(int device, int nonblock)
@@ -676,6 +700,7 @@ void HID_API_EXPORT hid_close(int device)
 	/* Free the string and the report buffer. */
 	CFRelease(dev->run_loop_mode);
 	free(dev->input_report_buf);
+	pthread_mutex_destroy(&dev->mutex);
 
 	dev->valid = 0;
 }
