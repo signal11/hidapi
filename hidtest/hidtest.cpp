@@ -18,6 +18,12 @@
 #include <stdlib.h>
 #include "hidapi.h"
 
+// Headers needed for sleeping.
+#ifdef WIN32
+	#include <windows.h>
+#else
+	#include <unistd.h>
+#endif
 
 int main(int argc, char* argv[])
 {
@@ -59,7 +65,7 @@ int main(int argc, char* argv[])
 	handle = hid_open(0x4d8, 0x3f, NULL);
 	if (handle < 0) {
 		printf("unable to open device\n");
-		wprintf(L"Error: %s\n", hid_error(handle));
+ 		return 1;
 	}
 
 	// Read the Manufacturer String
@@ -67,28 +73,28 @@ int main(int argc, char* argv[])
 	res = hid_get_manufacturer_string(handle, wstr, MAX_STR);
 	if (res < 0)
 		printf("Unable to read manufacturer string\n");
-	wprintf(L"Manufacturer String: %s\n", wstr);
+	printf("Manufacturer String: %ls\n", wstr);
 
 	// Read the Product String
 	wstr[0] = 0x0000;
 	res = hid_get_product_string(handle, wstr, MAX_STR);
 	if (res < 0)
 		printf("Unable to read product string\n");
-	wprintf(L"Product String: %s\n", wstr);
+	printf("Product String: %ls\n", wstr);
 
 	// Read the Serial Number String
 	wstr[0] = 0x0000;
 	res = hid_get_serial_number_string(handle, wstr, MAX_STR);
 	if (res < 0)
 		printf("Unable to read serial number string\n");
-	wprintf(L"Serial Number String: (%d) %s\n", wstr[0], wstr);
+	printf("Serial Number String: (%d) %ls\n", wstr[0], wstr);
 
 	// Read Indexed String 1
 	wstr[0] = 0x0000;
 	res = hid_get_indexed_string(handle, 1, wstr, MAX_STR);
 	if (res < 0)
 		printf("Unable to read indexed string 1\n");
-	wprintf(L"Indexed String 1: %s\n", wstr);
+	printf("Indexed String 1: %ls\n", wstr);
 
 	// Set the hid_read() function to be non-blocking.
 	hid_set_nonblocking(handle, 1);
@@ -123,6 +129,8 @@ int main(int argc, char* argv[])
 		printf("%02hhx ", buf[i]);
 	printf("\n");
 
+	memset(buf,0,sizeof(buf));
+
 
 	// Toggle LED (cmd 0x80). The first byte is the report number (0x1).
 	buf[0] = 0x1;
@@ -151,6 +159,11 @@ int main(int argc, char* argv[])
 			printf("waiting...\n");
 		if (res < 0)
 			printf("Unable to read()\n");
+		#ifdef WIN32
+		Sleep(500);
+		#else
+		usleep(500*1000);
+		#endif
 	}
 
 	printf("Data read:\n   ");
