@@ -516,6 +516,7 @@ int HID_API_EXPORT hid_set_nonblocking(int device, int nonblock)
 int HID_API_EXPORT hid_send_feature_report(int device, const unsigned char *data, size_t length)
 {
 	struct Device *dev = NULL;
+	int res;
 
 	// Get the handle 
 	if (device < 0 || device >= MAX_DEVICES)
@@ -524,12 +525,17 @@ int HID_API_EXPORT hid_send_feature_report(int device, const unsigned char *data
 		return -1;
 	dev = &devices[device];
 
-	return -1;
+	res = ioctl(dev->device_handle, HIDIOCSFEATURE(length), data);
+	if (res < 0)
+		perror("ioctl (SFEATURE)");
+
+	return res;
 }
 
 int HID_API_EXPORT hid_get_feature_report(int device, unsigned char *data, size_t length)
 {
 	struct Device *dev = NULL;
+	int res;
 
 	// Get the handle 
 	if (device < 0 || device >= MAX_DEVICES)
@@ -538,7 +544,12 @@ int HID_API_EXPORT hid_get_feature_report(int device, unsigned char *data, size_
 		return -1;
 	dev = &devices[device];
 
-	return -1;
+	res = ioctl(dev->device_handle, HIDIOCGFEATURE(length), data);
+	if (res < 0)
+		perror("ioctl (GFEATURE)");
+
+
+	return res;
 }
 
 
