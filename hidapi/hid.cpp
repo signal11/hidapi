@@ -426,6 +426,15 @@ int HID_API_EXPORT hid_read(int device, unsigned char *data, size_t length)
 	// we are in non-blocking mode. Get the number of bytes read. The actual
 	// data has been copied to the data[] array which was passed to ReadFile().
 	res = GetOverlappedResult(dev->device_handle, &ol, &bytes_read, TRUE/*wait*/);
+
+	if (bytes_read > 0 && data[0] == 0x0) {
+		/* If report numbers aren't being used, but Windows sticks a report
+		   number (0x0) on the beginning of the report anyway. To make this
+		   work like the other platforms, and to make it work more like the
+		   HID spec, we'll skip over this byte. */
+		bytes_read--;
+		memmove(data, data+1, bytes_read);
+	}
 	
 end_of_function:
 	if (!res) {
