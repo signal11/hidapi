@@ -19,7 +19,7 @@
 #include "hidapi.h"
 
 // Headers needed for sleeping.
-#ifdef WIN32
+#ifdef _WIN32
 	#include <windows.h>
 #else
 	#include <unistd.h>
@@ -28,7 +28,7 @@
 int main(int argc, char* argv[])
 {
 	int res;
-	unsigned char buf[65];
+	unsigned char buf[256];
 	#define MAX_STR 255
 	wchar_t wstr[MAX_STR];
 	int handle;
@@ -121,16 +121,17 @@ int main(int argc, char* argv[])
 	res = hid_get_feature_report(handle, buf, sizeof(buf));
 	if (res < 0) {
 		printf("Unable to get a feature report.\n");
+		printf("%s", hid_error(handle));
+	}
+	else {
+		// Print out the returned buffer.
+		printf("Feature Report\n   ");
+		for (i = 0; i < 17; i++)
+			printf("%02hhx ", buf[i]);
+		printf("\n");
 	}
 
-	// Print out the returned buffer.
-	printf("Feature Report\n   ");
-	for (i = 0; i < 17; i++)
-		printf("%02hhx ", buf[i]);
-	printf("\n");
-
 	memset(buf,0,sizeof(buf));
-
 
 	// Toggle LED (cmd 0x80). The first byte is the report number (0x1).
 	buf[0] = 0x1;
