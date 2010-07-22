@@ -6,7 +6,7 @@
 # 2010-06-01
 ###########################################
 
-all: hidtest
+all: testgui
 
 CC=gcc
 CXX=g++
@@ -17,8 +17,8 @@ CFLAGS=-I../hidapi -Wall -g -c `fox-config --cflags`
 LIBS=-ludev `fox-config --libs`
 
 
-hidtest: $(OBJS)
-	g++ -Wall -g $^ $(LIBS) -o hidtest
+testgui: $(OBJS)
+	g++ -Wall -g $^ $(LIBS) -o testgui
 
 $(COBJS): %.o: %.c
 	$(CC) $(CFLAGS) $< -o $@
@@ -27,6 +27,6 @@ $(CPPOBJS): %.o: %.cpp
 	$(CXX) $(CFLAGS) $< -o $@
 
 clean:
-	rm *.o hidtest
+	rm *.o testgui
 
 .PHONY: clean
