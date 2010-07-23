@@ -5,6 +5,9 @@ as part of the hidapi-externals.zip file located on the GitHub project page
 where HIDAPI is downloaded:
 	http://github.com/signal11/hidapi/downloads
 
+On Windows:
+	Copy ..\hidapi\objfre_wxp_x86\i386\hidapi.dll to this folder
+
 On Linux:
 	Install Fox-Toolkit from apt-get or yum:
 		On Debian or Ubuntu:
