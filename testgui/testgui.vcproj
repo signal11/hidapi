@@ -90,7 +90,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="xcopy /F /Y ..\hidapi\objfre_wxp_x86\i386\*.dll .\&#x0D;&#x0A;xcopy /F /Y ..\..\hidapi-externals\libpng*.dll .\&#x0D;&#x0A;xcopy /F /Y ..\..\hidapi-externals\zlib1*.dll .\"
+				CommandLine="xcopy /F /Y ..\hidapi\objfre_wxp_x86\i386\*.dll .\&#x0D;&#x0A;"
 			/>
 		</Configuration>
 		<Configuration
@@ -170,7 +170,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="xcopy /F /Y ..\hidapi\objfre_wxp_x86\i386\*.dll .\&#x0D;&#x0A;xcopy /F /Y ..\..\hidapi-externals\libpng*.dll .\&#x0D;&#x0A;xcopy /F /Y ..\..\hidapi-externals\zlib1*.dll .\"
+				CommandLine="xcopy /F /Y ..\hidapi\objfre_wxp_x86\i386\*.dll .\&#x0D;&#x0A;"
 			/>
 		</Configuration>
 	</Configurations>
