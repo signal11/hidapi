@@ -12,7 +12,7 @@
 #include "hidapi.h"
 #include <string.h>
 #include <stdlib.h>
-
+#include <limits.h>
 
 
 class MainWindow : public FXMainWindow {
@@ -41,8 +41,8 @@ private:
 	FXTextField *feature_text;
 	FXText *input_text;
 	
-	struct hid_device *devices;
-	int connected_device;
+	struct hid_device_info *devices;
+	hid_device *connected_device;
 
 protected:
 	MainWindow() {};
@@ -82,7 +82,7 @@ MainWindow::MainWindow(FXApp *app)
 	: FXMainWindow(app, "HIDAPI Test Application", NULL, NULL, DECOR_ALL, 200,100, 425,600)
 {
 	devices = NULL;
-	connected_device = -1;
+	connected_device = NULL;
 
 	FXVerticalFrame *vf = new FXVerticalFrame(this, LAYOUT_FILL_Y|LAYOUT_FILL_X);
 
@@ -151,7 +151,7 @@ MainWindow::create()
 	FXMainWindow::create();
 	show();
 	
-	struct hid_device *cur_dev;
+	struct hid_device_info *cur_dev;
 	
 	// List the Devices
 	hid_free_enumeration(devices);
@@ -186,7 +186,7 @@ MainWindow::create()
 long
 MainWindow::onConnect(FXObject *sender, FXSelector sel, void *ptr)
 {
-	if (connected_device != -1)
+	if (connected_device != NULL)
 		return 1;
 	
 	FXint cur_item = device_list->getCurrentItem();
@@ -195,13 +195,13 @@ MainWindow::onConnect(FXObject *sender, FXSelector sel, void *ptr)
 	FXListItem *item = device_list->getItem(cur_item);
 	if (!item)
 		return -1;
-	struct hid_device *device_info = (struct hid_device*) item->getData();
+	struct hid_device_info *device_info = (struct hid_device_info*) item->getData();
 	if (!device_info)
 		return -1;
 	
 	connected_device =  hid_open_path(device_info->path);
 	
-	if (connected_device < 0) {
+	if (!connected_device) {
 		FXMessageBox::error(this, MBOX_OK, "Device Error", "Unable To Connect to Device");
 		return -1;
 	}
@@ -228,7 +228,7 @@ long
 MainWindow::onDisconnect(FXObject *sender, FXSelector sel, void *ptr)
 {
 	hid_close(connected_device);
-	connected_device = -1;
+	connected_device = NULL;
 	connected_label->setText("Disconnected");
 	output_button->disable();
 	feature_button->disable();
@@ -303,6 +303,7 @@ MainWindow::onTimeout(FXObject *sender, FXSelector sel, void *ptr)
 		}
 		s += "\n";
 		input_text->appendText(s);
+		input_text->setBottomLine(INT_MAX);
 	}
 
 	getApp()->addTimeout(this, ID_TIMER,
