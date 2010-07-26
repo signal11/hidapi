@@ -2,6 +2,7 @@
 *.ncb
 *.pdb
 *.vcproj.*
+hidapi.dll
 Debug
 Release
 
