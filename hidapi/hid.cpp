@@ -13,9 +13,14 @@
 ********************************************************/
 
 #include <windows.h>
+
+//#define HIDAPI_USE_DDK
+
 extern "C" {
 	#include <setupapi.h>
-	#include <hidsdi.h>
+	#ifdef HIDAPI_USE_DDK
+		#include <hidsdi.h>
+	#endif
 }
 #include <stdio.h>
 #include <stdlib.h>
@@ -24,6 +29,36 @@ extern "C" {
 #include "hidapi.h"
 
 extern "C" {
+
+#ifndef HIDAPI_USE_DDK
+	// Since we're not building with the DDK, and the HID header
+	// files aren't part of the SDK, we have to define all this
+	// stuff here. In lookup_functions(), the function pointers
+	// defined below are set.
+	typedef struct _HIDD_ATTRIBUTES{
+		ULONG Size;
+		USHORT VendorID;
+		USHORT ProductID;
+		USHORT VersionNumber;
+	} HIDD_ATTRIBUTES, *PHIDD_ATTRIBUTES;
+	typedef BOOLEAN (__stdcall *HidD_GetAttributes_)(HANDLE device, PHIDD_ATTRIBUTES attrib);
+	typedef BOOLEAN (__stdcall *HidD_GetSerialNumberString_)(HANDLE device, PVOID buffer, ULONG buffer_len);
+	typedef BOOLEAN (__stdcall *HidD_GetManufacturerString_)(HANDLE handle, PVOID buffer, ULONG buffer_len);
+	typedef BOOLEAN (__stdcall *HidD_GetProductString_)(HANDLE handle, PVOID buffer, ULONG buffer_len);
+	typedef BOOLEAN (__stdcall *HidD_SetFeature_)(HANDLE handle, PVOID data, ULONG length);
+	typedef BOOLEAN (__stdcall *HidD_GetFeature_)(HANDLE handle, PVOID data, ULONG length);
+	typedef BOOLEAN (__stdcall *HidD_GetIndexedString_)(HANDLE handle, ULONG string_index, PVOID buffer, ULONG buffer_len);
+	
+	static HidD_GetAttributes_ HidD_GetAttributes;
+	static HidD_GetSerialNumberString_ HidD_GetSerialNumberString;
+	static HidD_GetManufacturerString_ HidD_GetManufacturerString;
+	static HidD_GetProductString_ HidD_GetProductString;
+	static HidD_SetFeature_ HidD_SetFeature;
+	static HidD_GetFeature_ HidD_GetFeature;
+	static HidD_GetIndexedString_ HidD_GetIndexedString;
+
+	static BOOLEAN initialized = FALSE;
+#endif // HIDAPI_USE_DDK
 
 struct hid_device_ {
 		HANDLE device_handle;
@@ -62,7 +97,27 @@ static void register_error(hid_device *device, const char *op)
 	device->last_error_str = msg;
 }
 
-struct hid_device_info HID_API_EXPORT * hid_enumerate(unsigned short vendor_id, unsigned short product_id)
+#ifndef HIDAPI_USE_DDK
+static void lookup_functions()
+{
+	HMODULE lib = LoadLibrary("hid.dll");
+	if (lib) {
+#define RESOLVE(x) x = (x##_)GetProcAddress(lib, #x);
+		RESOLVE(HidD_GetAttributes);
+		RESOLVE(HidD_GetSerialNumberString);
+		RESOLVE(HidD_GetManufacturerString);
+		RESOLVE(HidD_GetProductString);
+		RESOLVE(HidD_SetFeature);
+		RESOLVE(HidD_GetFeature);
+		RESOLVE(HidD_GetIndexedString);
+		//FreeLibrary(lib);
+#undef RESOLVE
+	}
+	initialized = true;
+}
+#endif
+
+struct hid_device_info HID_API_EXPORT * HID_API_CALL hid_enumerate(unsigned short vendor_id, unsigned short product_id)
 {
 	int i;
 	int handle = -1;
@@ -70,6 +125,10 @@ struct hid_device_info HID_API_EXPORT * hid_enumerate(unsigned short vendor_id, 
 	struct hid_device_info *root = NULL; // return object
 	struct hid_device_info *cur_dev = NULL;
 
+#ifndef HIDAPI_USE_DDK
+	if (!initialized)
+		lookup_functions();
+#endif
 
 	// Windows objects for interacting with the driver.
 	GUID InterfaceClassGuid = {0x4d1e55b2, 0xf16f, 0x11cf, 0x88, 0xcb, 0x00, 0x11, 0x11, 0x00, 0x00, 0x30};
@@ -234,7 +293,7 @@ cont:
 
 }
 
-void  HID_API_EXPORT hid_free_enumeration(struct hid_device_info *devs)
+void  HID_API_EXPORT HID_API_CALL hid_free_enumeration(struct hid_device_info *devs)
 {
 	// TODO: Merge this with the Linux version. This function is platform-independent.
 	struct hid_device_info *d = devs;
@@ -250,7 +309,7 @@ void  HID_API_EXPORT hid_free_enumeration(struct hid_device_info *devs)
 }
 
 
-HID_API_EXPORT hid_device * hid_open(unsigned short vendor_id, unsigned short product_id, wchar_t *serial_number)
+HID_API_EXPORT hid_device * HID_API_CALL hid_open(unsigned short vendor_id, unsigned short product_id, wchar_t *serial_number)
 {
 	// TODO: Merge this functions with the Linux version. This function should be platform independent.
 	struct hid_device_info *devs, *cur_dev;
@@ -286,10 +345,15 @@ HID_API_EXPORT hid_device * hid_open(unsigned short vendor_id, unsigned short pr
 	return handle;
 }
 
-HID_API_EXPORT hid_device * hid_open_path(const char *path)
+HID_API_EXPORT hid_device * HID_API_CALL hid_open_path(const char *path)
 {
   	int i;
 	hid_device *dev;
+
+#ifndef HIDAPI_USE_DDK
+	if (!initialized)
+		lookup_functions();
+#endif
 
 	dev = new_hid_device();
 
@@ -314,12 +378,13 @@ HID_API_EXPORT hid_device * hid_open_path(const char *path)
 	return dev;
 }
 
-int HID_API_EXPORT hid_write(hid_device *dev, const unsigned char *data, size_t length)
+int HID_API_EXPORT HID_API_CALL hid_write(hid_device *dev, const unsigned char *data, size_t length)
 {
 	DWORD bytes_written;
 	BOOL res;
 
 	OVERLAPPED ol;
+	memset(&ol, 0, sizeof(ol));
 	ol.Internal = 0x0;
 	ol.InternalHigh = 0x0;
 	ol.Pointer = 0x0;
@@ -348,7 +413,7 @@ int HID_API_EXPORT hid_write(hid_device *dev, const unsigned char *data, size_t 
 }
 
 
-int HID_API_EXPORT hid_read(hid_device *dev, unsigned char *data, size_t length)
+int HID_API_EXPORT HID_API_CALL hid_read(hid_device *dev, unsigned char *data, size_t length)
 {
 	DWORD bytes_read;
 	BOOL res;
@@ -357,6 +422,7 @@ int HID_API_EXPORT hid_read(hid_device *dev, unsigned char *data, size_t length)
 	ev = CreateEvent(NULL, FALSE, FALSE /*inital state f=nonsignaled*/, NULL);
 
 	OVERLAPPED ol;
+	memset(&ol, 0, sizeof(ol));
 	ol.Internal = 0x0;
 	ol.InternalHigh = 0x0;
 	ol.Pointer = 0x0;
@@ -409,13 +475,13 @@ end_of_function:
 	return bytes_read;
 }
 
-int HID_API_EXPORT hid_set_nonblocking(hid_device *dev, int nonblock)
+int HID_API_EXPORT HID_API_CALL hid_set_nonblocking(hid_device *dev, int nonblock)
 {
 	dev->blocking = !nonblock;
 	return 0; /* Success */
 }
 
-int HID_API_EXPORT hid_send_feature_report(hid_device *dev, const unsigned char *data, size_t length)
+int HID_API_EXPORT HID_API_CALL hid_send_feature_report(hid_device *dev, const unsigned char *data, size_t length)
 {
 	BOOL res = HidD_SetFeature(dev->device_handle, (PVOID)data, length);
 	if (!res) {
@@ -427,7 +493,7 @@ int HID_API_EXPORT hid_send_feature_report(hid_device *dev, const unsigned char 
 }
 
 
-int HID_API_EXPORT hid_get_feature_report(hid_device *dev, unsigned char *data, size_t length)
+int HID_API_EXPORT HID_API_CALL hid_get_feature_report(hid_device *dev, unsigned char *data, size_t length)
 {
 	BOOL res = HidD_GetFeature(dev->device_handle, data, length);
 	if (!res) {
@@ -438,14 +504,14 @@ int HID_API_EXPORT hid_get_feature_report(hid_device *dev, unsigned char *data, 
 	return 0; /* Windows doesn't give us an actual length, unfortunately */
 }
 
-void HID_API_EXPORT hid_close(hid_device *dev)
+void HID_API_EXPORT HID_API_CALL hid_close(hid_device *dev)
 {
 	CloseHandle(dev->device_handle);
 	LocalFree(dev->last_error_str);
 	free(dev);
 }
 
-int HID_API_EXPORT_CALL hid_get_manufacturer_string(hid_device *dev, wchar_t *string, size_t maxlen)
+int HID_API_EXPORT_CALL HID_API_CALL hid_get_manufacturer_string(hid_device *dev, wchar_t *string, size_t maxlen)
 {
 	BOOL res;
 
@@ -458,7 +524,7 @@ int HID_API_EXPORT_CALL hid_get_manufacturer_string(hid_device *dev, wchar_t *st
 	return 0;
 }
 
-int HID_API_EXPORT_CALL hid_get_product_string(hid_device *dev, wchar_t *string, size_t maxlen)
+int HID_API_EXPORT_CALL HID_API_CALL hid_get_product_string(hid_device *dev, wchar_t *string, size_t maxlen)
 {
 	BOOL res;
 
@@ -471,7 +537,7 @@ int HID_API_EXPORT_CALL hid_get_product_string(hid_device *dev, wchar_t *string,
 	return 0;
 }
 
-int HID_API_EXPORT_CALL hid_get_serial_number_string(hid_device *dev, wchar_t *string, size_t maxlen)
+int HID_API_EXPORT_CALL HID_API_CALL hid_get_serial_number_string(hid_device *dev, wchar_t *string, size_t maxlen)
 {
 	BOOL res;
 
@@ -484,7 +550,7 @@ int HID_API_EXPORT_CALL hid_get_serial_number_string(hid_device *dev, wchar_t *s
 	return 0;
 }
 
-int HID_API_EXPORT_CALL hid_get_indexed_string(hid_device *dev, int string_index, wchar_t *string, size_t maxlen)
+int HID_API_EXPORT_CALL HID_API_CALL hid_get_indexed_string(hid_device *dev, int string_index, wchar_t *string, size_t maxlen)
 {
 	BOOL res;
 
