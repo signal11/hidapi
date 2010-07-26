@@ -87,7 +87,8 @@ int main(int argc, char* argv[])
 	res = hid_get_serial_number_string(handle, wstr, MAX_STR);
 	if (res < 0)
 		printf("Unable to read serial number string\n");
-	printf("Serial Number String: (%d) %ls\n", wstr[0], wstr);
+	printf("Serial Number String: (%d) %ls", wstr[0], wstr);
+	printf("\n");
 
 	// Read Indexed String 1
 	wstr[0] = 0x0000;
