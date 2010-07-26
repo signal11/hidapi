@@ -25,20 +25,26 @@ extern "C" {
 
 extern "C" {
 
-struct Device {
-		int valid;
+struct hid_device_ {
 		HANDLE device_handle;
 		BOOL blocking;
 		void *last_error_str;
 		DWORD last_error_num;
 };
 
+static hid_device *new_hid_device()
+{
+	hid_device *dev = (hid_device*) calloc(1, sizeof(hid_device));
+	dev->device_handle = INVALID_HANDLE_VALUE;
+	dev->blocking = true;
+	dev->last_error_str = NULL;
+	dev->last_error_num = 0;
 
-#define MAX_DEVICES 64
-static Device devices[MAX_DEVICES];
-static int devices_initialized = 0;
+	return dev;
+}
 
-static void register_error(Device *device, const char *op)
+
+static void register_error(hid_device *device, const char *op)
 {
 	LPTSTR msg=NULL;
 	FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
@@ -56,13 +62,13 @@ static void register_error(Device *device, const char *op)
 	device->last_error_str = msg;
 }
 
-struct hid_device HID_API_EXPORT * hid_enumerate(unsigned short vendor_id, unsigned short product_id)
+struct hid_device_info HID_API_EXPORT * hid_enumerate(unsigned short vendor_id, unsigned short product_id)
 {
 	int i;
 	int handle = -1;
 	BOOL res;
-	struct hid_device *root = NULL; // return object
-	struct hid_device *cur_dev = NULL;
+	struct hid_device_info *root = NULL; // return object
+	struct hid_device_info *cur_dev = NULL;
 
 
 	// Windows objects for interacting with the driver.
@@ -159,12 +165,12 @@ struct hid_device HID_API_EXPORT * hid_enumerate(unsigned short vendor_id, unsig
 
 			#define WSTR_LEN 512
 			const char *str;
-			struct hid_device *tmp;
+			struct hid_device_info *tmp;
 			wchar_t wstr[WSTR_LEN]; // TODO: Determine Size
 			size_t len;
 
 			/* VID/PID match. Create the record. */
-			tmp = (hid_device*) calloc(1, sizeof(struct hid_device));
+			tmp = (hid_device_info*) calloc(1, sizeof(struct hid_device_info));
 			if (cur_dev) {
 				cur_dev->next = tmp;
 			}
@@ -228,12 +234,12 @@ cont:
 
 }
 
-void  HID_API_EXPORT hid_free_enumeration(struct hid_device *devs)
+void  HID_API_EXPORT hid_free_enumeration(struct hid_device_info *devs)
 {
 	// TODO: Merge this with the Linux version. This function is platform-independent.
-	struct hid_device *d = devs;
+	struct hid_device_info *d = devs;
 	while (d) {
-		struct hid_device *next = d->next;
+		struct hid_device_info *next = d->next;
 		free(d->path);
 		free(d->serial_number);
 		free(d->manufacturer_string);
@@ -244,12 +250,12 @@ void  HID_API_EXPORT hid_free_enumeration(struct hid_device *devs)
 }
 
 
-int HID_API_EXPORT hid_open(unsigned short vendor_id, unsigned short product_id, wchar_t *serial_number)
+HID_API_EXPORT hid_device * hid_open(unsigned short vendor_id, unsigned short product_id, wchar_t *serial_number)
 {
 	// TODO: Merge this functions with the Linux version. This function should be platform independent.
-	struct hid_device *devs, *cur_dev;
+	struct hid_device_info *devs, *cur_dev;
 	const char *path_to_open = NULL;
-	int handle = -1;
+	hid_device *handle = NULL;
 	
 	devs = hid_enumerate(vendor_id, product_id);
 	cur_dev = devs;
@@ -280,38 +286,12 @@ int HID_API_EXPORT hid_open(unsigned short vendor_id, unsigned short product_id,
 	return handle;
 }
 
-int HID_API_EXPORT hid_open_path(const char *path)
+HID_API_EXPORT hid_device * hid_open_path(const char *path)
 {
   	int i;
-	int handle = -1;
-	struct Device *dev = NULL;
+	hid_device *dev;
 
-	// Initialize the Device array if it hasn't been done.
-	if (!devices_initialized) {
-		int i;
-		for (i = 0; i < MAX_DEVICES; i++) {
-			devices[i].valid = 0;
-			devices[i].device_handle = INVALID_HANDLE_VALUE;
-			devices[i].blocking = true;
-			devices[i].last_error_str = NULL;
-			devices[i].last_error_num = 0;
-		}
-		devices_initialized = true;
-	}
-
-	// Find an available handle to use;
-	for (i = 0; i < MAX_DEVICES; i++) {
-		if (!devices[i].valid) {
-			devices[i].valid = 1;
-			handle = i;
-			dev = &devices[i];
-			break;
-		}
-	}
-
-	if (handle < 0) {
-		return -1;
-	}
+	dev = new_hid_device();
 
 	// Open a handle to the device
 	dev->device_handle = CreateFile(path,
@@ -327,25 +307,17 @@ int HID_API_EXPORT hid_open_path(const char *path)
 		// Unable to open the device.
 		register_error(dev, "CreateFile");
 		CloseHandle(dev->device_handle);
-		dev->valid = 0;
-		return -1;
+		free(dev);
+		return NULL;
 	}
 
-	return handle;
+	return dev;
 }
 
-int HID_API_EXPORT hid_write(int device, const unsigned char *data, size_t length)
+int HID_API_EXPORT hid_write(hid_device *dev, const unsigned char *data, size_t length)
 {
-	Device *dev = NULL;
 	DWORD bytes_written;
 	BOOL res;
-
-	// Get the handle 
-	if (device < 0 || device >= MAX_DEVICES)
-		return -1;
-	if (devices[device].valid == 0)
-		return -1;
-	dev = &devices[device];
 
 	OVERLAPPED ol;
 	ol.Internal = 0x0;
@@ -376,18 +348,10 @@ int HID_API_EXPORT hid_write(int device, const unsigned char *data, size_t lengt
 }
 
 
-int HID_API_EXPORT hid_read(int device, unsigned char *data, size_t length)
+int HID_API_EXPORT hid_read(hid_device *dev, unsigned char *data, size_t length)
 {
-	Device *dev = NULL;
 	DWORD bytes_read;
 	BOOL res;
-
-	// Get the handle 
-	if (device < 0 || device >= MAX_DEVICES)
-		return -1;
-	if (devices[device].valid == 0)
-		return -1;
-	dev = &devices[device];
 
 	HANDLE ev;
 	ev = CreateEvent(NULL, FALSE, FALSE /*inital state f=nonsignaled*/, NULL);
@@ -445,32 +409,14 @@ end_of_function:
 	return bytes_read;
 }
 
-int HID_API_EXPORT hid_set_nonblocking(int device, int nonblock)
+int HID_API_EXPORT hid_set_nonblocking(hid_device *dev, int nonblock)
 {
-	Device *dev = NULL;
-
-	// Get the handle 
-	if (device < 0 || device >= MAX_DEVICES)
-		return -1;
-	if (devices[device].valid == 0)
-		return -1;
-	dev = &devices[device];
-	
 	dev->blocking = !nonblock;
 	return 0; /* Success */
 }
 
-int HID_API_EXPORT hid_send_feature_report(int device, const unsigned char *data, size_t length)
+int HID_API_EXPORT hid_send_feature_report(hid_device *dev, const unsigned char *data, size_t length)
 {
-	Device *dev = NULL;
-
-	// Get the handle 
-	if (device < 0 || device >= MAX_DEVICES)
-		return -1;
-	if (devices[device].valid == 0)
-		return -1;
-	dev = &devices[device];
-
 	BOOL res = HidD_SetFeature(dev->device_handle, (PVOID)data, length);
 	if (!res) {
 		register_error(dev, "HidD_SetFeature");
@@ -481,17 +427,8 @@ int HID_API_EXPORT hid_send_feature_report(int device, const unsigned char *data
 }
 
 
-int HID_API_EXPORT hid_get_feature_report(int device, unsigned char *data, size_t length)
+int HID_API_EXPORT hid_get_feature_report(hid_device *dev, unsigned char *data, size_t length)
 {
-	Device *dev = NULL;
-
-	// Get the handle 
-	if (device < 0 || device >= MAX_DEVICES)
-		return -1;
-	if (devices[device].valid == 0)
-		return -1;
-	dev = &devices[device];
-
 	BOOL res = HidD_GetFeature(dev->device_handle, data, length);
 	if (!res) {
 		register_error(dev, "HidD_GetFeature");
@@ -501,36 +438,16 @@ int HID_API_EXPORT hid_get_feature_report(int device, unsigned char *data, size_
 	return 0; /* Windows doesn't give us an actual length, unfortunately */
 }
 
-void HID_API_EXPORT hid_close(int device)
+void HID_API_EXPORT hid_close(hid_device *dev)
 {
-	Device *dev = NULL;
-
-	// Get the handle 
-	if (device < 0 || device >= MAX_DEVICES)
-		return;
-	if (devices[device].valid == 0)
-		return;
-	dev = &devices[device];
-
 	CloseHandle(dev->device_handle);
-	dev->device_handle = INVALID_HANDLE_VALUE;
 	LocalFree(dev->last_error_str);
-	dev->last_error_str = NULL;
-	dev->valid = 0;
+	free(dev);
 }
 
-int HID_API_EXPORT_CALL hid_get_manufacturer_string(int device, wchar_t *string, size_t maxlen)
+int HID_API_EXPORT_CALL hid_get_manufacturer_string(hid_device *dev, wchar_t *string, size_t maxlen)
 {
-	Device *dev = NULL;
 	BOOL res;
-
-	// Get the handle 
-	if (device < 0 || device >= MAX_DEVICES)
-		return -1;
-	if (devices[device].valid == 0)
-		return -1;
-	dev = &devices[device];
-
 
 	res = HidD_GetManufacturerString(dev->device_handle, string, 2 * maxlen);
 	if (!res) {
@@ -541,18 +458,9 @@ int HID_API_EXPORT_CALL hid_get_manufacturer_string(int device, wchar_t *string,
 	return 0;
 }
 
-int HID_API_EXPORT_CALL hid_get_product_string(int device, wchar_t *string, size_t maxlen)
+int HID_API_EXPORT_CALL hid_get_product_string(hid_device *dev, wchar_t *string, size_t maxlen)
 {
-	Device *dev = NULL;
 	BOOL res;
-
-	// Get the handle 
-	if (device < 0 || device >= MAX_DEVICES)
-		return -1;
-	if (devices[device].valid == 0)
-		return -1;
-	dev = &devices[device];
-
 
 	res = HidD_GetProductString(dev->device_handle, string, 2 * maxlen);
 	if (!res) {
@@ -563,18 +471,9 @@ int HID_API_EXPORT_CALL hid_get_product_string(int device, wchar_t *string, size
 	return 0;
 }
 
-int HID_API_EXPORT_CALL hid_get_serial_number_string(int device, wchar_t *string, size_t maxlen)
+int HID_API_EXPORT_CALL hid_get_serial_number_string(hid_device *dev, wchar_t *string, size_t maxlen)
 {
-	Device *dev = NULL;
 	BOOL res;
-
-	// Get the handle 
-	if (device < 0 || device >= MAX_DEVICES)
-		return -1;
-	if (devices[device].valid == 0)
-		return -1;
-	dev = &devices[device];
-
 
 	res = HidD_GetSerialNumberString(dev->device_handle, string, 2 * maxlen);
 	if (!res) {
@@ -585,18 +484,9 @@ int HID_API_EXPORT_CALL hid_get_serial_number_string(int device, wchar_t *string
 	return 0;
 }
 
-int HID_API_EXPORT_CALL hid_get_indexed_string(int device, int string_index, wchar_t *string, size_t maxlen)
+int HID_API_EXPORT_CALL hid_get_indexed_string(hid_device *dev, int string_index, wchar_t *string, size_t maxlen)
 {
-	Device *dev = NULL;
 	BOOL res;
-
-	// Get the handle 
-	if (device < 0 || device >= MAX_DEVICES)
-		return -1;
-	if (devices[device].valid == 0)
-		return -1;
-	dev = &devices[device];
-
 
 	res = HidD_GetIndexedString(dev->device_handle, string_index, string, 2 * maxlen);
 	if (!res) {
@@ -608,17 +498,8 @@ int HID_API_EXPORT_CALL hid_get_indexed_string(int device, int string_index, wch
 }
 
 
-HID_API_EXPORT const char * HID_API_CALL  hid_error(int device)
+HID_API_EXPORT const char * HID_API_CALL  hid_error(hid_device *dev)
 {
-	Device *dev = NULL;
-
-	// Get the handle 
-	if (device < 0 || device >= MAX_DEVICES)
-		return NULL;
-	if (devices[device].valid == 0)
-		return NULL;
-	dev = &devices[device];
-
 	return (const char *)dev->last_error_str;
 }
 
