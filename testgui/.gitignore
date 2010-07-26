@@ -1,0 +1,7 @@
+
+*.ncb
+*.pdb
+*.vcproj.*
+Debug
+Release
+
