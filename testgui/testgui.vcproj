@@ -61,7 +61,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="hidapi.lib fox-1.6.lib"
+				AdditionalDependencies="setupapi.lib fox-1.6.lib"
 				OutputFile="$(ProjectName).exe"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="..\hidapi\objfre_wxp_x86\i386;&quot;..\..\hidapi-externals\fox\lib&quot;"
@@ -90,7 +90,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="xcopy /F /Y ..\hidapi\objfre_wxp_x86\i386\*.dll .\&#x0D;&#x0A;"
+				CommandLine=""
 			/>
 		</Configuration>
 		<Configuration
@@ -139,7 +139,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="hidapi.lib fox-1.6.lib"
+				AdditionalDependencies="setupapi.lib fox-1.6.lib"
 				OutputFile="$(ProjectName).exe"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="..\hidapi\objfre_wxp_x86\i386;&quot;..\..\hidapi-externals\fox\lib&quot;"
@@ -170,7 +170,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="xcopy /F /Y ..\hidapi\objfre_wxp_x86\i386\*.dll .\&#x0D;&#x0A;"
+				CommandLine=""
 			/>
 		</Configuration>
 	</Configurations>
@@ -182,6 +182,10 @@
 			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
+			<File
+				RelativePath="..\windows\hid.cpp"
+				>
+			</File>
 			<File
 				RelativePath=".\test.cpp"
 				>

@@ -59,7 +59,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="hidapi.lib"
-				AdditionalLibraryDirectories="..\hidapi\objfre_wxp_x86\i386"
+				AdditionalLibraryDirectories="..\windows\Debug"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				TargetMachine="1"
@@ -85,7 +85,7 @@
 			<Tool
 				Name="VCPostBuildEventTool"
 				Description="Copying hidapi.dll to the local direcotry."
-				CommandLine="xcopy /Y /F /R ..\hidapi\objfre_wxp_x86\i386\*.dll .\"
+				CommandLine="xcopy /Y /F /R ..\windows\Debug\*.dll .\"
 			/>
 		</Configuration>
 		<Configuration
@@ -133,7 +133,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="hidapi.lib"
-				AdditionalLibraryDirectories="..\hidapi\objfre_wxp_x86\i386"
+				AdditionalLibraryDirectories="..\windows\Release"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"
@@ -161,7 +161,7 @@
 			<Tool
 				Name="VCPostBuildEventTool"
 				Description="Copying hidapi.dll to the local direcotry."
-				CommandLine="xcopy /Y /F /R ..\hidapi\objfre_wxp_x86\i386\*.dll .\"
+				CommandLine="xcopy /Y /F /R ..\windows\Release\*.dll .\"
 			/>
 		</Configuration>
 	</Configurations>

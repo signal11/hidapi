@@ -28,6 +28,9 @@ extern "C" {
 
 #include "hidapi.h"
 
+// Thanks Microsoft, but I know how to use strncpy().
+#pragma warning(disable:4996)
+
 extern "C" {
 
 #ifndef HIDAPI_USE_DDK
@@ -100,7 +103,7 @@ static void register_error(hid_device *device, const char *op)
 #ifndef HIDAPI_USE_DDK
 static void lookup_functions()
 {
-	HMODULE lib = LoadLibrary("hid.dll");
+	HMODULE lib = LoadLibraryA("hid.dll");
 	if (lib) {
 #define RESOLVE(x) x = (x##_)GetProcAddress(lib, #x);
 		RESOLVE(HidD_GetAttributes);
@@ -119,8 +122,6 @@ static void lookup_functions()
 
 struct hid_device_info HID_API_EXPORT * HID_API_CALL hid_enumerate(unsigned short vendor_id, unsigned short product_id)
 {
-	int i;
-	int handle = -1;
 	BOOL res;
 	struct hid_device_info *root = NULL; // return object
 	struct hid_device_info *cur_dev = NULL;
@@ -134,7 +135,7 @@ struct hid_device_info HID_API_EXPORT * HID_API_CALL hid_enumerate(unsigned shor
 	GUID InterfaceClassGuid = {0x4d1e55b2, 0xf16f, 0x11cf, 0x88, 0xcb, 0x00, 0x11, 0x11, 0x00, 0x00, 0x30};
 	SP_DEVINFO_DATA devinfo_data;
 	SP_DEVICE_INTERFACE_DATA device_interface_data;
-	SP_DEVICE_INTERFACE_DETAIL_DATA *device_interface_detail_data = NULL;
+	SP_DEVICE_INTERFACE_DETAIL_DATA_A *device_interface_detail_data = NULL;
 	HDEVINFO device_info_set = INVALID_HANDLE_VALUE;
 
 	// Initialize the Windows objects.
@@ -143,7 +144,7 @@ struct hid_device_info HID_API_EXPORT * HID_API_CALL hid_enumerate(unsigned shor
 
 
 	// Get information for all the devices belonging to the HID class.
-	device_info_set = SetupDiGetClassDevs(&InterfaceClassGuid, NULL, NULL, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
+	device_info_set = SetupDiGetClassDevsA(&InterfaceClassGuid, NULL, NULL, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
 	
 	// Iterate over each device in the HID class, looking for the right one.
 	int device_index = 0;
@@ -164,7 +165,7 @@ struct hid_device_info HID_API_EXPORT * HID_API_CALL hid_enumerate(unsigned shor
 		// Call with 0-sized detail size, and let the function
 		// tell us how long the detail struct needs to be. The
 		// size is put in &required_size.
-		res = SetupDiGetDeviceInterfaceDetail(device_info_set,
+		res = SetupDiGetDeviceInterfaceDetailA(device_info_set,
 			&device_interface_data,
 			NULL,
 			0,
@@ -172,13 +173,13 @@ struct hid_device_info HID_API_EXPORT * HID_API_CALL hid_enumerate(unsigned shor
 			NULL);
 
 		// Allocate a long enough structure for device_interface_detail_data.
-		device_interface_detail_data = (SP_DEVICE_INTERFACE_DETAIL_DATA*) malloc(required_size);
-		device_interface_detail_data->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
+		device_interface_detail_data = (SP_DEVICE_INTERFACE_DETAIL_DATA_A*) malloc(required_size);
+		device_interface_detail_data->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA_A);
 
 		// Get the detailed data for this device. The detail data gives us
 		// the device path for this device, which is then passed into
 		// CreateFile() to get a handle to the device.
-		res = SetupDiGetDeviceInterfaceDetail(device_info_set,
+		res = SetupDiGetDeviceInterfaceDetailA(device_info_set,
 			&device_interface_data,
 			device_interface_detail_data,
 			required_size,
@@ -194,7 +195,7 @@ struct hid_device_info HID_API_EXPORT * HID_API_CALL hid_enumerate(unsigned shor
 		//wprintf(L"HandleName: %s\n", device_interface_detail_data->DevicePath);
 
 		// Open a handle to the device
-		HANDLE write_handle = CreateFile(device_interface_detail_data->DevicePath,
+		HANDLE write_handle = CreateFileA(device_interface_detail_data->DevicePath,
 			GENERIC_WRITE |GENERIC_READ,
 			0x0, /*share mode*/
 			NULL,
@@ -206,8 +207,7 @@ struct hid_device_info HID_API_EXPORT * HID_API_CALL hid_enumerate(unsigned shor
 		if (write_handle == INVALID_HANDLE_VALUE) {
 			// Unable to open the device.
 			//register_error(dev, "CreateFile");
-			CloseHandle(write_handle);
-			goto cont;
+			goto cont_close;
 		}		
 
 
@@ -276,9 +276,9 @@ struct hid_device_info HID_API_EXPORT * HID_API_CALL hid_enumerate(unsigned shor
 			cur_dev->product_id = attrib.ProductID;
 		}
 
-cont:
+cont_close:
 		CloseHandle(write_handle);
-
+cont:
 		// We no longer need the detail data. It can be freed
 		free(device_interface_detail_data);
 
@@ -347,7 +347,6 @@ HID_API_EXPORT hid_device * HID_API_CALL hid_open(unsigned short vendor_id, unsi
 
 HID_API_EXPORT hid_device * HID_API_CALL hid_open_path(const char *path)
 {
-  	int i;
 	hid_device *dev;
 
 #ifndef HIDAPI_USE_DDK
@@ -358,7 +357,7 @@ HID_API_EXPORT hid_device * HID_API_CALL hid_open_path(const char *path)
 	dev = new_hid_device();
 
 	// Open a handle to the device
-	dev->device_handle = CreateFile(path,
+	dev->device_handle = CreateFileA(path,
 			GENERIC_WRITE |GENERIC_READ,
 			0x0, /*share mode*/
 			NULL,
