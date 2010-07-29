@@ -10,4 +10,4 @@ Release
 *.dll
 *.pdb
 *.o
-testgui
+hidtest

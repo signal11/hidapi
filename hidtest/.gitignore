@@ -9,3 +9,4 @@ Release
 *.suo
 *.dll
 *.pdb
+*.o
