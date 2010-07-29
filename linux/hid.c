@@ -389,8 +389,6 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 		res = ioctl(dev->device_handle, HIDIOCGRDESCSIZE, &desc_size);
 		if (res < 0)
 			perror("HIDIOCGRDESCSIZE");
-		else
-			printf("Report Descriptor Size: %d\n", desc_size);
 
 
 		/* Get Report Descriptor */
