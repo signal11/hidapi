@@ -1,11 +1,17 @@
-/*********************************
-Mac OS X version of HID API
+/*******************************************************
+ HIDAPI - Multi-Platform library for
+ communication with HID devices.
  
-Alan Ott
-Signal 11 Software
+ Alan Ott
+ Signal 11 Software
 
-2010-07-03
-*********************************/
+ 2010-07-03
+
+ Copyright 2010, All Rights Reserved.
+ 
+ This software may be used by anyone for any reason so
+ long as this copyright notice remains intact.
+********************************************************/
 
 
 #include <IOKit/hid/IOHIDManager.h>

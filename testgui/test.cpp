@@ -1,10 +1,17 @@
-/**********************************
+/*******************************************************
  Demo Program for HIDAPI
  
  Alan Ott
  Signal 11 Software
+
  2010-07-20
-**********************************/
+
+ Copyright 2010, All Rights Reserved
+ 
+ This contents of this file may be used by anyone
+ for any reason and may be used as a starting point
+ for your own applications which use HIDAPI.
+********************************************************/
 
 
 #include <fx.h>
@@ -14,6 +21,10 @@
 #include <stdlib.h>
 #include <limits.h>
 
+#ifdef _WIN32
+	// Thanks Microsoft, but I know how to use strncpy().
+	#pragma warning(disable:4996)
+#endif
 
 class MainWindow : public FXMainWindow {
 	FXDECLARE(MainWindow)

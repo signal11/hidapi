@@ -2,9 +2,10 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="hidtest"
-	ProjectGUID="{23E9FF6A-49D1-4993-B2B5-BBB992C6C712}"
-	RootNamespace="hidtest"
+	Name="testgui"
+	ProjectGUID="{08769AC3-785A-4DDC-BFC7-1775414B7AB7}"
+	RootNamespace="testgui"
+	Keyword="Win32Proj"
 	TargetFrameworkVersion="196613"
 	>
 	<Platforms>
@@ -20,7 +21,7 @@
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
-			CharacterSet="2"
+			CharacterSet="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -40,10 +41,12 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\hidapi"
+				AdditionalIncludeDirectories="&quot;..\..\hidapi-externals\fox\include&quot;;..\hidapi"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
+				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="4"
 			/>
@@ -58,10 +61,13 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="hidapi.lib"
-				AdditionalLibraryDirectories="..\hidapi\objfre_wxp_x86\i386"
+				AdditionalDependencies="setupapi.lib fox-1.6.lib"
+				OutputFile="$(ProjectName).exe"
+				LinkIncremental="2"
+				AdditionalLibraryDirectories="..\hidapi\objfre_wxp_x86\i386;&quot;..\..\hidapi-externals\fox\lib&quot;"
 				GenerateDebugInformation="true"
-				SubSystem="1"
+				SubSystem="2"
+				EntryPointSymbol="mainCRTStartup"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -84,8 +90,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				Description="Copying hidapi.dll to the local direcotry."
-				CommandLine="xcopy /Y /F /R ..\hidapi\objfre_wxp_x86\i386\*.dll .\"
+				CommandLine=""
 			/>
 		</Configuration>
 		<Configuration
@@ -93,7 +98,7 @@
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
-			CharacterSet="2"
+			CharacterSet="1"
 			WholeProgramOptimization="1"
 			>
 			<Tool
@@ -115,9 +120,11 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="..\hidapi"
+				AdditionalIncludeDirectories="&quot;..\..\hidapi-externals\fox\include&quot;;..\hidapi"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
+				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="3"
 			/>
@@ -132,12 +139,15 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="hidapi.lib"
-				AdditionalLibraryDirectories="..\hidapi\objfre_wxp_x86\i386"
+				AdditionalDependencies="setupapi.lib fox-1.6.lib"
+				OutputFile="$(ProjectName).exe"
+				LinkIncremental="1"
+				AdditionalLibraryDirectories="..\hidapi\objfre_wxp_x86\i386;&quot;..\..\hidapi-externals\fox\lib&quot;"
 				GenerateDebugInformation="true"
-				SubSystem="1"
+				SubSystem="2"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
+				EntryPointSymbol="mainCRTStartup"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -160,8 +170,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				Description="Copying hidapi.dll to the local direcotry."
-				CommandLine="xcopy /Y /F /R ..\hidapi\objfre_wxp_x86\i386\*.dll .\"
+				CommandLine=""
 			/>
 		</Configuration>
 	</Configurations>
@@ -174,7 +183,11 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\hidtest.cpp"
+				RelativePath="..\windows\hid.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\test.cpp"
 				>
 			</File>
 		</Filter>
@@ -183,6 +196,10 @@
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
+			<File
+				RelativePath="..\hidapi\hidapi.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"
@@ -190,6 +207,10 @@
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
 		</Filter>
+		<File
+			RelativePath=".\ReadMe.txt"
+			>
+		</File>
 	</Files>
 	<Globals>
 	</Globals>

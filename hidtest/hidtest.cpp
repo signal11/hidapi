@@ -31,7 +31,7 @@ int main(int argc, char* argv[])
 	unsigned char buf[256];
 	#define MAX_STR 255
 	wchar_t wstr[MAX_STR];
-	int handle;
+	hid_device *handle;
 	int i;
 
 #ifdef WIN32
@@ -39,7 +39,7 @@ int main(int argc, char* argv[])
 	UNREFERENCED_PARAMETER(argv);
 #endif
 
-	struct hid_device *devs, *cur_dev;
+	struct hid_device_info *devs, *cur_dev;
 	
 	devs = hid_enumerate(0x0, 0x0);
 	cur_dev = devs;	
@@ -63,7 +63,7 @@ int main(int argc, char* argv[])
 	// and optionally the Serial number.
 	////handle = hid_open(0x4d8, 0x3f, L"12345");
 	handle = hid_open(0x4d8, 0x3f, NULL);
-	if (handle < 0) {
+	if (!handle) {
 		printf("unable to open device\n");
  		return 1;
 	}
@@ -87,7 +87,8 @@ int main(int argc, char* argv[])
 	res = hid_get_serial_number_string(handle, wstr, MAX_STR);
 	if (res < 0)
 		printf("Unable to read serial number string\n");
-	printf("Serial Number String: (%d) %ls\n", wstr[0], wstr);
+	printf("Serial Number String: (%d) %ls", wstr[0], wstr);
+	printf("\n");
 
 	// Read Indexed String 1
 	wstr[0] = 0x0000;
