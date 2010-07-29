@@ -1,21 +1,9 @@
-HID API for Windows
+HID API for Windows, Linux, and Mac OS X
 
 About
 ------
 
-HIDAPI is a library used to make it easier for an application connect to USB HID-Class devices on Windows. It is a single DLL (hidapi.dll) with a single header file (hidapi.h) which can be linked into any application or DLL. Its purpose is two-fold. The first is that it simplifies the Windows HID interface by wrapping it with a straight-forward API that handles the most common tasks a developer would want to do with a HID device. The second is that it allows a developer to work directly with a HID device without having to worry about the Windows Driver Kit (WDK).
-
-Why is this Necessary?
------------------------
-Microsoft provides a library called hid.dll to access HID-Class Devices. Hid.dll contains a handful of functions which are useful in talking to HID-Class devices from within an application (for more information, search for HidD_GetAttributes() on MSDN). Unfortunately, the headers and import library for hid.dll are not included in the Platform SDK, but in the Windows Driver Kit (WDK). In the past it was sufficient to download the WDK and then set the include and linker paths in Visual Studio to include the WDK's include/ and lib/ paths, but unfortunately now with WDK version 7, this is impossible, as the header files in the WDK are not compatible with those that ship with Visual Studio and the Platform SDK.
-
-While it is possible to tell Visual Studio to ignore the standard include paths and then add the WDK include paths, this does not promote best practices and in many cases will be incompatible with larger projects which rely on Visual Studio being configured in a more default manner.
-
-HIDAPI also provides a cleaner interface to the HID device, making it easier to develop applications which communicate with USB HID devices without having to know the details of the Microsoft HID API.
-
-How does it work then?
------------------------
-hidapi.dll is built using the WDK, using a Makefile as is standard practice when using the WDK. hidapi.dll links dynamically with hid.dll, and as a result, your application only has to link with hidapi.dll and not Microsoft's hid.dll. Applications using hidapi.dll can be built with Visual Studio in its default configuration.
+HIDAPI is a multi-platform library which allows an application to interface with USB and Bluetooth HID-Class devices on Windows, Linux, and Mac OS X. On Windows, a DLL is built. On other platforms (and optionally on Windows), the single source file can simply be dropped into a target application.
 
 What Does the API Look Like?
 -----------------------------
@@ -33,7 +21,7 @@ int main(int argc, char* argv[])
 	int res;
 	unsigned char buf[65];
 	wchar_t wstr[MAX_STR];
-	int handle;
+	hid_device *handle;
 	int i;
 
 	// Open the device using the VID, PID,
@@ -87,21 +75,26 @@ It can be downloaded from github
 
 Build Instructions
 -------------------
-The zip file contains a pre-built copy of hidapi.dll, so it is not even necessary to download the Windows Driver Kit unless you wish to re-build hidapi.dll itself. Building an application using hidapi.dll can be done without the WDK.
+Windows:
+  Build the .sln file in the windows/ directory.
+Linux:
+  cd to the linux/ directory and run make.
+Mac OS X:
+  cd to the mac/ directory and run make.
 
-Instructions for re-building hidapi.dll:
+To build the Test GUI:
+  On Windows, build the .sln file in the hidtest/ directory.
+  On Linux and Mac, run make from the hidtest/ directory.
+
+To build using the DDK (old method):
 
    1. Install the Windows Driver Kit (WDK) from Microsoft.
    2. From the Start menu, in the Windows Driver Kits folder, select Build Environments, then your operating system, then the x86 Free Build Environment (or one that is appropriate for your system).
-   3. From the console, change directory to the hidapi directory, which is part of the HIDAPI distribution.
+   3. From the console, change directory to the windows/ddk_build/ directory, which is part of the HIDAPI distribution.
    4. Type build.
    5. You can find the output files (DLL and LIB) in a subdirectory created by the build system which is appropriate for your environment. On Windows XP, this directory is objfre_wxp_x86/i386.
-
-To build the sample application:
-
-   1. load one of the solution files in the hidtest directory. hidtest.sln is for Visual Studio 2008, and hidtest-vc8.vcproj is for visual studio 2005.
 
 --------------------------------
 
 Signal 11 Software - 2010-04-11
-
+                     2010-07-28
