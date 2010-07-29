@@ -85,7 +85,7 @@
 			<Tool
 				Name="VCPostBuildEventTool"
 				Description="Copying hidapi.dll to the local direcotry."
-				CommandLine="xcopy /Y /F /R ..\windows\Debug\*.dll .\"
+				CommandLine=""
 			/>
 		</Configuration>
 		<Configuration
@@ -161,7 +161,7 @@
 			<Tool
 				Name="VCPostBuildEventTool"
 				Description="Copying hidapi.dll to the local direcotry."
-				CommandLine="xcopy /Y /F /R ..\windows\Release\*.dll .\"
+				CommandLine=""
 			/>
 		</Configuration>
 	</Configurations>
@@ -174,7 +174,7 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\hidtest.cpp"
+				RelativePath="..\hidtest\hidtest.cpp"
 				>
 			</File>
 		</Filter>

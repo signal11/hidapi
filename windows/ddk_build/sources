@@ -12,8 +12,8 @@ TARGETLIBS=$(SDK_LIB_PATH)\hid.lib \
 
 USE_MSVCRT=1
 
-INCLUDES=
-SOURCES= hid.cpp \
+INCLUDES= ..\..\hidapi
+SOURCES= ..\hid.cpp \
 
 
 TARGET_DESTINATION=retail
