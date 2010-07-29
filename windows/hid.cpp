@@ -505,6 +505,8 @@ int HID_API_EXPORT HID_API_CALL hid_get_feature_report(hid_device *dev, unsigned
 
 void HID_API_EXPORT HID_API_CALL hid_close(hid_device *dev)
 {
+	if (!dev)
+		return;
 	CloseHandle(dev->device_handle);
 	LocalFree(dev->last_error_str);
 	free(dev);
