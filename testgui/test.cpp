@@ -119,6 +119,7 @@ MainWindow::MainWindow(FXApp *app)
 	FXVerticalFrame *buttonVF = new FXVerticalFrame(hf);
 	connect_button = new FXButton(buttonVF, "Connect", NULL, this, ID_CONNECT, BUTTON_NORMAL|LAYOUT_FILL_X);
 	disconnect_button = new FXButton(buttonVF, "Disconnect", NULL, this, ID_DISCONNECT, BUTTON_NORMAL|LAYOUT_FILL_X);
+	disconnect_button->disable();
 	new FXHorizontalFrame(buttonVF, 0, 0,0,0,0, 0,0,50,0);
 
 	connected_label = new FXLabel(vf, "Disconnected");
@@ -169,12 +170,6 @@ MainWindow::create()
 	devices = hid_enumerate(0x0, 0x0);
 	cur_dev = devices;	
 	while (cur_dev) {
-		printf("Device Found\n  type: %04hx %04hx\n  path: %s\n  serial_number: %ls", cur_dev->vendor_id, cur_dev->product_id, cur_dev->path, cur_dev->serial_number);
-		printf("\n");
-		printf("  Manufacturer: %ls\n", cur_dev->manufacturer_string);
-		printf("  Product:      %ls\n", cur_dev->product_string);
-		printf("\n");
-		
 		// Add it to the List Box.
 		FXString s;
 		s.format("%04hx:%04hx -", cur_dev->vendor_id, cur_dev->product_id);
@@ -229,6 +224,8 @@ MainWindow::onConnect(FXObject *sender, FXSelector sel, void *ptr)
 	connected_label->setText(s);
 	output_button->enable();
 	feature_button->enable();
+	connect_button->disable();
+	disconnect_button->enable();
 	input_text->setText("");
 
 
@@ -243,6 +240,8 @@ MainWindow::onDisconnect(FXObject *sender, FXSelector sel, void *ptr)
 	connected_label->setText("Disconnected");
 	output_button->disable();
 	feature_button->disable();
+	connect_button->enable();
+	disconnect_button->disable();
 
 	getApp()->removeTimeout(this, ID_TIMER);
 	
@@ -269,7 +268,6 @@ MainWindow::onSendOutputReport(FXObject *sender, FXSelector sel, void *ptr)
 		char *endptr;
 		long int val = strtol(token, &endptr, 0);
 		buf[i++] = val;
-		printf("%02hhx\n", (char) buf[i-1]);
 		token = strtok(NULL, delim);
 	}
 	
