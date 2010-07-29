@@ -14,6 +14,10 @@
 #include <stdlib.h>
 #include <limits.h>
 
+#ifdef _WIN32
+	// Thanks Microsoft, but I know how to use strncpy().
+	#pragma warning(disable:4996)
+#endif
 
 class MainWindow : public FXMainWindow {
 	FXDECLARE(MainWindow)
