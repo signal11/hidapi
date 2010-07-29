@@ -353,7 +353,6 @@ hid_device * hid_open(unsigned short vendor_id, unsigned short product_id, wchar
 
 hid_device * HID_API_EXPORT hid_open_path(const char *path)
 {
-  	int i;
 	hid_device *dev = NULL;
 
 	dev = new_hid_device();
