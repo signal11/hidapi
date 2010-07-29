@@ -23,8 +23,7 @@ struct input_report {
 	struct input_report *next;
 };
 
-struct Device {
-	int valid;
+struct hid_device_ {
 	IOHIDDeviceRef device_handle;
 	int blocking;
 	int uses_numbered_reports;
@@ -35,13 +34,21 @@ struct Device {
 };
 
 
-#define MAX_DEVICES 64
-static struct Device devices[MAX_DEVICES];
-static int devices_initialized = 0;
+static hid_device *new_hid_device()
+{
+	hid_device *dev = calloc(1, sizeof(hid_device));
+	dev->device_handle = NULL;
+	dev->blocking = 1;
+	dev->uses_numbered_reports = 0;
+	dev->input_reports = NULL;
+	
+	return dev;
+}
+
 static 	IOHIDManagerRef hid_mgr = 0x0;
 
 
-static void register_error(struct Device *device, const char *op)
+static void register_error(hid_device *device, const char *op)
 {
 
 }
@@ -222,10 +229,10 @@ static void init_hid_manager()
 }
 
 
-struct hid_device  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, unsigned short product_id)
+struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, unsigned short product_id)
 {
-	struct hid_device *root = NULL; // return object
-	struct hid_device *cur_dev = NULL;
+	struct hid_device_info *root = NULL; // return object
+	struct hid_device_info *cur_dev = NULL;
 	CFIndex num_devices;
 	int i;
 	
@@ -259,11 +266,11 @@ struct hid_device  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, unsig
 		/* Check the VID/PID against the arguments */
 		if ((vendor_id == 0x0 && product_id == 0x0) ||
 		    (vendor_id == dev_vid && product_id == dev_pid)) {
-			struct hid_device *tmp;
+			struct hid_device_info *tmp;
 			size_t len;
 
 		    	/* VID/PID match. Create the record. */
-			tmp = malloc(sizeof(struct hid_device));
+			tmp = malloc(sizeof(struct hid_device_info));
 			if (cur_dev) {
 				cur_dev->next = tmp;
 			}
@@ -299,12 +306,12 @@ struct hid_device  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, unsig
 	return root;
 }
 
-void  HID_API_EXPORT hid_free_enumeration(struct hid_device *devs)
+void  HID_API_EXPORT hid_free_enumeration(struct hid_device_info *devs)
 {
 	/* This function is identical to the Linux version. Platform independent. */
-	struct hid_device *d = devs;
+	struct hid_device_info *d = devs;
 	while (d) {
-		struct hid_device *next = d->next;
+		struct hid_device_info *next = d->next;
 		free(d->path);
 		free(d->serial_number);
 		free(d->manufacturer_string);
@@ -314,12 +321,12 @@ void  HID_API_EXPORT hid_free_enumeration(struct hid_device *devs)
 	}
 }
 
-int HID_API_EXPORT hid_open(unsigned short vendor_id, unsigned short product_id, wchar_t *serial_number)
+hid_device * HID_API_EXPORT hid_open(unsigned short vendor_id, unsigned short product_id, wchar_t *serial_number)
 {
 	/* This function is identical to the Linux version. Platform independent. */
-	struct hid_device *devs, *cur_dev;
+	struct hid_device_info *devs, *cur_dev;
 	const char *path_to_open = NULL;
-	int handle = -1;
+	hid_device * handle = NULL;
 	
 	devs = hid_enumerate(vendor_id, product_id);
 	cur_dev = devs;
@@ -358,7 +365,7 @@ void hid_report_callback(void *context, IOReturn result, void *sender,
                          uint8_t *report, CFIndex report_length)
 {
 	struct input_report *rpt;
-	struct Device *dev = context;
+	hid_device *dev = context;
 	
 	/* Make a new Input Report object */
 	rpt = calloc(1, sizeof(struct input_report));
@@ -385,44 +392,14 @@ void hid_report_callback(void *context, IOReturn result, void *sender,
 	CFRunLoopStop(CFRunLoopGetCurrent());
 }
 
-int HID_API_EXPORT hid_open_path(const char *path)
+hid_device * HID_API_EXPORT hid_open_path(const char *path)
 {
   	int i;
-	int handle = -1;
-	struct Device *dev = NULL;
+	hid_device *dev = NULL;
 	CFIndex num_devices;
-
-	// Initialize the Device array if it hasn't been done.
-	if (!devices_initialized) {
-		int i;
-		for (i = 0; i < MAX_DEVICES; i++) {
-			devices[i].valid = 0;
-			devices[i].device_handle = NULL;
-			devices[i].blocking = 1;
-			devices[i].uses_numbered_reports = 0;
-			devices[i].input_reports = NULL;
-		}
-		devices_initialized = 1;
-	}
-
-	// Find an available handle to use;
-	for (i = 0; i < MAX_DEVICES; i++) {
-		if (!devices[i].valid) {
-			devices[i].valid = 1;
-			devices[i].device_handle = NULL;
-			devices[i].blocking = 1;
-			devices[i].uses_numbered_reports = 0;
-			devices[i].input_reports = NULL;
-			handle = i;
-			dev = &devices[i];
-			break;
-		}
-	}
-
-	if (handle < 0) {
-		return -1;
-	}
 	
+	dev = new_hid_device();
+
 	/* Set up the HID Manager if it hasn't been done */
 	if (!hid_mgr)
 		init_hid_manager();
@@ -467,7 +444,7 @@ int HID_API_EXPORT hid_open_path(const char *path)
 				
 				pthread_mutex_init(&dev->mutex, NULL);
 				
-				return handle;
+				return dev;
 			}
 			else {
 				goto return_error;
@@ -478,11 +455,11 @@ int HID_API_EXPORT hid_open_path(const char *path)
 return_error:
 	free(device_array);
 	CFRelease(device_set);
-	dev->valid = 0;
-	return -1;
+	free(dev);
+	return NULL;
 }
 
-static int set_report(struct Device *dev, IOHIDReportType type, const unsigned char *data, size_t length)
+static int set_report(hid_device *dev, IOHIDReportType type, const unsigned char *data, size_t length)
 {
 	const unsigned char *data_to_send;
 	size_t length_to_send;
@@ -514,22 +491,13 @@ static int set_report(struct Device *dev, IOHIDReportType type, const unsigned c
 
 }
 
-int HID_API_EXPORT hid_write(int device, const unsigned char *data, size_t length)
+int HID_API_EXPORT hid_write(hid_device *dev, const unsigned char *data, size_t length)
 {
-	struct Device *dev = NULL;
-
-	// Get the handle 
-	if (device < 0 || device >= MAX_DEVICES)
-		return -1;
-	if (devices[device].valid == 0)
-		return -1;
-	dev = &devices[device];
-	
 	return set_report(dev, kIOHIDReportTypeOutput, data, length);
 }
 
 /* Helper function, so that this isn't duplicated in hid_read(). */
-static int return_data(struct Device *dev, unsigned char *data, size_t length)
+static int return_data(hid_device *dev, unsigned char *data, size_t length)
 {
 	/* Copy the data out of the linked list item (rpt) into the
 	   return buffer (data), and delete the liked list item. */
@@ -542,17 +510,9 @@ static int return_data(struct Device *dev, unsigned char *data, size_t length)
 	return len;
 }
 
-int HID_API_EXPORT hid_read(int device, unsigned char *data, size_t length)
+int HID_API_EXPORT hid_read(hid_device *dev, unsigned char *data, size_t length)
 {
-	struct Device *dev = NULL;
 	int ret_val = -1;
-
-	// Get the handle 
-	if (device < 0 || device >= MAX_DEVICES)
-		return -1;
-	if (devices[device].valid == 0)
-		return -1;
-	dev = &devices[device];
 
 	/* Lock this function */
 	pthread_mutex_lock(&dev->mutex);
@@ -619,49 +579,23 @@ ret:
 	return ret_val;
 }
 
-int HID_API_EXPORT hid_set_nonblocking(int device, int nonblock)
+int HID_API_EXPORT hid_set_nonblocking(hid_device *dev, int nonblock)
 {
-	struct Device *dev = NULL;
-
-	// Get the handle 
-	if (device < 0 || device >= MAX_DEVICES)
-		return -1;
-	if (devices[device].valid == 0)
-		return -1;
-	dev = &devices[device];
-	
 	/* All Nonblocking operation is handled by the library. */
 	dev->blocking = !nonblock;
 	
 	return 0;
 }
 
-int HID_API_EXPORT hid_send_feature_report(int device, const unsigned char *data, size_t length)
+int HID_API_EXPORT hid_send_feature_report(hid_device *dev, const unsigned char *data, size_t length)
 {
-	struct Device *dev = NULL;
-
-	// Get the handle 
-	if (device < 0 || device >= MAX_DEVICES)
-		return -1;
-	if (devices[device].valid == 0)
-		return -1;
-	dev = &devices[device];
-
 	return set_report(dev, kIOHIDReportTypeFeature, data, length);
 }
 
-int HID_API_EXPORT hid_get_feature_report(int device, unsigned char *data, size_t length)
+int HID_API_EXPORT hid_get_feature_report(hid_device *dev, unsigned char *data, size_t length)
 {
-	struct Device *dev = NULL;
 	CFIndex len = length;
 	IOReturn res;
-
-	// Get the handle 
-	if (device < 0 || device >= MAX_DEVICES)
-		return -1;
-	if (devices[device].valid == 0)
-		return -1;
-	dev = &devices[device];
 
 	res = IOHIDDeviceGetReport(dev->device_handle,
 	                           kIOHIDReportTypeFeature,
@@ -674,17 +608,11 @@ int HID_API_EXPORT hid_get_feature_report(int device, unsigned char *data, size_
 }
 
 
-void HID_API_EXPORT hid_close(int device)
+void HID_API_EXPORT hid_close(hid_device *dev)
 {
-	struct Device *dev = NULL;
-
-	// Get the handle 
-	if (device < 0 || device >= MAX_DEVICES)
+	if (!dev)
 		return;
-	if (devices[device].valid == 0)
-		return;
-	dev = &devices[device];
-
+	
 	/* Close the OS handle to the device. */
 	IOHIDDeviceClose(dev->device_handle, kIOHIDOptionsTypeNone);
 
@@ -702,71 +630,39 @@ void HID_API_EXPORT hid_close(int device)
 	free(dev->input_report_buf);
 	pthread_mutex_destroy(&dev->mutex);
 
-	dev->valid = 0;
+	free(dev);
 }
 
-int HID_API_EXPORT_CALL hid_get_manufacturer_string(int device, wchar_t *string, size_t maxlen)
+int HID_API_EXPORT_CALL hid_get_manufacturer_string(hid_device *dev, wchar_t *string, size_t maxlen)
 {
-	struct Device *dev = NULL;
 	int res;
-
-	// Get the handle 
-	if (device < 0 || device >= MAX_DEVICES)
-		return -1;
-	if (devices[device].valid == 0)
-		return -1;
-	dev = &devices[device];
 
 	// TODO:
 
 	return 0;
 }
 
-int HID_API_EXPORT_CALL hid_get_product_string(int device, wchar_t *string, size_t maxlen)
+int HID_API_EXPORT_CALL hid_get_product_string(hid_device *dev, wchar_t *string, size_t maxlen)
 {
-	struct Device *dev = NULL;
 	int res;
-
-	// Get the handle 
-	if (device < 0 || device >= MAX_DEVICES)
-		return -1;
-	if (devices[device].valid == 0)
-		return -1;
-	dev = &devices[device];
 
 	// TODO:
 
 	return 0;
 }
 
-int HID_API_EXPORT_CALL hid_get_serial_number_string(int device, wchar_t *string, size_t maxlen)
+int HID_API_EXPORT_CALL hid_get_serial_number_string(hid_device *dev, wchar_t *string, size_t maxlen)
 {
-	struct Device *dev = NULL;
 	int res;
-
-	// Get the handle 
-	if (device < 0 || device >= MAX_DEVICES)
-		return -1;
-	if (devices[device].valid == 0)
-		return -1;
-	dev = &devices[device];
 
 	// TODO:
 
 	return 0;
 }
 
-int HID_API_EXPORT_CALL hid_get_indexed_string(int device, int string_index, wchar_t *string, size_t maxlen)
+int HID_API_EXPORT_CALL hid_get_indexed_string(hid_device *dev, int string_index, wchar_t *string, size_t maxlen)
 {
-	struct Device *dev = NULL;
 	int res;
-
-	// Get the handle 
-	if (device < 0 || device >= MAX_DEVICES)
-		return -1;
-	if (devices[device].valid == 0)
-		return -1;
-	dev = &devices[device];
 
 	// TODO:
 
@@ -774,17 +670,8 @@ int HID_API_EXPORT_CALL hid_get_indexed_string(int device, int string_index, wch
 }
 
 
-HID_API_EXPORT const char * HID_API_CALL  hid_error(int device)
+HID_API_EXPORT const char * HID_API_CALL  hid_error(hid_device *dev)
 {
-	struct Device *dev = NULL;
-
-	// Get the handle 
-	if (device < 0 || device >= MAX_DEVICES)
-		return NULL;
-	if (devices[device].valid == 0)
-		return NULL;
-	dev = &devices[device];
-
 	// TODO:
 
 	return NULL;
