@@ -11,14 +11,17 @@ all: testgui
 CC=gcc
 CXX=g++
 COBJS=../mac/hid.o
-CPPOBJS=test.o
+CPPOBJS=test.o mac_support.o
 OBJS=$(COBJS) $(CPPOBJS)
 CFLAGS=-I../hidapi -Wall -g -c `fox-config --cflags`
-LIBS=`fox-config --libs` -framework IOKit -framework CoreFoundation
+LIBS=`fox-config --libs` -framework IOKit -framework CoreFoundation -framework Carbon
 
 
 testgui: $(OBJS)
 	g++ -Wall -g $^ $(LIBS) -o testgui
+	./copy_to_bundle.sh
+	#cp TestGUI.app/Contents/MacOS/testgui  TestGUI.app/Contents/MacOS/tg 
+	#cp start.sh TestGUI.app/Contents/MacOS/testgui 
 
 $(COBJS): %.o: %.c
 	$(CC) $(CFLAGS) $< -o $@

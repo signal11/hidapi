@@ -17,6 +17,7 @@
 #include <fx.h>
 
 #include "hidapi.h"
+#include "mac_support.h"
 #include <string.h>
 #include <stdlib.h>
 #include <limits.h>
@@ -38,6 +39,7 @@ public:
 		ID_SEND_FEATURE_REPORT,
 		ID_CLEAR,
 		ID_TIMER,
+		ID_MAC_TIMER,
 		ID_LAST,
 	};
 	
@@ -68,6 +70,7 @@ public:
 	long onSendFeatureReport(FXObject *sender, FXSelector sel, void *ptr);
 	long onClear(FXObject *sender, FXSelector sel, void *ptr);
 	long onTimeout(FXObject *sender, FXSelector sel, void *ptr);
+	long onMacTimeout(FXObject *sender, FXSelector sel, void *ptr);
 };
 
 // FOX 1.7 changes the timeouts to all be nanoseconds.
@@ -78,6 +81,9 @@ public:
 	const int timeout_scalar = 1;
 #endif
 
+FXMainWindow *g_main_window;
+
+
 FXDEFMAP(MainWindow) MainWindowMap [] = {
 	FXMAPFUNC(SEL_COMMAND, MainWindow::ID_CONNECT, MainWindow::onConnect ),
 	FXMAPFUNC(SEL_COMMAND, MainWindow::ID_DISCONNECT, MainWindow::onDisconnect ),
@@ -85,6 +91,7 @@ FXDEFMAP(MainWindow) MainWindowMap [] = {
 	FXMAPFUNC(SEL_COMMAND, MainWindow::ID_SEND_FEATURE_REPORT, MainWindow::onSendFeatureReport ),
 	FXMAPFUNC(SEL_COMMAND, MainWindow::ID_CLEAR, MainWindow::onClear ),
 	FXMAPFUNC(SEL_TIMEOUT, MainWindow::ID_TIMER, MainWindow::onTimeout ),
+	FXMAPFUNC(SEL_TIMEOUT, MainWindow::ID_MAC_TIMER, MainWindow::onMacTimeout ),
 };
 
 FXIMPLEMENT(MainWindow, FXMainWindow, MainWindowMap, ARRAYNUMBER(MainWindowMap));
@@ -187,6 +194,12 @@ MainWindow::create()
 		device_list->selectItem(0);
 	}
 
+#ifdef __APPLE__
+	init_apple_message_system();
+#endif
+	
+	getApp()->addTimeout(this, ID_MAC_TIMER,
+		50 * timeout_scalar /*50ms*/);
 }
 
 long
@@ -320,11 +333,24 @@ MainWindow::onTimeout(FXObject *sender, FXSelector sel, void *ptr)
 	return 1;
 }
 
+long
+MainWindow::onMacTimeout(FXObject *sender, FXSelector sel, void *ptr)
+{
+#ifdef __APPLE__
+	check_apple_events();
+	
+	getApp()->addTimeout(this, ID_MAC_TIMER,
+		50 * timeout_scalar /*50ms*/);
+#endif
+
+	return 1;
+}
+
 int main(int argc, char **argv)
 {
 	FXApp app("HIDAPI Test Application", "Signal 11 Software");
 	app.init(argc, argv);
-	new MainWindow(&app);
+	g_main_window = new MainWindow(&app);
 	app.create();
 	app.run();
 	return 0;
