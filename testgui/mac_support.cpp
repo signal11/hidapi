@@ -30,6 +30,13 @@ static pascal OSErr HandleReopenMessage(const AppleEvent *theAppleEvent, AppleEv
 	return 0;
 }
 
+static pascal OSErr HandleWildCardMessage(const AppleEvent *theAppleEvent, AppleEvent 
+									  *reply, long handlerRefcon) 
+{
+	puts("WildCard\n");
+	return 0;
+}
+
 OSStatus AEHandler(EventHandlerCallRef inCaller, EventRef inEvent, void* inRefcon) 
 { 
     Boolean     release = false; 
@@ -56,9 +63,18 @@ OSStatus AEHandler(EventHandlerCallRef inCaller, EventRef inEvent, void* inRefco
     return noErr; 
 }
 
-#if 0
 static void HandleEvent(EventRecord *event) 
 { 
+	//printf("What: %d message %x\n", event->what, event->message);
+	if (event->what == osEvt) {
+		if (((event->message >> 24) & 0xff) == suspendResumeMessage) {
+			if (event->message & resumeFlag) {
+				g_main_window->show();				
+			}
+		}
+	}
+
+#if 0
     switch (event->what) 
     { 
         case mouseDown: 
@@ -73,8 +89,8 @@ static void HandleEvent(EventRecord *event)
             AEProcessAppleEvent(event); 
             break; 
     } 
-} 
 #endif
+} 
 
 void
 init_apple_message_system()
@@ -95,6 +111,11 @@ init_apple_message_system()
 	              NewAEEventHandlerUPP(HandleQuitMessage), 0, false);
 	err = AEInstallEventHandler(kCoreEventClass, kAEReopenApplication, 
 	              NewAEEventHandlerUPP(HandleReopenMessage), 0, false);
+#if 0
+	// Left as an example of a wild card match.
+	err = AEInstallEventHandler(kCoreEventClass, typeWildCard, 
+	              NewAEEventHandlerUPP(HandleWildMessage), 0, false);
+#endif
 }
 
 void
@@ -107,11 +128,7 @@ check_apple_events()
 	while (gotEvent) { 
 		gotEvent = WaitNextEvent(everyEvent, &event, 0L/*timeout*/, cursorRgn); 
 		if (gotEvent) { 
-			// No need to handle the events here. The Apple
-			// Events are handled automatically by just calling
-			// waitNextEvent();
-			
-			//HandleEvent(&event); 
+			HandleEvent(&event); 
 		} 
 	}
 }
