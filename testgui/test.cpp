@@ -296,7 +296,7 @@ MainWindow::onSendOutputReport(FXObject *sender, FXSelector sel, void *ptr)
 	
 	int res = hid_write(connected_device, (const unsigned char*)buf, len);
 	if (res < 0) {
-		FXMessageBox::error(this, MBOX_OK, "Error Writing", "Could not write to device. Error reported was %s", hid_error(connected_device));
+		FXMessageBox::error(this, MBOX_OK, "Error Writing", "Could not write to device. Error reported was %ls", hid_error(connected_device));
 	}
 	
 	return 1;
@@ -314,7 +314,7 @@ MainWindow::onSendFeatureReport(FXObject *sender, FXSelector sel, void *ptr)
 	
 	int res = hid_send_feature_report(connected_device, (const unsigned char*)buf, len);
 	if (res < 0) {
-		FXMessageBox::error(this, MBOX_OK, "Error Writing", "Could not send feature report to device. Error reported was %s", hid_error(connected_device));
+		FXMessageBox::error(this, MBOX_OK, "Error Writing", "Could not send feature report to device. Error reported was %ls", hid_error(connected_device));
 	}
 	
 	return 1;

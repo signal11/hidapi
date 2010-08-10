@@ -122,7 +122,7 @@ int main(int argc, char* argv[])
 	res = hid_get_feature_report(handle, buf, sizeof(buf));
 	if (res < 0) {
 		printf("Unable to get a feature report.\n");
-		printf("%s", hid_error(handle));
+		printf("%ls", hid_error(handle));
 	}
 	else {
 		// Print out the returned buffer.
@@ -140,7 +140,7 @@ int main(int argc, char* argv[])
 	res = hid_write(handle, buf, 17);
 	if (res < 0) {
 		printf("Unable to write()\n");
-		printf("Error: %s\n", hid_error(handle));
+		printf("Error: %ls\n", hid_error(handle));
 	}
 	
 

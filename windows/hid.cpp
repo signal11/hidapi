@@ -85,8 +85,9 @@ static hid_device *new_hid_device()
 
 static void register_error(hid_device *device, const char *op)
 {
+	LPTSTR ptr;
 	LPTSTR msg=NULL;
-	FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
+	FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER |
 		FORMAT_MESSAGE_FROM_SYSTEM |
 		FORMAT_MESSAGE_IGNORE_INSERTS,
 		NULL,
@@ -95,6 +96,17 @@ static void register_error(hid_device *device, const char *op)
 		(LPTSTR)&msg, 0/*sz*/,
 		NULL);
 	
+	// Get rid of the CR and LF that FormatMessage() sticks at the
+	// end of the message. Thanks Microsoft!
+	ptr = msg;
+	while (*ptr) {
+		if (*ptr == '\r') {
+			*ptr = 0x0000;
+			break;
+		}
+		ptr++;
+	}
+
 	// Store the message off in the Device entry so that 
 	// the hid_error() function can pick it up.
 	LocalFree(device->last_error_str);
@@ -566,9 +578,9 @@ int HID_API_EXPORT_CALL HID_API_CALL hid_get_indexed_string(hid_device *dev, int
 }
 
 
-HID_API_EXPORT const char * HID_API_CALL  hid_error(hid_device *dev)
+HID_API_EXPORT wchar_t * HID_API_CALL  hid_error(hid_device *dev)
 {
-	return (const char *)dev->last_error_str;
+	return (wchar_t*)dev->last_error_str;
 }
 
 

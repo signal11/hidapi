@@ -278,7 +278,7 @@ extern "C" {
 				This function returns a string containing the last error
 				which occurred or NULL if none has occurred.
 		*/
-		HID_API_EXPORT const char* HID_API_CALL hid_error(hid_device *device);
+		HID_API_EXPORT wchar_t* HID_API_CALL hid_error(hid_device *device);
 
 #ifdef __cplusplus
 }
