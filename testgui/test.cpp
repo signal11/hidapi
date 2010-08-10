@@ -56,6 +56,8 @@ private:
 	
 	struct hid_device_info *devices;
 	hid_device *connected_device;
+	size_t getDataFromTextField(FXTextField *tf, char *buf, size_t len);
+
 
 protected:
 	MainWindow() {};
@@ -261,14 +263,13 @@ MainWindow::onDisconnect(FXObject *sender, FXSelector sel, void *ptr)
 	return 1;
 }
 
-long
-MainWindow::onSendOutputReport(FXObject *sender, FXSelector sel, void *ptr)
+size_t
+MainWindow::getDataFromTextField(FXTextField *tf, char *buf, size_t len)
 {
 	const char *delim = " ,{}\t\r\n";
-	FXString data = output_text->getText();
-	const FXchar *d  = data.text();
-	char buf[256];
-	int i = 0;
+	FXString data = tf->getText();
+	const FXchar *d = data.text();
+	size_t i = 0;
 	
 	// Copy the string from the GUI.
 	size_t sz = strlen(d);
@@ -283,8 +284,17 @@ MainWindow::onSendOutputReport(FXObject *sender, FXSelector sel, void *ptr)
 		buf[i++] = val;
 		token = strtok(NULL, delim);
 	}
+	return i;
+}
+
+long
+MainWindow::onSendOutputReport(FXObject *sender, FXSelector sel, void *ptr)
+{
+	char buf[256];
+	size_t len;
+	len = getDataFromTextField(output_text, buf, sizeof(buf));
 	
-	int res = hid_write(connected_device, (const unsigned char*)buf, i);
+	int res = hid_write(connected_device, (const unsigned char*)buf, len);
 	if (res < 0) {
 		FXMessageBox::error(this, MBOX_OK, "Error Writing", "Could not write to device. Error reported was %s", hid_error(connected_device));
 	}
@@ -295,6 +305,18 @@ MainWindow::onSendOutputReport(FXObject *sender, FXSelector sel, void *ptr)
 long
 MainWindow::onSendFeatureReport(FXObject *sender, FXSelector sel, void *ptr)
 {
+	char buf[256];
+	size_t len;
+	len = getDataFromTextField(feature_text, buf, sizeof(buf));
+	for (int i = 0; i < len; i++) {
+		printf("%02hhx\n", buf[i]);
+	}
+	
+	int res = hid_send_feature_report(connected_device, (const unsigned char*)buf, len);
+	if (res < 0) {
+		FXMessageBox::error(this, MBOX_OK, "Error Writing", "Could not send feature report to device. Error reported was %s", hid_error(connected_device));
+	}
+	
 	return 1;
 }
 
