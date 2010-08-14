@@ -19,9 +19,16 @@
 
 extern "C" {
 	#include <setupapi.h>
+	#include "WinIoCTL.h"
 	#ifdef HIDAPI_USE_DDK
 		#include <hidsdi.h>
 	#endif
+
+	// Copied from inc/ddk/hidclass.h, part of the Windows DDK.
+	#define HID_OUT_CTL_CODE(id)  \
+		CTL_CODE(FILE_DEVICE_KEYBOARD, (id), METHOD_OUT_DIRECT, FILE_ANY_ACCESS)
+	#define IOCTL_HID_GET_FEATURE                   HID_OUT_CTL_CODE(100)
+
 }
 #include <stdio.h>
 #include <stdlib.h>
@@ -507,13 +514,48 @@ int HID_API_EXPORT HID_API_CALL hid_send_feature_report(hid_device *dev, const u
 
 int HID_API_EXPORT HID_API_CALL hid_get_feature_report(hid_device *dev, unsigned char *data, size_t length)
 {
-	BOOL res = HidD_GetFeature(dev->device_handle, data, length);
+	BOOL res;
+#if 0
+	res = HidD_GetFeature(dev->device_handle, data, length);
 	if (!res) {
 		register_error(dev, "HidD_GetFeature");
 		return -1;
 	}
+	return 0; /* HidD_GetFeature() doesn't give us an actual length, unfortunately */
+#else
+	DWORD bytes_returned;
 
-	return 0; /* Windows doesn't give us an actual length, unfortunately */
+	OVERLAPPED ol;
+	memset(&ol, 0, sizeof(ol));
+	ol.Internal = 0x0;
+	ol.InternalHigh = 0x0;
+	ol.Pointer = 0x0;
+	ol.hEvent = 0x0;
+
+	res = DeviceIoControl(dev->device_handle,
+		IOCTL_HID_GET_FEATURE,
+		data, length,
+		data, length,
+		&bytes_returned, &ol);
+
+	if (!res) {
+		if (GetLastError() != ERROR_IO_PENDING) {
+			// DeviceIoControl() failed. Return error.
+			register_error(dev, "Send Feature Report DeviceIoControl");
+			return -1;
+		}
+	}
+
+	// Wait here until the write is done. This makes
+	// hid_get_feature_report() synchronous.
+	res = GetOverlappedResult(dev->device_handle, &ol, &bytes_returned, TRUE/*wait*/);
+	if (!res) {
+		// The operation failed.
+		register_error(dev, "Send Feature Report GetOverLappedResult");
+		return -1;
+	}
+	return bytes_returned;
+#endif
 }
 
 void HID_API_EXPORT HID_API_CALL hid_close(hid_device *dev)

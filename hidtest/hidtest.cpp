@@ -127,7 +127,7 @@ int main(int argc, char* argv[])
 	else {
 		// Print out the returned buffer.
 		printf("Feature Report\n   ");
-		for (i = 0; i < 17; i++)
+		for (i = 0; i < res; i++)
 			printf("%02hhx ", buf[i]);
 		printf("\n");
 	}

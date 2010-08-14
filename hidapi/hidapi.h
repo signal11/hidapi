@@ -209,7 +209,8 @@ extern "C" {
 						actual report.
 			
 			Return Value:
-				This function returns 0 on success and -1 on error.
+				This function returns the number of bytes read and
+				-1 on error.
 		*/
 		int HID_API_EXPORT HID_API_CALL hid_get_feature_report(hid_device *device, unsigned char *data, size_t length);
 

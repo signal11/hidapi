@@ -608,7 +608,7 @@ int HID_API_EXPORT hid_get_feature_report(hid_device *dev, unsigned char *data, 
 	                           data[0], /* Report ID */
 	                           data, &len);
 	if (res == kIOReturnSuccess)
-		return length;
+		return len;
 	else
 		return -1;
 }
