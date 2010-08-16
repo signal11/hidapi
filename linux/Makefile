@@ -10,11 +10,11 @@ all: hidtest
 
 CC=gcc
 CXX=g++
-COBJS=hid.o
+COBJS=hid-libusb.o
 CPPOBJS=../hidtest/hidtest.o
 OBJS=$(COBJS) $(CPPOBJS)
 CFLAGS=-I../hidapi -Wall -g -c
-LIBS=-ludev
+LIBS=-ludev -lusb-1.0
 
 
 hidtest: $(OBJS)

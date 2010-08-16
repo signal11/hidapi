@@ -10,11 +10,11 @@ all: testgui
 
 CC=gcc
 CXX=g++
-COBJS=../linux/hid.o
+COBJS=../linux/hid-libusb.o
 CPPOBJS=test.o
 OBJS=$(COBJS) $(CPPOBJS)
 CFLAGS=-I../hidapi -Wall -g -c `fox-config --cflags`
-LIBS=-ludev `fox-config --libs`
+LIBS=-ludev -lusb-1.0 `fox-config --libs`
 
 
 testgui: $(OBJS)
