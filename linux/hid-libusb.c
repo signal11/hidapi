@@ -529,18 +529,31 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 int HID_API_EXPORT hid_write(hid_device *dev, const unsigned char *data, size_t length)
 {
 	int res;
+	int report_number = data[0];
+	int skipped_report_id = 0;
+
+	if (report_number == 0x0) {
+		data++;
+		length--;
+		skipped_report_id = 1;
+	}
+
+
 	if (dev->output_endpoint <= 0) {
 		/* No interrput out endpoint. Use the Control Endpoint */
 		res = libusb_control_transfer(dev->device_handle,
 			LIBUSB_REQUEST_TYPE_CLASS|LIBUSB_RECIPIENT_INTERFACE|LIBUSB_ENDPOINT_OUT,
 			0x09/*HID Set_Report*/,
-			(2/*HID output*/ << 8) | *data,
+			(2/*HID output*/ << 8) | report_number,
 			dev->interface,
 			(unsigned char *)data, length,
 			1000/*timeout millis*/);
 		
 		if (res < 0)
 			return -1;
+		
+		if (skipped_report_id)
+			length++;
 		
 		return length;
 	}
@@ -553,10 +566,13 @@ int HID_API_EXPORT hid_write(hid_device *dev, const unsigned char *data, size_t 
 			length,
 			&actual_length, 1000);
 		
-		if (res == 0)
-			return actual_length;
-		else
+		if (res < 0)
 			return -1;
+		
+		if (skipped_report_id)
+			actual_length++;
+		
+		return actual_length;
 	}
 }
 
@@ -621,17 +637,29 @@ int HID_API_EXPORT hid_set_nonblocking(hid_device *dev, int nonblock)
 int HID_API_EXPORT hid_send_feature_report(hid_device *dev, const unsigned char *data, size_t length)
 {
 	int res = -1;
+	int skipped_report_id = 0;
+	int report_number = data[0];
+
+	if (report_number == 0x0) {
+		data++;
+		length--;
+		skipped_report_id = 1;
+	}
 
 	res = libusb_control_transfer(dev->device_handle,
 		LIBUSB_REQUEST_TYPE_CLASS|LIBUSB_RECIPIENT_INTERFACE|LIBUSB_ENDPOINT_OUT,
 		0x09/*HID set_report*/,
-		(3/*HID feature*/ << 8) | *data,
+		(3/*HID feature*/ << 8) | report_number,
 		dev->interface,
 		(unsigned char *)data, length,
 		1000/*timeout millis*/);
 	
 	if (res < 0)
 		return -1;
+	
+	/* Account for the report ID */
+	if (skipped_report_id)
+		length++;
 	
 	return length;
 }
@@ -639,17 +667,29 @@ int HID_API_EXPORT hid_send_feature_report(hid_device *dev, const unsigned char 
 int HID_API_EXPORT hid_get_feature_report(hid_device *dev, unsigned char *data, size_t length)
 {
 	int res = -1;
+	int skipped_report_id = 0;
+	int report_number = data[0];
 
+	if (report_number == 0x0) {
+		/* Offset the return buffer by 1, so that the report ID
+		   will remain in byte 0. */
+		data++;
+		length--;
+		skipped_report_id = 1;
+	}
 	res = libusb_control_transfer(dev->device_handle,
 		LIBUSB_REQUEST_TYPE_CLASS|LIBUSB_RECIPIENT_INTERFACE|LIBUSB_ENDPOINT_IN,
 		0x01/*HID get_report*/,
-		(3/*HID feature*/ << 8) | *data,
+		(3/*HID feature*/ << 8) | report_number,
 		dev->interface,
 		(unsigned char *)data, length,
 		1000/*timeout millis*/);
 	
 	if (res < 0)
 		return -1;
+
+	if (skipped_report_id)
+		res++;
 	
 	return res;
 }
