@@ -49,6 +49,7 @@ struct hid_device_ {
 	libusb_device_handle *device_handle;
 	int input_endpoint;
 	int output_endpoint;
+	int input_ep_max_packet_size;
 	int interface;
 	int blocking; /* boolean */
 	pthread_t thread;
@@ -67,6 +68,7 @@ hid_device *new_hid_device()
 	dev->device_handle = NULL;
 	dev->input_endpoint = 0;
 	dev->output_endpoint = 0;
+	dev->input_ep_max_packet_size = 0;
 	dev->interface = 0;
 	dev->blocking = 0;
 	dev->shutdown_thread = 0;
@@ -365,7 +367,7 @@ static void *read_thread(void *param)
 {
 	hid_device *dev = param;
 	unsigned char *buf;
-	const size_t length = 1024; // Long enough for HID events.
+	const size_t length = dev->input_ep_max_packet_size;
 
 	/* Set up the transfer object. */
 	buf = malloc(length);
@@ -492,6 +494,7 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 							    is_interrupt && is_input) {
 								/* Use this endpoint for INPUT */
 								dev->input_endpoint = ep->bEndpointAddress;
+								dev->input_ep_max_packet_size = ep->wMaxPacketSize;
 							}
 							if (dev->output_endpoint == 0 &&
 							    is_interrupt && is_output) {
