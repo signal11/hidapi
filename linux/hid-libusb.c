@@ -32,7 +32,7 @@
 #include <pthread.h>
 
 /* GNU / LibUSB */
-#include "libusb-1.0/libusb.h"
+#include "libusb.h"
 #include "iconv.h"
 
 #include "hidapi.h"
@@ -250,8 +250,8 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 					cur_dev->product_string =
 						get_usb_string(handle, desc.iProduct);
 				
+				libusb_close(handle);
 			}
-			libusb_close(handle);
 			/* VID/PID */
 			cur_dev->vendor_id = dev_vid;
 			cur_dev->product_id = dev_pid;
