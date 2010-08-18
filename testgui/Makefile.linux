@@ -13,8 +13,8 @@ CXX=g++
 COBJS=../linux/hid-libusb.o
 CPPOBJS=test.o
 OBJS=$(COBJS) $(CPPOBJS)
-CFLAGS=-I../hidapi -Wall -g -c `fox-config --cflags`
-LIBS=-ludev -lusb-1.0 `fox-config --libs`
+CFLAGS=-I../hidapi -Wall -g -c `fox-config --cflags` `pkg-config libusb-1.0 --cflags`
+LIBS=-ludev `fox-config --libs` `pkg-config libusb-1.0 --libs`
 
 
 testgui: $(OBJS)
