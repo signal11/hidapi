@@ -86,6 +86,25 @@ static void register_error(hid_device *device, const char *op)
 
 }
 
+/* Get the first language the device says it reports. This comes from
+   USB string #0. */
+static uint16_t get_first_language(libusb_device_handle *dev)
+{
+	uint16_t buf[32];
+	int len;
+	
+	/* Get the string from libusb. */
+	len = libusb_get_string_descriptor(dev,
+			0x0, /* String ID */
+			0x0, /* Language */
+			(unsigned char*)buf,
+			sizeof(buf));
+	if (len < 4)
+		return 0x0;
+	
+	return buf[1]; // First two bytes are len and descriptor type.
+}
+
 /* This function returns a newly allocated wide string containing the USB
    device string numbered by the index. The returned string must be freed
    by using free(). */
@@ -103,11 +122,13 @@ static wchar_t *get_usb_string(libusb_device_handle *dev, uint8_t index)
 	size_t res;
 	char *inptr;
 	char *outptr;
+
+	uint16_t lang = get_first_language(dev);
 	
 	/* Get the string from libusb. */
 	len = libusb_get_string_descriptor(dev,
 			index,
-			0x0,
+			lang,
 			(unsigned char*)buf,
 			sizeof(buf));
 	if (len < 0)
