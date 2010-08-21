@@ -54,10 +54,12 @@ static hid_device *new_hid_device()
 static 	IOHIDManagerRef hid_mgr = 0x0;
 
 
+#if 0
 static void register_error(hid_device *device, const char *op)
 {
 
 }
+#endif
 
 
 static long get_long_property(IOHIDDeviceRef device, CFStringRef key)
@@ -85,28 +87,6 @@ static unsigned short get_product_id(IOHIDDeviceRef device)
 	return get_long_property(device, CFSTR(kIOHIDProductIDKey));
 }
 
-static long get_location_id(IOHIDDeviceRef device)
-{
-	return get_long_property(device, CFSTR(kIOHIDLocationIDKey));
-}
-
-static long get_usage(IOHIDDeviceRef device)
-{
-	long res;
-	res = get_long_property(device, CFSTR(kIOHIDDeviceUsageKey));
-	if (!res)
-		res = get_long_property(device, CFSTR(kIOHIDPrimaryUsageKey));
-	return res;
-}
-
-static long get_usage_page(IOHIDDeviceRef device)
-{
-	long res;
-	res = get_long_property(device, CFSTR(kIOHIDDeviceUsagePageKey));
-	if (!res)
-		res = get_long_property(device, CFSTR(kIOHIDPrimaryUsagePageKey));
-	return res;
-}
 
 static long get_max_report_length(IOHIDDeviceRef device)
 {
@@ -181,12 +161,6 @@ static int get_product_string(IOHIDDeviceRef device, wchar_t *buf, size_t len)
 	return get_string_property(device, CFSTR(kIOHIDProductKey), buf, len);
 }
 
-
-
-static int get_transport(IOHIDDeviceRef device, wchar_t *buf, size_t len)
-{
-	return get_string_property(device, CFSTR(kIOHIDTransportKey), buf, len);
-}
 
 /* Implementation of wcsdup() for Mac. */
 static wchar_t *dup_wcs(const wchar_t *s)
@@ -656,8 +630,6 @@ int HID_API_EXPORT_CALL hid_get_serial_number_string(hid_device *dev, wchar_t *s
 
 int HID_API_EXPORT_CALL hid_get_indexed_string(hid_device *dev, int string_index, wchar_t *string, size_t maxlen)
 {
-	int res;
-
 	// TODO:
 
 	return 0;
@@ -673,6 +645,35 @@ HID_API_EXPORT const wchar_t * HID_API_CALL  hid_error(hid_device *dev)
 
 
 #if 0
+static long get_location_id(IOHIDDeviceRef device)
+{
+	return get_long_property(device, CFSTR(kIOHIDLocationIDKey));
+}
+
+static long get_usage(IOHIDDeviceRef device)
+{
+	long res;
+	res = get_long_property(device, CFSTR(kIOHIDDeviceUsageKey));
+	if (!res)
+		res = get_long_property(device, CFSTR(kIOHIDPrimaryUsageKey));
+	return res;
+}
+
+static long get_usage_page(IOHIDDeviceRef device)
+{
+	long res;
+	res = get_long_property(device, CFSTR(kIOHIDDeviceUsagePageKey));
+	if (!res)
+		res = get_long_property(device, CFSTR(kIOHIDPrimaryUsagePageKey));
+	return res;
+}
+
+static int get_transport(IOHIDDeviceRef device, wchar_t *buf, size_t len)
+{
+	return get_string_property(device, CFSTR(kIOHIDTransportKey), buf, len);
+}
+
+
 int main(void)
 {
 	IOHIDManagerRef mgr;
