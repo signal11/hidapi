@@ -393,8 +393,6 @@ static void read_callback(struct libusb_transfer *transfer)
 	
 	if (transfer->status == LIBUSB_TRANSFER_COMPLETED) {
 
-		printf("Transfer Completed\n");
-
 		struct input_report *rpt = malloc(sizeof(*rpt));
 		rpt->data = malloc(transfer->actual_length);
 		memcpy(rpt->data, transfer->buffer, transfer->actual_length);
@@ -427,7 +425,7 @@ static void read_callback(struct libusb_transfer *transfer)
 		return;
 	}
 	else if (transfer->status == LIBUSB_TRANSFER_TIMED_OUT) {
-		printf("Timeout (normal)\n");
+		//printf("Timeout (normal)\n");
 	}
 	else {
 		printf("Unknown transfer code: %d\n", transfer->status);
@@ -521,7 +519,6 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 					char *dev_path = make_path(usb_dev, intf_desc->bInterfaceNumber);
 					if (!strcmp(dev_path, path)) {
 						/* Matched Paths. Open this device */
-						printf("Opening this one \n");
 
 						// OPEN HERE //
 						res = libusb_open(usb_dev, &dev->device_handle);
@@ -532,7 +529,7 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 						good_open = 1;
 						res = libusb_detach_kernel_driver(dev->device_handle, intf_desc->bInterfaceNumber);
 						if (res < 0) {
-							printf("Unable to detach. Maybe this is OK\n");
+							//printf("Unable to detach. Maybe this is OK\n");
 						}
 						
 						res = libusb_claim_interface(dev->device_handle, intf_desc->bInterfaceNumber);
