@@ -47,17 +47,33 @@ struct input_report {
 
 
 struct hid_device_ {
+	/* Handle to the actual device. */
 	libusb_device_handle *device_handle;
+	
+	/* Endpoint information */
 	int input_endpoint;
 	int output_endpoint;
 	int input_ep_max_packet_size;
+
+	/* The interface number of the HID */	
 	int interface;
+	
+	/* Indexes of Strings */
+	int manufacturer_index;
+	int product_index;
+	int serial_index;
+	
+	/* Whether blocking reads are used */
 	int blocking; /* boolean */
+	
+	/* Read thread objects */
 	pthread_t thread;
 	pthread_mutex_t mutex; /* Protects input_reports */
 	pthread_cond_t condition;
 	int shutdown_thread;
 	struct libusb_transfer *transfer;
+
+	/* List of received input reports. */
 	struct input_report *input_reports;
 };
 
@@ -74,6 +90,9 @@ hid_device *new_hid_device()
 	dev->output_endpoint = 0;
 	dev->input_ep_max_packet_size = 0;
 	dev->interface = 0;
+	dev->manufacturer_index = 0;
+	dev->product_index = 0;
+	dev->serial_index = 0;
 	dev->blocking = 0;
 	dev->shutdown_thread = 0;
 	dev->transfer = NULL;
@@ -524,6 +543,11 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 							break;
 						}
 
+						/* Store off the string descriptor indexes */
+						dev->manufacturer_index = desc.iManufacturer;
+						dev->product_index      = desc.iProduct;
+						dev->serial_index       = desc.iSerialNumber;
+
 						/* Store off the interface number */
 						dev->interface = intf_desc->bInterfaceNumber;
 												
@@ -778,22 +802,32 @@ void HID_API_EXPORT hid_close(hid_device *dev)
 
 int HID_API_EXPORT_CALL hid_get_manufacturer_string(hid_device *dev, wchar_t *string, size_t maxlen)
 {
-	return -1;
+	return hid_get_indexed_string(dev, dev->manufacturer_index, string, maxlen);
 }
 
 int HID_API_EXPORT_CALL hid_get_product_string(hid_device *dev, wchar_t *string, size_t maxlen)
 {
-	return -1;
+	return hid_get_indexed_string(dev, dev->product_index, string, maxlen);
 }
 
 int HID_API_EXPORT_CALL hid_get_serial_number_string(hid_device *dev, wchar_t *string, size_t maxlen)
 {
-	return -1;
+	return hid_get_indexed_string(dev, dev->serial_index, string, maxlen);
 }
 
 int HID_API_EXPORT_CALL hid_get_indexed_string(hid_device *dev, int string_index, wchar_t *string, size_t maxlen)
 {
-	return -1;
+	wchar_t *str;
+
+	str = get_usb_string(dev->device_handle, string_index);
+	if (str) {
+		wcsncpy(string, str, maxlen);
+		string[maxlen-1] = L'\0';
+		free(str);
+		return 0;
+	}
+	else
+		return -1;
 }
 
 
