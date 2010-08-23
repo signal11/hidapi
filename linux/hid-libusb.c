@@ -80,7 +80,7 @@ struct hid_device_ {
 static int initialized = 0;
 
 uint16_t get_usb_code_for_current_locale();
-
+static int return_data(hid_device *dev, unsigned char *data, size_t length);
 
 hid_device *new_hid_device()
 {
@@ -410,9 +410,19 @@ static void read_callback(struct libusb_transfer *transfer)
 		else {
 			/* Find the end of the list and attach. */
 			struct input_report *cur = dev->input_reports;
-			while (cur->next != NULL)
+			int num_queued = 0;
+			while (cur->next != NULL) {
 				cur = cur->next;
+				num_queued++;
+			}
 			cur->next = rpt;
+			
+			/* Pop one off if we've reached 30 in the queue. This
+			   way we don't grow forever if the user never reads
+			   anything from the device. */
+			if (num_queued > 30) {
+				return_data(dev, NULL, 0);
+			}			
 		}
 		pthread_mutex_unlock(&dev->mutex);
 	}
@@ -788,6 +798,13 @@ void HID_API_EXPORT hid_close(hid_device *dev)
 	
 	/* Close the handle */
 	libusb_close(dev->device_handle);
+	
+	/* Clear out the queue of received reports. */
+	pthread_mutex_lock(&dev->mutex);
+	while (dev->input_reports) {
+		return_data(dev, NULL, 0);
+	}
+	pthread_mutex_unlock(&dev->mutex);
 	
 	/* Clean up the thread objects */
 	pthread_mutex_destroy(&dev->mutex);
