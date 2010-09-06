@@ -15,6 +15,11 @@
 
 #include <windows.h>
 
+#ifdef __MINGW32__
+#include <ntdef.h>
+#include <winbase.h>
+#endif
+
 //#define HIDAPI_USE_DDK
 
 extern "C" {
@@ -36,8 +41,10 @@ extern "C" {
 
 #include "hidapi.h"
 
-// Thanks Microsoft, but I know how to use strncpy().
-#pragma warning(disable:4996)
+#ifdef _MSC_VER
+	// Thanks Microsoft, but I know how to use strncpy().
+	#pragma warning(disable:4996)
+#endif
 
 extern "C" {
 
@@ -94,7 +101,7 @@ extern "C" {
 struct hid_device_ {
 		HANDLE device_handle;
 		BOOL blocking;
-		int input_report_length;
+		size_t input_report_length;
 		void *last_error_str;
 		DWORD last_error_num;
 };
@@ -104,7 +111,7 @@ static hid_device *new_hid_device()
 	hid_device *dev = (hid_device*) calloc(1, sizeof(hid_device));
 	dev->device_handle = INVALID_HANDLE_VALUE;
 	dev->blocking = true;
-	dev->input_report_length = -1;
+	dev->input_report_length = 0;
 	dev->last_error_str = NULL;
 	dev->last_error_num = 0;
 
@@ -114,15 +121,15 @@ static hid_device *new_hid_device()
 
 static void register_error(hid_device *device, const char *op)
 {
-	LPTSTR ptr;
-	LPTSTR msg=NULL;
+	WCHAR *ptr, *msg;
+
 	FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER |
 		FORMAT_MESSAGE_FROM_SYSTEM |
 		FORMAT_MESSAGE_IGNORE_INSERTS,
 		NULL,
 		GetLastError(),
 		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-		(LPTSTR)&msg, 0/*sz*/,
+		(LPWSTR)&msg, 0/*sz*/,
 		NULL);
 	
 	// Get rid of the CR and LF that FormatMessage() sticks at the
@@ -177,7 +184,7 @@ struct hid_device_info HID_API_EXPORT * HID_API_CALL hid_enumerate(unsigned shor
 #endif
 
 	// Windows objects for interacting with the driver.
-	GUID InterfaceClassGuid = {0x4d1e55b2, 0xf16f, 0x11cf, 0x88, 0xcb, 0x00, 0x11, 0x11, 0x00, 0x00, 0x30};
+	GUID InterfaceClassGuid = {0x4d1e55b2, 0xf16f, 0x11cf, {0x88, 0xcb, 0x00, 0x11, 0x11, 0x00, 0x00, 0x30} };
 	SP_DEVINFO_DATA devinfo_data;
 	SP_DEVICE_INTERFACE_DATA device_interface_data;
 	SP_DEVICE_INTERFACE_DETAIL_DATA_A *device_interface_detail_data = NULL;
@@ -194,7 +201,9 @@ struct hid_device_info HID_API_EXPORT * HID_API_CALL hid_enumerate(unsigned shor
 	// Iterate over each device in the HID class, looking for the right one.
 	int device_index = 0;
 	for (;;) {
+		HANDLE write_handle = INVALID_HANDLE_VALUE;
 		DWORD required_size = 0;
+
 		res = SetupDiEnumDeviceInterfaces(device_info_set,
 			NULL,
 			&InterfaceClassGuid,
@@ -240,7 +249,7 @@ struct hid_device_info HID_API_EXPORT * HID_API_CALL hid_enumerate(unsigned shor
 		//wprintf(L"HandleName: %s\n", device_interface_detail_data->DevicePath);
 
 		// Open a handle to the device
-		HANDLE write_handle = CreateFileA(device_interface_detail_data->DevicePath,
+		write_handle = CreateFileA(device_interface_detail_data->DevicePath,
 			GENERIC_WRITE |GENERIC_READ,
 			0x0, /*share mode*/
 			NULL,
@@ -452,10 +461,6 @@ int HID_API_EXPORT HID_API_CALL hid_write(hid_device *dev, const unsigned char *
 
 	OVERLAPPED ol;
 	memset(&ol, 0, sizeof(ol));
-	ol.Internal = 0x0;
-	ol.InternalHigh = 0x0;
-	ol.Pointer = 0x0;
-	ol.hEvent = 0x0;
 
 	res = WriteFile(dev->device_handle, data, length, NULL, &ol);
 	
@@ -490,9 +495,6 @@ int HID_API_EXPORT HID_API_CALL hid_read(hid_device *dev, unsigned char *data, s
 
 	OVERLAPPED ol;
 	memset(&ol, 0, sizeof(ol));
-	ol.Internal = 0x0;
-	ol.InternalHigh = 0x0;
-	ol.Pointer = 0x0;
 	ol.hEvent = ev;
 
 	// Limit the data to be returned. This ensures we get
@@ -579,10 +581,6 @@ int HID_API_EXPORT HID_API_CALL hid_get_feature_report(hid_device *dev, unsigned
 
 	OVERLAPPED ol;
 	memset(&ol, 0, sizeof(ol));
-	ol.Internal = 0x0;
-	ol.InternalHigh = 0x0;
-	ol.Pointer = 0x0;
-	ol.hEvent = 0x0;
 
 	res = DeviceIoControl(dev->device_handle,
 		IOCTL_HID_GET_FEATURE,
