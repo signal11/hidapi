@@ -9,8 +9,9 @@
  Copyright 2010, All Rights Reserved
  
  This contents of this file may be used by anyone
- for any reason and may be used as a starting point
- for your own applications which use HIDAPI.
+ for any reason without any conditions and may be
+ used as a starting point for your own applications
+ which use HIDAPI.
 ********************************************************/
 
 

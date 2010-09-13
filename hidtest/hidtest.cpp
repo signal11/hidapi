@@ -8,8 +8,10 @@
 
  Copyright 2009, All Rights Reserved.
  
- This software may be used by anyone for any reason so
- long as this copyright notice remains intact.
+ This contents of this file may be used by anyone
+ for any reason without any conditions and may be
+ used as a starting point for your own applications
+ which use HIDAPI.
 ********************************************************/
 
 #include <stdio.h>
