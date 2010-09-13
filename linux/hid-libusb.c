@@ -727,7 +727,7 @@ int HID_API_EXPORT hid_set_nonblocking(hid_device *dev, int nonblock)
 {
 	dev->blocking = !nonblock;
 	
-	return -1;
+	return 0;
 }
 
 
