@@ -22,6 +22,16 @@
 
 #include <windows.h>
 
+#ifdef __MINGW32__
+#include <ntdef.h>
+#include <winbase.h>
+#endif
+
+#ifdef __CYGWIN__
+#include <ntdef.h>
+#define _wcsdup wcsdup
+#endif
+
 //#define HIDAPI_USE_DDK
 
 extern "C" {
@@ -43,8 +53,10 @@ extern "C" {
 
 #include "hidapi.h"
 
-// Thanks Microsoft, but I know how to use strncpy().
-#pragma warning(disable:4996)
+#ifdef _MSC_VER
+	// Thanks Microsoft, but I know how to use strncpy().
+	#pragma warning(disable:4996)
+#endif
 
 extern "C" {
 
@@ -59,6 +71,20 @@ extern "C" {
 		USHORT ProductID;
 		USHORT VersionNumber;
 	} HIDD_ATTRIBUTES, *PHIDD_ATTRIBUTES;
+
+	typedef USHORT USAGE;
+	typedef struct _HIDP_CAPS {
+		USAGE Usage;
+		USAGE UsagePage;
+		USHORT InputReportByteLength;
+		USHORT OutputReportByteLength;
+		USHORT FeatureReportByteLength;
+		USHORT Reserved[17];
+		USHORT fields_not_used_by_hidapi[10];
+	} HIDP_CAPS, *PHIDP_CAPS;
+	typedef char* HIDP_PREPARSED_DATA;
+	#define HIDP_STATUS_SUCCESS 0x0
+
 	typedef BOOLEAN (__stdcall *HidD_GetAttributes_)(HANDLE device, PHIDD_ATTRIBUTES attrib);
 	typedef BOOLEAN (__stdcall *HidD_GetSerialNumberString_)(HANDLE device, PVOID buffer, ULONG buffer_len);
 	typedef BOOLEAN (__stdcall *HidD_GetManufacturerString_)(HANDLE handle, PVOID buffer, ULONG buffer_len);
@@ -66,7 +92,10 @@ extern "C" {
 	typedef BOOLEAN (__stdcall *HidD_SetFeature_)(HANDLE handle, PVOID data, ULONG length);
 	typedef BOOLEAN (__stdcall *HidD_GetFeature_)(HANDLE handle, PVOID data, ULONG length);
 	typedef BOOLEAN (__stdcall *HidD_GetIndexedString_)(HANDLE handle, ULONG string_index, PVOID buffer, ULONG buffer_len);
-	
+	typedef BOOLEAN (__stdcall *HidD_GetPreparsedData_)(HANDLE handle, HIDP_PREPARSED_DATA **preparsed_data);
+	typedef BOOLEAN (__stdcall *HidD_FreePreparsedData_)(HIDP_PREPARSED_DATA *preparsed_data);
+	typedef BOOLEAN (__stdcall *HidP_GetCaps_)(HIDP_PREPARSED_DATA *preparsed_data, HIDP_CAPS *caps);
+
 	static HidD_GetAttributes_ HidD_GetAttributes;
 	static HidD_GetSerialNumberString_ HidD_GetSerialNumberString;
 	static HidD_GetManufacturerString_ HidD_GetManufacturerString;
@@ -74,6 +103,9 @@ extern "C" {
 	static HidD_SetFeature_ HidD_SetFeature;
 	static HidD_GetFeature_ HidD_GetFeature;
 	static HidD_GetIndexedString_ HidD_GetIndexedString;
+	static HidD_GetPreparsedData_ HidD_GetPreparsedData;
+	static HidD_FreePreparsedData_ HidD_FreePreparsedData;
+	static HidP_GetCaps_ HidP_GetCaps;
 
 	static BOOLEAN initialized = FALSE;
 #endif // HIDAPI_USE_DDK
@@ -81,6 +113,7 @@ extern "C" {
 struct hid_device_ {
 		HANDLE device_handle;
 		BOOL blocking;
+		size_t input_report_length;
 		void *last_error_str;
 		DWORD last_error_num;
 };
@@ -90,6 +123,7 @@ static hid_device *new_hid_device()
 	hid_device *dev = (hid_device*) calloc(1, sizeof(hid_device));
 	dev->device_handle = INVALID_HANDLE_VALUE;
 	dev->blocking = true;
+	dev->input_report_length = 0;
 	dev->last_error_str = NULL;
 	dev->last_error_num = 0;
 
@@ -99,15 +133,15 @@ static hid_device *new_hid_device()
 
 static void register_error(hid_device *device, const char *op)
 {
-	LPTSTR ptr;
-	LPTSTR msg=NULL;
+	WCHAR *ptr, *msg;
+
 	FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER |
 		FORMAT_MESSAGE_FROM_SYSTEM |
 		FORMAT_MESSAGE_IGNORE_INSERTS,
 		NULL,
 		GetLastError(),
 		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-		(LPTSTR)&msg, 0/*sz*/,
+		(LPWSTR)&msg, 0/*sz*/,
 		NULL);
 	
 	// Get rid of the CR and LF that FormatMessage() sticks at the
@@ -140,6 +174,9 @@ static void lookup_functions()
 		RESOLVE(HidD_SetFeature);
 		RESOLVE(HidD_GetFeature);
 		RESOLVE(HidD_GetIndexedString);
+		RESOLVE(HidD_GetPreparsedData);
+		RESOLVE(HidD_FreePreparsedData);
+		RESOLVE(HidP_GetCaps);
 		//FreeLibrary(lib);
 #undef RESOLVE
 	}
@@ -159,7 +196,7 @@ struct hid_device_info HID_API_EXPORT * HID_API_CALL hid_enumerate(unsigned shor
 #endif
 
 	// Windows objects for interacting with the driver.
-	GUID InterfaceClassGuid = {0x4d1e55b2, 0xf16f, 0x11cf, 0x88, 0xcb, 0x00, 0x11, 0x11, 0x00, 0x00, 0x30};
+	GUID InterfaceClassGuid = {0x4d1e55b2, 0xf16f, 0x11cf, {0x88, 0xcb, 0x00, 0x11, 0x11, 0x00, 0x00, 0x30} };
 	SP_DEVINFO_DATA devinfo_data;
 	SP_DEVICE_INTERFACE_DATA device_interface_data;
 	SP_DEVICE_INTERFACE_DETAIL_DATA_A *device_interface_detail_data = NULL;
@@ -176,7 +213,9 @@ struct hid_device_info HID_API_EXPORT * HID_API_CALL hid_enumerate(unsigned shor
 	// Iterate over each device in the HID class, looking for the right one.
 	int device_index = 0;
 	for (;;) {
+		HANDLE write_handle = INVALID_HANDLE_VALUE;
 		DWORD required_size = 0;
+
 		res = SetupDiEnumDeviceInterfaces(device_info_set,
 			NULL,
 			&InterfaceClassGuid,
@@ -222,7 +261,7 @@ struct hid_device_info HID_API_EXPORT * HID_API_CALL hid_enumerate(unsigned shor
 		//wprintf(L"HandleName: %s\n", device_interface_detail_data->DevicePath);
 
 		// Open a handle to the device
-		HANDLE write_handle = CreateFileA(device_interface_detail_data->DevicePath,
+		write_handle = CreateFileA(device_interface_detail_data->DevicePath,
 			GENERIC_WRITE |GENERIC_READ,
 			0x0, /*share mode*/
 			NULL,
@@ -375,6 +414,10 @@ HID_API_EXPORT hid_device * HID_API_CALL hid_open(unsigned short vendor_id, unsi
 HID_API_EXPORT hid_device * HID_API_CALL hid_open_path(const char *path)
 {
 	hid_device *dev;
+	HIDP_CAPS caps;
+	HIDP_PREPARSED_DATA *pp_data = NULL;
+	BOOLEAN res;
+	NTSTATUS nt_res;
 
 #ifndef HIDAPI_USE_DDK
 	if (!initialized)
@@ -396,12 +439,31 @@ HID_API_EXPORT hid_device * HID_API_CALL hid_open_path(const char *path)
 	if (dev->device_handle == INVALID_HANDLE_VALUE) {
 		// Unable to open the device.
 		register_error(dev, "CreateFile");
+		goto err;
+	}
+
+	// Get the Input Report length for the device.
+	res = HidD_GetPreparsedData(dev->device_handle, &pp_data);
+	if (!res) {
+		register_error(dev, "HidD_GetPreparsedData");
+		goto err;
+	}
+	nt_res = HidP_GetCaps(pp_data, &caps);
+	if (nt_res != HIDP_STATUS_SUCCESS) {
+		register_error(dev, "HidP_GetCaps");	
+		goto err_pp_data;
+	}
+	dev->input_report_length = caps.InputReportByteLength;
+	HidD_FreePreparsedData(pp_data);
+
+	return dev;
+
+err_pp_data:
+		HidD_FreePreparsedData(pp_data);
+err:	
 		CloseHandle(dev->device_handle);
 		free(dev);
 		return NULL;
-	}
-
-	return dev;
 }
 
 int HID_API_EXPORT HID_API_CALL hid_write(hid_device *dev, const unsigned char *data, size_t length)
@@ -411,10 +473,6 @@ int HID_API_EXPORT HID_API_CALL hid_write(hid_device *dev, const unsigned char *
 
 	OVERLAPPED ol;
 	memset(&ol, 0, sizeof(ol));
-	ol.Internal = 0x0;
-	ol.InternalHigh = 0x0;
-	ol.Pointer = 0x0;
-	ol.hEvent = 0x0;
 
 	res = WriteFile(dev->device_handle, data, length, NULL, &ol);
 	
@@ -449,10 +507,11 @@ int HID_API_EXPORT HID_API_CALL hid_read(hid_device *dev, unsigned char *data, s
 
 	OVERLAPPED ol;
 	memset(&ol, 0, sizeof(ol));
-	ol.Internal = 0x0;
-	ol.InternalHigh = 0x0;
-	ol.Pointer = 0x0;
 	ol.hEvent = ev;
+
+	// Limit the data to be returned. This ensures we get
+	// only one report returned per call to hid_read().
+	length = (length < dev->input_report_length)? length: dev->input_report_length;
 
 	res = ReadFile(dev->device_handle, data, length, &bytes_read, &ol);
 	
@@ -534,10 +593,6 @@ int HID_API_EXPORT HID_API_CALL hid_get_feature_report(hid_device *dev, unsigned
 
 	OVERLAPPED ol;
 	memset(&ol, 0, sizeof(ol));
-	ol.Internal = 0x0;
-	ol.InternalHigh = 0x0;
-	ol.Pointer = 0x0;
-	ol.hEvent = 0x0;
 
 	res = DeviceIoControl(dev->device_handle,
 		IOCTL_HID_GET_FEATURE,

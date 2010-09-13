@@ -24,7 +24,7 @@
 
 #ifdef _WIN32
       #define HID_API_EXPORT __declspec(dllexport)
-      #define HID_API_CALL  _stdcall
+      #define HID_API_CALL
 #else
       #define HID_API_EXPORT
       #define HID_API_CALL
