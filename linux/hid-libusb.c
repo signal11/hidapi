@@ -45,6 +45,10 @@
 
 #include "hidapi.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Linked List of input reports received from the device. */
 struct input_report {
 	uint8_t *data;
@@ -1064,3 +1068,6 @@ uint16_t get_usb_code_for_current_locale()
 	return 0x0;
 }
 
+#ifdef __cplusplus
+}
+#endif
