@@ -1,3 +1,0 @@
-gcc -Wall -g -c hid.c -I ../hidapi
-gcc -Wall -g -c ../hidtest/hidtest.cpp -I ../hidapi
-g++ -Wall -g -o test hid.o hidtest.o -ludev
