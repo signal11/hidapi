@@ -36,8 +36,10 @@ public:
 		ID_FIRST = FXMainWindow::ID_LAST,
 		ID_CONNECT,
 		ID_DISCONNECT,
+		ID_RESCAN,
 		ID_SEND_OUTPUT_REPORT,
 		ID_SEND_FEATURE_REPORT,
+		ID_GET_FEATURE_REPORT,
 		ID_CLEAR,
 		ID_TIMER,
 		ID_MAC_TIMER,
@@ -48,11 +50,14 @@ private:
 	FXList *device_list;
 	FXButton *connect_button;
 	FXButton *disconnect_button;
+	FXButton *rescan_button;
 	FXButton *output_button;
 	FXLabel *connected_label;
 	FXTextField *output_text;
 	FXButton *feature_button;
+	FXButton *get_feature_button;
 	FXTextField *feature_text;
+	FXTextField *get_feature_text;
 	FXText *input_text;
 	
 	struct hid_device_info *devices;
@@ -69,8 +74,10 @@ public:
 	
 	long onConnect(FXObject *sender, FXSelector sel, void *ptr);
 	long onDisconnect(FXObject *sender, FXSelector sel, void *ptr);
+	long onRescan(FXObject *sender, FXSelector sel, void *ptr);
 	long onSendOutputReport(FXObject *sender, FXSelector sel, void *ptr);
 	long onSendFeatureReport(FXObject *sender, FXSelector sel, void *ptr);
+	long onGetFeatureReport(FXObject *sender, FXSelector sel, void *ptr);
 	long onClear(FXObject *sender, FXSelector sel, void *ptr);
 	long onTimeout(FXObject *sender, FXSelector sel, void *ptr);
 	long onMacTimeout(FXObject *sender, FXSelector sel, void *ptr);
@@ -90,8 +97,10 @@ FXMainWindow *g_main_window;
 FXDEFMAP(MainWindow) MainWindowMap [] = {
 	FXMAPFUNC(SEL_COMMAND, MainWindow::ID_CONNECT, MainWindow::onConnect ),
 	FXMAPFUNC(SEL_COMMAND, MainWindow::ID_DISCONNECT, MainWindow::onDisconnect ),
+	FXMAPFUNC(SEL_COMMAND, MainWindow::ID_RESCAN, MainWindow::onRescan ),
 	FXMAPFUNC(SEL_COMMAND, MainWindow::ID_SEND_OUTPUT_REPORT, MainWindow::onSendOutputReport ),
 	FXMAPFUNC(SEL_COMMAND, MainWindow::ID_SEND_FEATURE_REPORT, MainWindow::onSendFeatureReport ),
+	FXMAPFUNC(SEL_COMMAND, MainWindow::ID_GET_FEATURE_REPORT, MainWindow::onGetFeatureReport ),
 	FXMAPFUNC(SEL_COMMAND, MainWindow::ID_CLEAR, MainWindow::onClear ),
 	FXMAPFUNC(SEL_TIMEOUT, MainWindow::ID_TIMER, MainWindow::onTimeout ),
 	FXMAPFUNC(SEL_TIMEOUT, MainWindow::ID_MAC_TIMER, MainWindow::onMacTimeout ),
@@ -130,6 +139,7 @@ MainWindow::MainWindow(FXApp *app)
 	connect_button = new FXButton(buttonVF, "Connect", NULL, this, ID_CONNECT, BUTTON_NORMAL|LAYOUT_FILL_X);
 	disconnect_button = new FXButton(buttonVF, "Disconnect", NULL, this, ID_DISCONNECT, BUTTON_NORMAL|LAYOUT_FILL_X);
 	disconnect_button->disable();
+	rescan_button = new FXButton(buttonVF, "Re-Scan devices", NULL, this, ID_RESCAN, BUTTON_NORMAL|LAYOUT_FILL_X);
 	new FXHorizontalFrame(buttonVF, 0, 0,0,0,0, 0,0,50,0);
 
 	connected_label = new FXLabel(vf, "Disconnected");
@@ -150,6 +160,10 @@ MainWindow::MainWindow(FXApp *app)
 	feature_text = new FXTextField(matrix, 40, NULL, 0, TEXTFIELD_NORMAL|LAYOUT_FILL_X|LAYOUT_FILL_COLUMN);
 	feature_button = new FXButton(matrix, "Send Feature Report", NULL, this, ID_SEND_FEATURE_REPORT, BUTTON_NORMAL|LAYOUT_FILL_X);
 	feature_button->disable();
+
+	get_feature_text = new FXTextField(matrix, 40, NULL, 0, TEXTFIELD_NORMAL|LAYOUT_FILL_X|LAYOUT_FILL_COLUMN);
+	get_feature_button = new FXButton(matrix, "Get Feature Report", NULL, this, ID_GET_FEATURE_REPORT, BUTTON_NORMAL|LAYOUT_FILL_X);
+	get_feature_button->disable();
 
 
 	// Input Group Box
@@ -172,30 +186,9 @@ MainWindow::create()
 {
 	FXMainWindow::create();
 	show();
-	
-	struct hid_device_info *cur_dev;
-	
-	// List the Devices
-	hid_free_enumeration(devices);
-	devices = hid_enumerate(0x0, 0x0);
-	cur_dev = devices;	
-	while (cur_dev) {
-		// Add it to the List Box.
-		FXString s;
-		s.format("%04hx:%04hx -", cur_dev->vendor_id, cur_dev->product_id);
-		s += FXString(" ") + cur_dev->manufacturer_string;
-		s += FXString(" ") + cur_dev->product_string;
-		FXListItem *li = new FXListItem(s, NULL, cur_dev);
-		device_list->appendItem(li);
-		
-		cur_dev = cur_dev->next;
-	}
 
-	if (device_list->getNumItems() == 0)
-		device_list->appendItem("*** No Devices Connected ***");
-	else {
-		device_list->selectItem(0);
-	}
+	onRescan(NULL, 0, NULL);
+	
 
 #ifdef __APPLE__
 	init_apple_message_system();
@@ -240,6 +233,7 @@ MainWindow::onConnect(FXObject *sender, FXSelector sel, void *ptr)
 	connected_label->setText(s);
 	output_button->enable();
 	feature_button->enable();
+	get_feature_button->enable();
 	connect_button->disable();
 	disconnect_button->enable();
 	input_text->setText("");
@@ -256,11 +250,44 @@ MainWindow::onDisconnect(FXObject *sender, FXSelector sel, void *ptr)
 	connected_label->setText("Disconnected");
 	output_button->disable();
 	feature_button->disable();
+	get_feature_button->disable();
 	connect_button->enable();
 	disconnect_button->disable();
 
 	getApp()->removeTimeout(this, ID_TIMER);
 	
+	return 1;
+}
+
+long
+MainWindow::onRescan(FXObject *sender, FXSelector sel, void *ptr)
+{
+	struct hid_device_info *cur_dev;
+
+	device_list->clearItems();
+	
+	// List the Devices
+	hid_free_enumeration(devices);
+	devices = hid_enumerate(0x0, 0x0);
+	cur_dev = devices;	
+	while (cur_dev) {
+		// Add it to the List Box.
+		FXString s;
+		s.format("%04hx:%04hx -", cur_dev->vendor_id, cur_dev->product_id);
+		s += FXString(" ") + cur_dev->manufacturer_string;
+		s += FXString(" ") + cur_dev->product_string;
+		FXListItem *li = new FXListItem(s, NULL, cur_dev);
+		device_list->appendItem(li);
+		
+		cur_dev = cur_dev->next;
+	}
+
+	if (device_list->getNumItems() == 0)
+		device_list->appendItem("*** No Devices Connected ***");
+	else {
+		device_list->selectItem(0);
+	}
+
 	return 1;
 }
 
@@ -317,6 +344,42 @@ MainWindow::onSendFeatureReport(FXObject *sender, FXSelector sel, void *ptr)
 	if (res < 0) {
 		FXMessageBox::error(this, MBOX_OK, "Error Writing", "Could not send feature report to device. Error reported was: %ls", hid_error(connected_device));
 	}
+	
+	return 1;
+}
+
+long
+MainWindow::onGetFeatureReport(FXObject *sender, FXSelector sel, void *ptr)
+{
+	char buf[256];
+	size_t len;
+	len = getDataFromTextField(get_feature_text, buf, sizeof(buf));
+	if (len != 1) {
+		FXMessageBox::error(this, MBOX_OK, "Too many numbers", "Enter only a single report number in the text field");
+	}
+	
+	int res = hid_get_feature_report(connected_device, (unsigned char*)buf, sizeof(buf));
+	if (res < 0) {
+		FXMessageBox::error(this, MBOX_OK, "Error Getting Report", "Could not get feature report from device. Error reported was: %ls", hid_error(connected_device));
+	}
+
+	if (res > 0) {
+		FXString s;
+		s.format("Returned Feature Report. %d bytes:\n", res);
+		for (int i = 0; i < res; i++) {
+			FXString t;
+			t.format("%02hhx ", buf[i]);
+			s += t;
+			if ((i+1) % 4 == 0)
+				s += " ";
+			if ((i+1) % 16 == 0)
+				s += "\n";
+		}
+		s += "\n";
+		input_text->appendText(s);
+		input_text->setBottomLine(INT_MAX);
+	}
+
 	
 	return 1;
 }
