@@ -216,7 +216,7 @@ static wchar_t *get_usb_string(libusb_device_handle *dev, uint8_t idx)
 	outptr = (char*) wbuf;
 	outbytes = sizeof(wbuf);
 	res = iconv(ic, &inptr, &inbytes, &outptr, &outbytes);
-	if (res < 0)
+	if (res == (size_t)-1)
 		goto err;
 
 	/* Write the terminating NULL. */
