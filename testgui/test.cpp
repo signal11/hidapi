@@ -59,6 +59,7 @@ private:
 	FXTextField *feature_text;
 	FXTextField *get_feature_text;
 	FXText *input_text;
+	FXFont *title_font;
 	
 	struct hid_device_info *devices;
 	hid_device *connected_device;
@@ -117,7 +118,8 @@ MainWindow::MainWindow(FXApp *app)
 	FXVerticalFrame *vf = new FXVerticalFrame(this, LAYOUT_FILL_Y|LAYOUT_FILL_X);
 
 	FXLabel *label = new FXLabel(vf, "HIDAPI Test Tool");
-	label->setFont(new FXFont(getApp(), "Arial", 14, FXFont::Bold));
+	title_font = new FXFont(getApp(), "Arial", 14, FXFont::Bold);
+	label->setFont(title_font);
 	
 	new FXLabel(vf,
 		"Select a device and press Connect.", NULL, JUSTIFY_LEFT);
@@ -178,7 +180,7 @@ MainWindow::MainWindow(FXApp *app)
 
 MainWindow::~MainWindow()
 {
-
+	delete title_font;
 }
 
 void
@@ -312,6 +314,8 @@ MainWindow::getDataFromTextField(FXTextField *tf, char *buf, size_t len)
 		buf[i++] = val;
 		token = strtok(NULL, delim);
 	}
+	
+	free(str);
 	return i;
 }
 
