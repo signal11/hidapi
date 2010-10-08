@@ -169,7 +169,7 @@ static int is_language_supported(libusb_device_handle *dev, uint16_t lang)
 /* This function returns a newly allocated wide string containing the USB
    device string numbered by the index. The returned string must be freed
    by using free(). */
-static wchar_t *get_usb_string(libusb_device_handle *dev, uint8_t index)
+static wchar_t *get_usb_string(libusb_device_handle *dev, uint8_t idx)
 {
 	char buf[512];
 	int len;
@@ -192,7 +192,7 @@ static wchar_t *get_usb_string(libusb_device_handle *dev, uint8_t index)
 		
 	/* Get the string from libusb. */
 	len = libusb_get_string_descriptor(dev,
-			index,
+			idx,
 			lang,
 			(unsigned char*)buf,
 			sizeof(buf));
