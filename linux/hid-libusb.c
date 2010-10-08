@@ -220,7 +220,7 @@ static wchar_t *get_usb_string(libusb_device_handle *dev, uint8_t index)
 		goto err;
 
 	/* Write the terminating NULL. */
-	wbuf[sizeof(wbuf)-1] = 0x00000000;
+	wbuf[sizeof(wbuf)/sizeof(wbuf[0])-1] = 0x00000000;
 	if (outbytes >= sizeof(wbuf[0]))
 		*((wchar_t*)outptr) = 0x00000000;
 	
