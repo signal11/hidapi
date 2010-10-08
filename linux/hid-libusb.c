@@ -206,7 +206,7 @@ static wchar_t *get_usb_string(libusb_device_handle *dev, uint8_t idx)
 	
 	/* Initialize iconv. */
 	ic = iconv_open("UTF-32", "UTF-16");
-	if (ic < 0)
+	if (ic == (iconv_t)-1)
 		return NULL;
 	
 	/* Convert to UTF-32 (wchar_t on glibc systems).
