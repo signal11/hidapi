@@ -93,7 +93,7 @@ static int initialized = 0;
 uint16_t get_usb_code_for_current_locale(void);
 static int return_data(hid_device *dev, unsigned char *data, size_t length);
 
-hid_device *new_hid_device(void)
+static hid_device *new_hid_device(void)
 {
 	hid_device *dev = calloc(1, sizeof(hid_device));
 	dev->device_handle = NULL;
