@@ -90,10 +90,10 @@ struct hid_device_ {
 
 static int initialized = 0;
 
-uint16_t get_usb_code_for_current_locale();
+uint16_t get_usb_code_for_current_locale(void);
 static int return_data(hid_device *dev, unsigned char *data, size_t length);
 
-hid_device *new_hid_device()
+hid_device *new_hid_device(void)
 {
 	hid_device *dev = calloc(1, sizeof(hid_device));
 	dev->device_handle = NULL;
@@ -1006,7 +1006,7 @@ static struct lang_map_entry lang_map[] = {
 	LANG(NULL, NULL, 0x0),	
 };
 
-uint16_t get_usb_code_for_current_locale()
+uint16_t get_usb_code_for_current_locale(void)
 {
 	char *locale;
 	char search_string[64];
