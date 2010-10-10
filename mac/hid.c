@@ -47,7 +47,7 @@ struct hid_device_ {
 };
 
 
-static hid_device *new_hid_device()
+static hid_device *new_hid_device(void)
 {
 	hid_device *dev = calloc(1, sizeof(hid_device));
 	dev->device_handle = NULL;
@@ -206,7 +206,7 @@ static int make_path(IOHIDDeviceRef device, char *buf, size_t len)
 	return res+1;
 }
 
-static void init_hid_manager()
+static void init_hid_manager(void)
 {
 	/* Initialize all the HID Manager Objects */
 	hid_mgr = IOHIDManagerCreate(kCFAllocatorDefault, kIOHIDOptionsTypeNone);
