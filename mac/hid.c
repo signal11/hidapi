@@ -347,7 +347,7 @@ hid_device * HID_API_EXPORT hid_open(unsigned short vendor_id, unsigned short pr
 /* The Run Loop calls this function for each input report received.
    This function puts the data into a linked list to be picked up by
    hid_read(). */
-void hid_report_callback(void *context, IOReturn result, void *sender,
+static void hid_report_callback(void *context, IOReturn result, void *sender,
                          IOHIDReportType report_type, uint32_t report_id,
                          uint8_t *report, CFIndex report_length)
 {
