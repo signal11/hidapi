@@ -13,8 +13,8 @@ CXX=g++
 COBJS=hid-libusb.o
 CPPOBJS=../hidtest/hidtest.o
 OBJS=$(COBJS) $(CPPOBJS)
-CFLAGS+=-I../hidapi -Wall -g -c `pkg-config libusb-1.0 --cflags`
-LIBS=-ludev `pkg-config libusb-1.0 --libs`
+CFLAGS=-I../hidapi -Wall -g -c `pkg-config libusb-1.0 --cflags`
+LIBS=`pkg-config libusb-1.0 libudev --libs`
 
 
 hidtest: $(OBJS)
