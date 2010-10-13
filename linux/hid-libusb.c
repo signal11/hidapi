@@ -81,6 +81,7 @@ struct hid_device_ {
 	pthread_t thread;
 	pthread_mutex_t mutex; /* Protects input_reports */
 	pthread_cond_t condition;
+	pthread_barrier_t barrier; /* Ensures correct startup sequence */
 	int shutdown_thread;
 	struct libusb_transfer *transfer;
 
@@ -111,8 +112,20 @@ static hid_device *new_hid_device(void)
 	
 	pthread_mutex_init(&dev->mutex, NULL);
 	pthread_cond_init(&dev->condition, NULL);
+	pthread_barrier_init(&dev->barrier, NULL, 2);
 	
 	return dev;
+}
+
+static void free_hid_device(hid_device *dev)
+{
+	/* Clean up the thread objects */
+	pthread_barrier_destroy(&dev->barrier);
+	pthread_cond_destroy(&dev->condition);
+	pthread_mutex_destroy(&dev->mutex);
+
+	/* Free the device itself */
+	free(dev);
 }
 
 static void register_error(hid_device *device, const char *op)
@@ -478,6 +491,9 @@ static void *read_thread(void *param)
 	/* Make the first submission. Further submissions are made
 	   from inside read_callback() */
 	libusb_submit_transfer(dev->transfer);
+
+	// Notify the main thread that the read thread is up and running.
+	pthread_barrier_wait(&dev->barrier);
 	
 	/* Handle all the events. */
 	while (!dev->shutdown_thread) {
@@ -603,6 +619,9 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 						
 						pthread_create(&dev->thread, NULL, read_thread, dev);
 						
+						// Wait here for the read thread to be initialized.
+						pthread_barrier_wait(&dev->barrier);
+						
 					}
 					free(dev_path);
 				}
@@ -621,7 +640,7 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 	}
 	else {
 		// Unable to open any devices.
-		free(dev);
+		free_hid_device(dev);
 		return NULL;
 	}
 }
@@ -817,11 +836,7 @@ void HID_API_EXPORT hid_close(hid_device *dev)
 	}
 	pthread_mutex_unlock(&dev->mutex);
 	
-	/* Clean up the thread objects */
-	pthread_mutex_destroy(&dev->mutex);
-	pthread_cond_destroy(&dev->condition);
-	
-	free(dev);
+	free_hid_device(dev);
 }
 
 
