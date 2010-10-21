@@ -105,7 +105,7 @@ static hid_device *new_hid_device(void)
 	dev->manufacturer_index = 0;
 	dev->product_index = 0;
 	dev->serial_index = 0;
-	dev->blocking = 0;
+	dev->blocking = 1;
 	dev->shutdown_thread = 0;
 	dev->transfer = NULL;
 	dev->input_reports = NULL;
