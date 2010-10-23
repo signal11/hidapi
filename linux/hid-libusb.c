@@ -508,6 +508,10 @@ static void *read_thread(void *param)
 			break;
 		}
 	}
+	
+	/* Cancel any transfer that may be pending. This call will fail
+	   if no transfers are pending, but that's OK. */
+	libusb_cancel_transfer(dev->transfer);
 
 #if 0 // This is done in hid_close()
 	/* Cleanup before returning */
@@ -821,6 +825,7 @@ void HID_API_EXPORT hid_close(hid_device *dev)
 		return;
 	
 	/* Cause read_thread() to stop. */
+	dev->shutdown_thread = 1;
 	libusb_cancel_transfer(dev->transfer);
 
 	/* Wait for read_thread() to end. */
