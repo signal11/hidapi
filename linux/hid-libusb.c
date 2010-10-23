@@ -829,6 +829,9 @@ void HID_API_EXPORT hid_close(hid_device *dev)
 	/* Wait for read_thread() to end. */
 	pthread_join(dev->thread, NULL);
 	
+	/* release the interface */
+	libusb_release_interface(dev->device_handle, dev->interface);
+	
 	/* Close the handle */
 	libusb_close(dev->device_handle);
 	
