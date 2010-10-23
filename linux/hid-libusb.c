@@ -513,11 +513,9 @@ static void *read_thread(void *param)
 	   if no transfers are pending, but that's OK. */
 	libusb_cancel_transfer(dev->transfer);
 
-#if 0 // This is done in hid_close()
 	/* Cleanup before returning */
 	free(dev->transfer->buffer);
 	libusb_free_transfer(dev->transfer);
-#endif
 	
 	return NULL;
 }
