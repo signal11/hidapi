@@ -305,7 +305,6 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 					skip = 0;
 				}
 			}
-			intf++;
 		}
 		libusb_free_config_descriptor(conf_desc);
 
@@ -631,7 +630,6 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 					free(dev_path);
 				}
 			}
-			intf++;
 		}
 		libusb_free_config_descriptor(conf_desc);
 
