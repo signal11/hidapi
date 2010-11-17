@@ -706,7 +706,8 @@ static int return_data(hid_device *dev, unsigned char *data, size_t length)
 	   return buffer (data), and delete the liked list item. */
 	struct input_report *rpt = dev->input_reports;
 	size_t len = (length < rpt->len)? length: rpt->len;
-	memcpy(data, rpt->data, len);
+	if (len > 0)
+		memcpy(data, rpt->data, len);
 	dev->input_reports = rpt->next;
 	free(rpt->data);
 	free(rpt);
