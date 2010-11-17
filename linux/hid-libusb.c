@@ -475,7 +475,6 @@ static void *read_thread(void *param)
 	hid_device *dev = param;
 	unsigned char *buf;
 	const size_t length = dev->input_ep_max_packet_size;
-	int r;
 
 	/* Set up the transfer object. */
 	buf = malloc(length);
@@ -512,10 +511,8 @@ static void *read_thread(void *param)
 	
 	/* Cancel any transfer that may be pending. This call will fail
 	   if no transfers are pending, but that's OK. */
-	r = libusb_cancel_transfer(dev->transfer);
-	if (0 == r)
-	{
-		/* a transfer was cancelled so we wait for its completion */
+	if (libusb_cancel_transfer(dev->transfer) == 0) {
+		/* The transfer was cancelled, so wait for its completion. */
 		libusb_handle_events(NULL);
 	}
 
