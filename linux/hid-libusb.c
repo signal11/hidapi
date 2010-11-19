@@ -550,7 +550,8 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 		int i,j,k;
 		libusb_get_device_descriptor(usb_dev, &desc);
 
-		libusb_get_active_config_descriptor(usb_dev, &conf_desc);
+		if (libusb_get_active_config_descriptor(usb_dev, &conf_desc) < 0)
+			continue;
 		for (j = 0; j < conf_desc->bNumInterfaces; j++) {
 			const struct libusb_interface *intf = &conf_desc->interface[j];
 			for (k = 0; k < intf->num_altsetting; k++) {
