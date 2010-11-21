@@ -72,11 +72,11 @@ static void register_error(hid_device *device, const char *op)
 static long get_long_property(IOHIDDeviceRef device, CFStringRef key)
 {
 	CFTypeRef ref;
-	long value;
 	
 	ref = IOHIDDeviceGetProperty(device, key);
 	if (ref) {
 		if (CFGetTypeID(ref) == CFNumberGetTypeID()) {
+			int32_t value;
 			CFNumberGetValue((CFNumberRef) ref, kCFNumberSInt32Type, &value);
 			return value;
 		}
