@@ -49,6 +49,12 @@
 extern "C" {
 #endif
 
+#ifdef DEBUG_PRINTF
+#define LOG(...) fprintf(stderr, __VA_ARGS__)
+#else
+#define LOG(...) do {} while (0)
+#endif
+
 /* Linked List of input reports received from the device. */
 struct input_report {
 	uint8_t *data;
@@ -458,10 +464,10 @@ static void read_callback(struct libusb_transfer *transfer)
 		return;
 	}
 	else if (transfer->status == LIBUSB_TRANSFER_TIMED_OUT) {
-		//printf("Timeout (normal)\n");
+		//LOG("Timeout (normal)\n");
 	}
 	else {
-		printf("Unknown transfer code: %d\n", transfer->status);
+		LOG("Unknown transfer code: %d\n", transfer->status);
 	}
 	
 	/* Re-submit the transfer object. */
@@ -565,18 +571,18 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 						// OPEN HERE //
 						res = libusb_open(usb_dev, &dev->device_handle);
 						if (res < 0) {
-							printf("can't open device\n");
+							LOG("can't open device\n");
  							break;
 						}
 						good_open = 1;
 						res = libusb_detach_kernel_driver(dev->device_handle, intf_desc->bInterfaceNumber);
 						if (res < 0) {
-							//printf("Unable to detach. Maybe this is OK\n");
+							//LOG("Unable to detach. Maybe this is OK\n");
 						}
 						
 						res = libusb_claim_interface(dev->device_handle, intf_desc->bInterfaceNumber);
 						if (res < 0) {
-							printf("can't claim interface %d: %d\n", intf_desc->bInterfaceNumber, res);
+							LOG("can't claim interface %d: %d\n", intf_desc->bInterfaceNumber, res);
 							libusb_close(dev->device_handle);
 							good_open = 0;
 							break;
@@ -724,7 +730,7 @@ int HID_API_EXPORT hid_read(hid_device *dev, unsigned char *data, size_t length)
 #if 0
 	int transferred;
 	int res = libusb_interrupt_transfer(dev->device_handle, dev->input_endpoint, data, length, &transferred, 5000);
-	printf("transferred: %d\n", transferred);
+	LOG("transferred: %d\n", transferred);
 	return transferred;
 #endif
 
