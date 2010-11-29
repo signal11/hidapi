@@ -24,8 +24,8 @@
  * @defgroup API hidapi API
  */
 
-#ifndef __HIDAPI_H__
-#define __HIDAPI_H__
+#ifndef HIDAPI_H__
+#define HIDAPI_H__
 
 #include <wchar.h>
 
