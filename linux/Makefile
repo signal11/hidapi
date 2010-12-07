@@ -27,6 +27,6 @@ $(CPPOBJS): %.o: %.cpp
 	$(CXX) $(CFLAGS) $< -o $@
 
 clean:
-	rm -f *.o hidtest
+	rm -f $(OBJS) hidtest
 
 .PHONY: clean
