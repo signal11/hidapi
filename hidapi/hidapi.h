@@ -24,6 +24,9 @@
  * @defgroup API hidapi API
  */
 
+#ifndef HIDAPI_H__
+#define HIDAPI_H__
+
 #include <wchar.h>
 
 #ifdef _WIN32
@@ -311,5 +314,7 @@ extern "C" {
 
 #ifdef __cplusplus
 }
+#endif
+
 #endif
 
