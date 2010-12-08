@@ -69,10 +69,10 @@ static void register_error(hid_device *device, const char *op)
 #endif
 
 
-static long get_long_property(IOHIDDeviceRef device, CFStringRef key)
+static int32_t get_int_property(IOHIDDeviceRef device, CFStringRef key)
 {
 	CFTypeRef ref;
-	long value;
+	int32_t value;
 	
 	ref = IOHIDDeviceGetProperty(device, key);
 	if (ref) {
@@ -86,18 +86,18 @@ static long get_long_property(IOHIDDeviceRef device, CFStringRef key)
 
 static unsigned short get_vendor_id(IOHIDDeviceRef device)
 {
-	return get_long_property(device, CFSTR(kIOHIDVendorIDKey));
+	return get_int_property(device, CFSTR(kIOHIDVendorIDKey));
 }
 
 static unsigned short get_product_id(IOHIDDeviceRef device)
 {
-	return get_long_property(device, CFSTR(kIOHIDProductIDKey));
+	return get_int_property(device, CFSTR(kIOHIDProductIDKey));
 }
 
 
-static long get_max_report_length(IOHIDDeviceRef device)
+static int32_t get_max_report_length(IOHIDDeviceRef device)
 {
-	return get_long_property(device, CFSTR(kIOHIDMaxInputReportSizeKey));
+	return get_int_property(device, CFSTR(kIOHIDMaxInputReportSizeKey));
 }
 
 static int get_string_property(IOHIDDeviceRef device, CFStringRef prop, wchar_t *buf, size_t len)
@@ -119,6 +119,7 @@ static int get_string_property(IOHIDDeviceRef device, CFStringRef prop, wchar_t 
 			(UInt8*)buf,
 			len,
 			&used_buf_len);
+		buf[len-1] = 0x00000000;
 		return used_buf_len;
 	}
 	else
@@ -653,26 +654,26 @@ HID_API_EXPORT const wchar_t * HID_API_CALL  hid_error(hid_device *dev)
 
 
 #if 0
-static long get_location_id(IOHIDDeviceRef device)
+static int32_t get_location_id(IOHIDDeviceRef device)
 {
-	return get_long_property(device, CFSTR(kIOHIDLocationIDKey));
+	return get_int_property(device, CFSTR(kIOHIDLocationIDKey));
 }
 
-static long get_usage(IOHIDDeviceRef device)
+static int32_t get_usage(IOHIDDeviceRef device)
 {
-	long res;
-	res = get_long_property(device, CFSTR(kIOHIDDeviceUsageKey));
+	int32_t res;
+	res = get_int_property(device, CFSTR(kIOHIDDeviceUsageKey));
 	if (!res)
-		res = get_long_property(device, CFSTR(kIOHIDPrimaryUsageKey));
+		res = get_int_property(device, CFSTR(kIOHIDPrimaryUsageKey));
 	return res;
 }
 
-static long get_usage_page(IOHIDDeviceRef device)
+static int32_t get_usage_page(IOHIDDeviceRef device)
 {
-	long res;
-	res = get_long_property(device, CFSTR(kIOHIDDeviceUsagePageKey));
+	int32_t res;
+	res = get_int_property(device, CFSTR(kIOHIDDeviceUsagePageKey));
 	if (!res)
-		res = get_long_property(device, CFSTR(kIOHIDPrimaryUsagePageKey));
+		res = get_int_property(device, CFSTR(kIOHIDPrimaryUsagePageKey));
 	return res;
 }
 
