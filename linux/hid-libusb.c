@@ -521,9 +521,13 @@ static void *read_thread(void *param)
 		libusb_handle_events(NULL);
 	}
 
-	/* Cleanup before returning */
-	free(dev->transfer->buffer);
-	libusb_free_transfer(dev->transfer);
+	/* The dev->transfer->buffer and dev->transfer objects are cleaned up
+	   in hid_close(). They are not cleaned up here because this thread
+	   could end either due to a disconnect or due to a user
+	   call to hid_close(). In both cases the objects can be safely
+	   cleaned up after the call to pthread_join() (in hid_close()), but
+	   since hid_close() calls libusb_cancel_transfer(), on these objects,
+	   they can not be cleaned up here. */
 	
 	return NULL;
 }
@@ -837,6 +841,10 @@ void HID_API_EXPORT hid_close(hid_device *dev)
 
 	/* Wait for read_thread() to end. */
 	pthread_join(dev->thread, NULL);
+	
+	/* Clean up the Transfer objects allocated in read_thread(). */
+	free(dev->transfer->buffer);
+	libusb_free_transfer(dev->transfer);
 	
 	/* release the interface */
 	libusb_release_interface(dev->device_handle, dev->interface);
