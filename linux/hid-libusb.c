@@ -317,9 +317,6 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 			}
 			libusb_free_config_descriptor(conf_desc);
 		}
-		else {
-			skip = 1;
-		}
 
 		if (skip)
 			continue;
