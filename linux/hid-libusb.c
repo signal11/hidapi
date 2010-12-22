@@ -283,6 +283,8 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 	}
 	
 	num_devs = libusb_get_device_list(NULL, &devs);
+	if (num_devs < 0)
+		return NULL;
 	while ((dev = devs[i++]) != NULL) {
 		struct libusb_device_descriptor desc;
 		struct libusb_config_descriptor *conf_desc = NULL;
@@ -301,18 +303,23 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 		res = libusb_get_active_config_descriptor(dev, &conf_desc);
 		if (res < 0)
 			libusb_get_config_descriptor(dev, 0, &conf_desc);
-		for (j = 0; j < conf_desc->bNumInterfaces; j++) {
-			const struct libusb_interface *intf = &conf_desc->interface[j];
-			for (k = 0; k < intf->num_altsetting; k++) {
-				const struct libusb_interface_descriptor *intf_desc;
-				intf_desc = &intf->altsetting[k];
-				if (intf_desc->bInterfaceClass == LIBUSB_CLASS_HID) {
-					interface_num = intf_desc->bInterfaceNumber;
-					skip = 0;
+		if (conf_desc) {
+			for (j = 0; j < conf_desc->bNumInterfaces; j++) {
+				const struct libusb_interface *intf = &conf_desc->interface[j];
+				for (k = 0; k < intf->num_altsetting; k++) {
+					const struct libusb_interface_descriptor *intf_desc;
+					intf_desc = &intf->altsetting[k];
+					if (intf_desc->bInterfaceClass == LIBUSB_CLASS_HID) {
+						interface_num = intf_desc->bInterfaceNumber;
+						skip = 0;
+					}
 				}
 			}
+			libusb_free_config_descriptor(conf_desc);
 		}
-		libusb_free_config_descriptor(conf_desc);
+		else {
+			skip = 1;
+		}
 
 		if (skip)
 			continue;
