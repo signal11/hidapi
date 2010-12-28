@@ -751,6 +751,13 @@ int HID_API_EXPORT hid_read(hid_device *dev, unsigned char *data, size_t length)
 		goto ret;
 	}
 	
+	if (dev->shutdown_thread) {
+		/* This means the device has been disconnected.
+		   An error code of -1 should be returned. */
+		bytes_read = -1;
+		goto ret;
+	}
+	
 	if (dev->blocking) {
 		pthread_cond_wait(&dev->condition, &dev->mutex);
 		bytes_read = return_data(dev, data, length);
