@@ -283,6 +283,8 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 	}
 	
 	num_devs = libusb_get_device_list(NULL, &devs);
+	if (num_devs < 0)
+		return NULL;
 	while ((dev = devs[i++]) != NULL) {
 		struct libusb_device_descriptor desc;
 		struct libusb_config_descriptor *conf_desc = NULL;
@@ -301,18 +303,20 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 		res = libusb_get_active_config_descriptor(dev, &conf_desc);
 		if (res < 0)
 			libusb_get_config_descriptor(dev, 0, &conf_desc);
-		for (j = 0; j < conf_desc->bNumInterfaces; j++) {
-			const struct libusb_interface *intf = &conf_desc->interface[j];
-			for (k = 0; k < intf->num_altsetting; k++) {
-				const struct libusb_interface_descriptor *intf_desc;
-				intf_desc = &intf->altsetting[k];
-				if (intf_desc->bInterfaceClass == LIBUSB_CLASS_HID) {
-					interface_num = intf_desc->bInterfaceNumber;
-					skip = 0;
+		if (conf_desc) {
+			for (j = 0; j < conf_desc->bNumInterfaces; j++) {
+				const struct libusb_interface *intf = &conf_desc->interface[j];
+				for (k = 0; k < intf->num_altsetting; k++) {
+					const struct libusb_interface_descriptor *intf_desc;
+					intf_desc = &intf->altsetting[k];
+					if (intf_desc->bInterfaceClass == LIBUSB_CLASS_HID) {
+						interface_num = intf_desc->bInterfaceNumber;
+						skip = 0;
+					}
 				}
 			}
+			libusb_free_config_descriptor(conf_desc);
 		}
-		libusb_free_config_descriptor(conf_desc);
 
 		if (skip)
 			continue;
@@ -521,9 +525,13 @@ static void *read_thread(void *param)
 		libusb_handle_events(NULL);
 	}
 
-	/* Cleanup before returning */
-	free(dev->transfer->buffer);
-	libusb_free_transfer(dev->transfer);
+	/* The dev->transfer->buffer and dev->transfer objects are cleaned up
+	   in hid_close(). They are not cleaned up here because this thread
+	   could end either due to a disconnect or due to a user
+	   call to hid_close(). In both cases the objects can be safely
+	   cleaned up after the call to pthread_join() (in hid_close()), but
+	   since hid_close() calls libusb_cancel_transfer(), on these objects,
+	   they can not be cleaned up here. */
 	
 	return NULL;
 }
@@ -743,6 +751,13 @@ int HID_API_EXPORT hid_read(hid_device *dev, unsigned char *data, size_t length)
 		goto ret;
 	}
 	
+	if (dev->shutdown_thread) {
+		/* This means the device has been disconnected.
+		   An error code of -1 should be returned. */
+		bytes_read = -1;
+		goto ret;
+	}
+	
 	if (dev->blocking) {
 		pthread_cond_wait(&dev->condition, &dev->mutex);
 		bytes_read = return_data(dev, data, length);
@@ -837,6 +852,10 @@ void HID_API_EXPORT hid_close(hid_device *dev)
 
 	/* Wait for read_thread() to end. */
 	pthread_join(dev->thread, NULL);
+	
+	/* Clean up the Transfer objects allocated in read_thread(). */
+	free(dev->transfer->buffer);
+	libusb_free_transfer(dev->transfer);
 	
 	/* release the interface */
 	libusb_release_interface(dev->device_handle, dev->interface);
