@@ -134,10 +134,13 @@ static void free_hid_device(hid_device *dev)
 	free(dev);
 }
 
+#if 0
+//TODO: Implement this funciton on Linux.
 static void register_error(hid_device *device, const char *op)
 {
 
 }
+#endif
 
 /* Get the first language the device says it reports. This comes from
    USB string #0. */
