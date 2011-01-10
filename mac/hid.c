@@ -361,6 +361,9 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 			/* VID/PID */
 			cur_dev->vendor_id = dev_vid;
 			cur_dev->product_id = dev_pid;
+
+			/* Release Number */
+			cur_dev->release_number = get_int_property(dev, CFSTR(kIOHIDVersionNumberKey));
 		}
 	}
 	
