@@ -142,6 +142,108 @@ static void register_error(hid_device *device, const char *op)
 }
 #endif
 
+/* Get bytes from a HID Report Descriptor.
+   Only call with a num_bytes of 0, 1, 2, or 4. */
+static uint32_t get_bytes(uint8_t *rpt, size_t len, size_t num_bytes, size_t cur)
+{
+	/* Return if there aren't enough bytes. */
+	if (cur + num_bytes >= len)
+		return 0;
+
+	if (num_bytes == 0)
+		return 0;
+	else if (num_bytes == 1) {
+		return rpt[cur+1];
+	}
+	else if (num_bytes == 2) {
+		return (rpt[cur+2] * 256 + rpt[cur+1]);
+	}
+	else if (num_bytes == 4) {
+		return (rpt[cur+4] * 0x01000000 +
+		        rpt[cur+3] * 0x00010000 +
+		        rpt[cur+2] * 0x00000100 +
+		        rpt[cur+1] * 0x00000001);
+	}
+	else
+		return 0;
+}
+
+/* Retrieves the device's Usage Page and Usage from the report
+   descriptor. The algorithm is simple, as it just returns the first
+   Usage and Usage Page that it finds in the descriptor.
+   The return value is 0 on success and -1 on failure. */
+static int get_usage(uint8_t *report_descriptor, size_t size,
+                     unsigned short *usage_page, unsigned short *usage)
+{
+	int i = 0;
+	int size_code;
+	int data_len, key_size;
+	int usage_found = 0, usage_page_found = 0;
+	
+	while (i < size) {
+		int key = report_descriptor[i];
+		int key_cmd = key & 0xfc;
+
+		//printf("key: %02hhx\n", key);
+		
+		if ((key & 0xf0) == 0xf0) {
+			/* This is a Long Item. The next byte contains the
+			   length of the data section (value) for this key.
+			   See the HID specification, version 1.11, section
+			   6.2.2.3, titled "Long Items." */
+			if (i+1 < size)
+				data_len = report_descriptor[i+1];
+			else
+				data_len = 0; /* malformed report */
+			key_size = 3;
+		}
+		else {
+			/* This is a Short Item. The bottom two bits of the
+			   key contain the size code for the data section
+			   (value) for this key.  Refer to the HID
+			   specification, version 1.11, section 6.2.2.2,
+			   titled "Short Items." */
+			size_code = key & 0x3;
+			switch (size_code) {
+			case 0:
+			case 1:
+			case 2:
+				data_len = size_code;
+				break;
+			case 3:
+				data_len = 4;
+				break;
+			default:
+				/* Can't ever happen since size_code is & 0x3 */
+				data_len = 0;
+				break;
+			};
+			key_size = 1;
+		}
+		
+		if (key_cmd == 0x4) {
+			*usage_page  = get_bytes(report_descriptor, size, data_len, i);
+			usage_page_found = 1;
+			//printf("Usage Page: %x\n", (uint32_t)*usage_page);
+		}
+		if (key_cmd == 0x8) {
+			*usage = get_bytes(report_descriptor, size, data_len, i);
+			usage_found = 1;
+			//printf("Usage: %x\n", (uint32_t)*usage);
+		}
+
+		if (usage_page_found && usage_found)
+			return 0; /* success */
+		
+		/* Skip over this key and it's associated data */
+		i += data_len + key_size;
+	}
+	
+	return -1; /* failure */
+}
+
+
+
 /* Get the first language the device says it reports. This comes from
    USB string #0. */
 static uint16_t get_first_language(libusb_device_handle *dev)
@@ -291,7 +393,6 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 	while ((dev = devs[i++]) != NULL) {
 		struct libusb_device_descriptor desc;
 		struct libusb_config_descriptor *conf_desc = NULL;
-		int skip = 1;
 		int j, k;
 		int interface_num = 0;
 
@@ -314,58 +415,87 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 					intf_desc = &intf->altsetting[k];
 					if (intf_desc->bInterfaceClass == LIBUSB_CLASS_HID) {
 						interface_num = intf_desc->bInterfaceNumber;
-						skip = 0;
+
+						/* Check the VID/PID against the arguments */
+						if ((vendor_id == 0x0 && product_id == 0x0) ||
+						    (vendor_id == dev_vid && product_id == dev_pid)) {
+							struct hid_device_info *tmp;
+
+							/* VID/PID match. Create the record. */
+							tmp = calloc(1, sizeof(struct hid_device_info));
+							if (cur_dev) {
+								cur_dev->next = tmp;
+							}
+							else {
+								root = tmp;
+							}
+							cur_dev = tmp;
+							
+							/* Fill out the record */
+							cur_dev->next = NULL;
+							cur_dev->path = make_path(dev, interface_num);
+							
+							res = libusb_open(dev, &handle);
+
+							if (res >= 0) {
+								unsigned char data[256];
+							
+								/* Serial Number */
+								if (desc.iSerialNumber > 0)
+									cur_dev->serial_number =
+										get_usb_string(handle, desc.iSerialNumber);
+
+								/* Manufacturer and Product strings */
+								if (desc.iManufacturer > 0)
+									cur_dev->manufacturer_string =
+										get_usb_string(handle, desc.iManufacturer);
+								if (desc.iProduct > 0)
+									cur_dev->product_string =
+										get_usb_string(handle, desc.iProduct);
+
+								/* Usage Page and Usage */
+								res = libusb_detach_kernel_driver(handle, interface_num);
+								if (res >= 0) {
+									res = libusb_claim_interface(handle, interface_num);
+									if (res >= 0) {
+										/* Get the HID Report Descriptor. */
+										res = libusb_control_transfer(handle, LIBUSB_ENDPOINT_IN|LIBUSB_RECIPIENT_INTERFACE, LIBUSB_REQUEST_GET_DESCRIPTOR, (LIBUSB_DT_REPORT << 8)|interface_num, 0, data, sizeof(data), 5000);
+										if (res >= 0) {
+											unsigned short page=0, usage=0;
+											/* Parse the usage and usage page
+											   out of the report descriptor. */
+											get_usage(data, res,  &page, &usage);
+											cur_dev->usage_page = page;
+											cur_dev->usage = usage;
+										}
+										else
+											LOG("libusb_control_transfer() for getting the HID report failed with %d\n", res);
+
+										/* release the interface */
+ 										res = libusb_release_interface(handle, interface_num);
+ 										if (res < 0)
+ 											LOG("Can't release the interface.\n");
+									}
+									else
+										LOG("Can't claim interface %d\n", res);
+
+									res = libusb_attach_kernel_driver(handle, interface_num);
+									if (res < 0)
+										LOG("Couldn't re-attach kernel driver.\n");
+								}
+								else
+									LOG("Couldn't detach kernel driver\n");
+
+								libusb_close(handle);
+							}
+							/* VID/PID */
+							cur_dev->vendor_id = dev_vid;
+							cur_dev->product_id = dev_pid;
+						}
 					}
-				}
-			}
+				} /* altsettings */
+			} /* interfaces */
 			libusb_free_config_descriptor(conf_desc);
-		}
-
-		if (skip)
-			continue;
-			
-		/* Check the VID/PID against the arguments */
-		if ((vendor_id == 0x0 && product_id == 0x0) ||
-		    (vendor_id == dev_vid && product_id == dev_pid)) {
-			struct hid_device_info *tmp;
-
-		    	/* VID/PID match. Create the record. */
-			tmp = calloc(1, sizeof(struct hid_device_info));
-			if (cur_dev) {
-				cur_dev->next = tmp;
-			}
-			else {
-				root = tmp;
-			}
-			cur_dev = tmp;
-			
-			/* Fill out the record */
-			cur_dev->next = NULL;
-			cur_dev->path = make_path(dev, interface_num);
-			
-			res = libusb_open(dev, &handle);
-
-
-			if (res >= 0) {
-			
-				/* Serial Number */
-				if (desc.iSerialNumber > 0)
-					cur_dev->serial_number =
-						get_usb_string(handle, desc.iSerialNumber);
-
-				/* Manufacturer and Product strings */
-				if (desc.iManufacturer > 0)
-					cur_dev->manufacturer_string =
-						get_usb_string(handle, desc.iManufacturer);
-				if (desc.iProduct > 0)
-					cur_dev->product_string =
-						get_usb_string(handle, desc.iProduct);
-				
-				libusb_close(handle);
-			}
-			/* VID/PID */
-			cur_dev->vendor_id = dev_vid;
-			cur_dev->product_id = dev_pid;
 		}
 	}
 
