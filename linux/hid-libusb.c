@@ -438,6 +438,7 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 							res = libusb_open(dev, &handle);
 
 							if (res >= 0) {
+								int detached = 0;
 								unsigned char data[256];
 							
 								/* Serial Number */
@@ -454,37 +455,43 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 										get_usb_string(handle, desc.iProduct);
 
 								/* Usage Page and Usage */
-								res = libusb_detach_kernel_driver(handle, interface_num);
+								res = libusb_kernel_driver_active(handle, interface_num);
+								if (res == 1) {
+									res = libusb_detach_kernel_driver(handle, interface_num);
+									if (res < 0)
+										LOG("Couldn't detach kernel driver, even though a kernel driver was attached.");
+									else
+										detached = 1;
+								}
+								res = libusb_claim_interface(handle, interface_num);
 								if (res >= 0) {
-									res = libusb_claim_interface(handle, interface_num);
+									/* Get the HID Report Descriptor. */
+									res = libusb_control_transfer(handle, LIBUSB_ENDPOINT_IN|LIBUSB_RECIPIENT_INTERFACE, LIBUSB_REQUEST_GET_DESCRIPTOR, (LIBUSB_DT_REPORT << 8)|interface_num, 0, data, sizeof(data), 5000);
 									if (res >= 0) {
-										/* Get the HID Report Descriptor. */
-										res = libusb_control_transfer(handle, LIBUSB_ENDPOINT_IN|LIBUSB_RECIPIENT_INTERFACE, LIBUSB_REQUEST_GET_DESCRIPTOR, (LIBUSB_DT_REPORT << 8)|interface_num, 0, data, sizeof(data), 5000);
-										if (res >= 0) {
-											unsigned short page=0, usage=0;
-											/* Parse the usage and usage page
-											   out of the report descriptor. */
-											get_usage(data, res,  &page, &usage);
-											cur_dev->usage_page = page;
-											cur_dev->usage = usage;
-										}
-										else
-											LOG("libusb_control_transfer() for getting the HID report failed with %d\n", res);
-
-										/* release the interface */
- 										res = libusb_release_interface(handle, interface_num);
- 										if (res < 0)
- 											LOG("Can't release the interface.\n");
+										unsigned short page=0, usage=0;
+										/* Parse the usage and usage page
+										   out of the report descriptor. */
+										get_usage(data, res,  &page, &usage);
+										cur_dev->usage_page = page;
+										cur_dev->usage = usage;
 									}
 									else
-										LOG("Can't claim interface %d\n", res);
+										LOG("libusb_control_transfer() for getting the HID report failed with %d\n", res);
 
+									/* Release the interface */
+									res = libusb_release_interface(handle, interface_num);
+									if (res < 0)
+										LOG("Can't release the interface.\n");
+								}
+								else
+									LOG("Can't claim interface %d\n", res);
+
+								/* Re-attach kernel driver if necessary. */
+								if (detached) {
 									res = libusb_attach_kernel_driver(handle, interface_num);
 									if (res < 0)
 										LOG("Couldn't re-attach kernel driver.\n");
 								}
-								else
-									LOG("Couldn't detach kernel driver\n");
 
 								libusb_close(handle);
 							}
