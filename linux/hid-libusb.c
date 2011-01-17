@@ -723,9 +723,13 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
  							break;
 						}
 						good_open = 1;
-						res = libusb_detach_kernel_driver(dev->device_handle, intf_desc->bInterfaceNumber);
-						if (res < 0) {
-							//LOG("Unable to detach. Maybe this is OK\n");
+						/* detach only if the device is managed by the
+						 * kernel */
+						if (1 == libusb_kernel_driver_active(dev->device_handle, intf_desc->bInterfaceNumber)) {
+							res = libusb_detach_kernel_driver(dev->device_handle, intf_desc->bInterfaceNumber);
+							if (res < 0) {
+								//LOG("Unable to detach. Maybe this is OK\n");
+							}
 						}
 						
 						res = libusb_claim_interface(dev->device_handle, intf_desc->bInterfaceNumber);
