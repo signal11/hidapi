@@ -275,9 +275,12 @@ MainWindow::onRescan(FXObject *sender, FXSelector sel, void *ptr)
 	while (cur_dev) {
 		// Add it to the List Box.
 		FXString s;
+		FXString usage_str;
 		s.format("%04hx:%04hx -", cur_dev->vendor_id, cur_dev->product_id);
 		s += FXString(" ") + cur_dev->manufacturer_string;
 		s += FXString(" ") + cur_dev->product_string;
+		usage_str.format(" (usage: %04hx:%04hx) ", cur_dev->usage_page, cur_dev->usage);
+		s += usage_str;
 		FXListItem *li = new FXListItem(s, NULL, cur_dev);
 		device_list->appendItem(li);
 		

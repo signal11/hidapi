@@ -338,7 +338,11 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 				root = tmp;
 			}
 			cur_dev = tmp;
-			
+
+			// Get the Usage Page and Usage for this device.
+			cur_dev->usage_page = get_int_property(dev, CFSTR(kIOHIDPrimaryUsagePageKey));
+			cur_dev->usage = get_int_property(dev, CFSTR(kIOHIDPrimaryUsageKey));
+
 			/* Fill out the record */
 			cur_dev->next = NULL;
 			len = make_path(dev, cbuf, sizeof(cbuf));

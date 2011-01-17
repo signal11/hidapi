@@ -291,6 +291,10 @@ struct hid_device_info HID_API_EXPORT * HID_API_CALL hid_enumerate(unsigned shor
 			#define WSTR_LEN 512
 			const char *str;
 			struct hid_device_info *tmp;
+			HIDP_PREPARSED_DATA *pp_data = NULL;
+			HIDP_CAPS caps;
+			BOOLEAN res;
+			NTSTATUS nt_res;
 			wchar_t wstr[WSTR_LEN]; // TODO: Determine Size
 			size_t len;
 
@@ -303,6 +307,18 @@ struct hid_device_info HID_API_EXPORT * HID_API_CALL hid_enumerate(unsigned shor
 				root = tmp;
 			}
 			cur_dev = tmp;
+
+			// Get the Usage Page and Usage for this device.
+			res = HidD_GetPreparsedData(write_handle, &pp_data);
+			if (res) {
+				nt_res = HidP_GetCaps(pp_data, &caps);
+				if (nt_res == HIDP_STATUS_SUCCESS) {
+					cur_dev->usage_page = caps.UsagePage;
+					cur_dev->usage = caps.Usage;
+				}
+
+				HidD_FreePreparsedData(pp_data);
+			}
 			
 			/* Fill out the record */
 			cur_dev->next = NULL;
