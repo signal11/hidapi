@@ -24,6 +24,9 @@
  * @defgroup API hidapi API
  */
 
+#ifndef HIDAPI_H__
+#define HIDAPI_H__
+
 #include <wchar.h>
 
 #ifdef _WIN32
@@ -52,6 +55,9 @@ extern "C" {
 			unsigned short product_id;
 			/** Serial Number */
 			wchar_t *serial_number;
+			/** Device Release Number in binary-coded decimal,
+			    also known as Device Version Number */
+			unsigned short release_number;
 			/** Manufacturer String */
 			wchar_t *manufacturer_string;
 			/** Product string */
@@ -315,5 +321,7 @@ extern "C" {
 
 #ifdef __cplusplus
 }
+#endif
+
 #endif
 
