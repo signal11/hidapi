@@ -529,7 +529,7 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 							cur_dev->release_number = desc.bcdDevice;
 							
 							/* Interface Number */
-							cur_dev->interface = interface_num;
+							cur_dev->interface_number = interface_num;
 						}
 					}
 				} /* altsettings */

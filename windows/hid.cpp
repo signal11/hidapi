@@ -361,7 +361,7 @@ struct hid_device_info HID_API_EXPORT * HID_API_CALL hid_enumerate(unsigned shor
 			cur_dev->release_number = attrib.VersionNumber;
 
 			/* Interface Number (Unsupported on Windows)*/
-			cur_dev->interface = -1;
+			cur_dev->interface_number = -1;
 		}
 
 cont_close:
