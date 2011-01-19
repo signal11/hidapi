@@ -51,6 +51,7 @@ int main(int argc, char* argv[])
 		printf("  Manufacturer: %ls\n", cur_dev->manufacturer_string);
 		printf("  Product:      %ls\n", cur_dev->product_string);
 		printf("  Release:      %hx\n", cur_dev->release_number);
+		printf("  Interface:    %d\n",  cur_dev->interface);
 		printf("\n");
 		cur_dev = cur_dev->next;
 	}

@@ -62,10 +62,15 @@ extern "C" {
 			wchar_t *manufacturer_string;
 			/** Product string */
 			wchar_t *product_string;
-			/** Usage Page for this Device/Interface */
+			/** Usage Page for this Device/Interface
+			    (Windows/Mac only). */
 			unsigned short usage_page;
-			/** Usage for this Device/Interface */
+			/** Usage for this Device/Interface
+			    (Windows/Mac only).*/
 			unsigned short usage;
+			/** The USB interface which this logical device
+			    represents (Linux/libusb implementation only). */
+			int interface;
 
 			/** Pointer to the next device */
 			struct hid_device_info *next;

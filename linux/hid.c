@@ -299,6 +299,10 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 			/* Release Number */
 			str = udev_device_get_sysattr_value(dev, "bcdDevice");
 			cur_dev->release_number = (str)? strtol(str, NULL, 16): 0x0;
+			
+			/* Interface Number (Unsupported on Linux/hidraw) */
+			cur_dev->interface = -1;
+
 		}
 		else
 			goto next;
