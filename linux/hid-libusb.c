@@ -55,6 +55,14 @@ extern "C" {
 #define LOG(...) do {} while (0)
 #endif
 
+
+/* Uncomment to enable the retrieval of Usage and Usage Page in
+hid_enumerate(). Warning, this is very invasive as it requires the detach
+and re-attach of the kernel driver. See comments inside hid_enumerate().
+Linux/libusb HIDAPI programs are encouraged to use the interface number
+instead to differentiate between interfaces on a composite HID device. */
+/*#define INVASIVE_GET_USAGE*/
+
 /* Linked List of input reports received from the device. */
 struct input_report {
 	uint8_t *data;
@@ -142,6 +150,7 @@ static void register_error(hid_device *device, const char *op)
 }
 #endif
 
+#ifdef INVASIVE_GET_USAGE
 /* Get bytes from a HID Report Descriptor.
    Only call with a num_bytes of 0, 1, 2, or 4. */
 static uint32_t get_bytes(uint8_t *rpt, size_t len, size_t num_bytes, size_t cur)
@@ -241,7 +250,7 @@ static int get_usage(uint8_t *report_descriptor, size_t size,
 	
 	return -1; /* failure */
 }
-
+#endif // INVASIVE_GET_USAGE
 
 
 /* Get the first language the device says it reports. This comes from
@@ -438,9 +447,6 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 							res = libusb_open(dev, &handle);
 
 							if (res >= 0) {
-								int detached = 0;
-								unsigned char data[256];
-							
 								/* Serial Number */
 								if (desc.iSerialNumber > 0)
 									cur_dev->serial_number =
@@ -454,6 +460,25 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 									cur_dev->product_string =
 										get_usb_string(handle, desc.iProduct);
 
+#ifdef INVASIVE_GET_USAGE
+							/*
+							This section is removed because it is too
+							invasive on the system. Getting a Usage Page
+							and Usage requires parsing the HID Report
+							descriptor. Getting a HID Report descriptor
+							involves claiming the interface. Claiming the
+							interface involves detaching the kernel driver.
+							Detaching the kernel driver is hard on the system
+							because it will unclaim interfaces (if another
+							app has them claimed) and the re-attachment of
+							the driver will sometimes change /dev entry names.
+							It is for these reasons that this section is
+							#if 0. For composite devices, use the interface
+							field in the hid_device_info struct to distinguish
+							between interfaces. */
+								int detached = 0;
+								unsigned char data[256];
+							
 								/* Usage Page and Usage */
 								res = libusb_kernel_driver_active(handle, interface_num);
 								if (res == 1) {
@@ -492,6 +517,7 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 									if (res < 0)
 										LOG("Couldn't re-attach kernel driver.\n");
 								}
+#endif /*******************/
 
 								libusb_close(handle);
 							}
@@ -501,6 +527,9 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 
 							/* Release Number */
 							cur_dev->release_number = desc.bcdDevice;
+							
+							/* Interface Number */
+							cur_dev->interface_number = interface_num;
 						}
 					}
 				} /* altsettings */
