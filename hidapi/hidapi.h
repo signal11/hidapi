@@ -70,7 +70,7 @@ extern "C" {
 			unsigned short usage;
 			/** The USB interface which this logical device
 			    represents (Linux/libusb implementation only). */
-			int interface;
+			int interface_number;
 
 			/** Pointer to the next device */
 			struct hid_device_info *next;
