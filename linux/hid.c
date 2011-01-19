@@ -301,7 +301,7 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 			cur_dev->release_number = (str)? strtol(str, NULL, 16): 0x0;
 			
 			/* Interface Number (Unsupported on Linux/hidraw) */
-			cur_dev->interface = -1;
+			cur_dev->interface_number = -1;
 
 		}
 		else
