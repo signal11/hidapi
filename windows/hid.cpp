@@ -356,6 +356,12 @@ struct hid_device_info HID_API_EXPORT * HID_API_CALL hid_enumerate(unsigned shor
 			/* VID/PID */
 			cur_dev->vendor_id = attrib.VendorID;
 			cur_dev->product_id = attrib.ProductID;
+
+			/* Release Number */
+			cur_dev->release_number = attrib.VersionNumber;
+
+			/* Interface Number (Unsupported on Windows)*/
+			cur_dev->interface_number = -1;
 		}
 
 cont_close:
