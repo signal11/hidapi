@@ -755,12 +755,16 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
  							break;
 						}
 						good_open = 1;
-						/* detach only if the device is managed by the
-						 * kernel */
-						if (1 == libusb_kernel_driver_active(dev->device_handle, intf_desc->bInterfaceNumber)) {
+						
+						/* Detach the kernel driver, but only if the
+						   device is managed by the kernel */
+						if (libusb_kernel_driver_active(dev->device_handle, intf_desc->bInterfaceNumber) == 1) {
 							res = libusb_detach_kernel_driver(dev->device_handle, intf_desc->bInterfaceNumber);
 							if (res < 0) {
-								//LOG("Unable to detach. Maybe this is OK\n");
+								libusb_close(dev->device_handle);
+								LOG("Unable to detach Kernel Driver\n");
+								good_open = 0;
+								break;
 							}
 						}
 						
