@@ -420,6 +420,10 @@ MainWindow::onTimeout(FXObject *sender, FXSelector sel, void *ptr)
 		input_text->appendText(s);
 		input_text->setBottomLine(INT_MAX);
 	}
+	if (res < 0) {
+		input_text->appendText("hid_read() returned error\n");
+		input_text->setBottomLine(INT_MAX);
+	}
 
 	getApp()->addTimeout(this, ID_TIMER,
 		5 * timeout_scalar /*5ms*/);
