@@ -500,7 +500,7 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 		len = make_path(os_dev, cbuf, sizeof(cbuf));
 		if (!strcmp(cbuf, path)) {
 			// Matched Paths. Open this Device.
-			IOReturn ret = IOHIDDeviceOpen(os_dev, kIOHIDOptionsTypeNone);
+			IOReturn ret = IOHIDDeviceOpen(os_dev, kIOHIDOptionsTypeSeizeDevice);
 			if (ret == kIOReturnSuccess) {
 				char str[32];
 				CFIndex max_input_report_len;
@@ -733,7 +733,7 @@ void HID_API_EXPORT hid_close(hid_device *dev)
 	   been unplugged. If it's been unplugged, then calling
 	   IOHIDDeviceClose() will crash. */
 	if (!dev->disconnected) {
-		IOHIDDeviceClose(dev->device_handle, kIOHIDOptionsTypeNone);
+		IOHIDDeviceClose(dev->device_handle, kIOHIDOptionsTypeSeizeDevice);
 	}
 
 	free_hid_device(dev);
