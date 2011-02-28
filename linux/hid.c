@@ -606,6 +606,7 @@ int HID_API_EXPORT hid_set_nonblocking(hid_device *dev, int nonblock)
 
 int HID_API_EXPORT hid_send_feature_report(hid_device *dev, const unsigned char *data, size_t length)
 {
+#ifdef FEATURE_REPORT
 	int res;
 
 	res = ioctl(dev->device_handle, HIDIOCSFEATURE(length), data);
@@ -613,10 +614,15 @@ int HID_API_EXPORT hid_send_feature_report(hid_device *dev, const unsigned char 
 		perror("ioctl (SFEATURE)");
 
 	return res;
+#else
+	perror("ioctl HIDIOCSFEATURE not yet supported in mainline kernel");
+	return -1;
+#endif
 }
 
 int HID_API_EXPORT hid_get_feature_report(hid_device *dev, unsigned char *data, size_t length)
 {
+#ifdef FEATURE_REPORT
 	int res;
 
 	res = ioctl(dev->device_handle, HIDIOCGFEATURE(length), data);
@@ -625,6 +631,10 @@ int HID_API_EXPORT hid_get_feature_report(hid_device *dev, unsigned char *data, 
 
 
 	return res;
+#else
+	perror("ioctl HIDIOCGFEATURE not yet supported in mainline kernel");
+	return -1;
+#endif
 }
 
 
