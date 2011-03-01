@@ -13,12 +13,15 @@ CXX=g++
 COBJS=hid.o
 CPPOBJS=../hidtest/hidtest.o
 OBJS=$(COBJS) $(CPPOBJS)
-CFLAGS+=-I../hidapi -Wall -g -c `pkg-config libusb-1.0 --cflags`
+CFLAGS+=-I../hidapi -Wall -fPIC -shared -g -c
 LIBS=`pkg-config libudev --libs`
 
 
 hidtest: $(OBJS)
 	g++ -Wall -g $^ $(LIBS) -o hidtest
+
+libhidapi: $(COBJS) 
+	gcc -fPIC -shared -Wall -g $^ $(LIBS) -o libhidapi.so
 
 $(COBJS): %.o: %.c
 	$(CC) $(CFLAGS) $< -o $@
@@ -27,6 +30,6 @@ $(CPPOBJS): %.o: %.cpp
 	$(CXX) $(CFLAGS) $< -o $@
 
 clean:
-	rm -f $(OBJS) hidtest
+	rm -f $(OBJS) hidtest libhidapi.so
 
 .PHONY: clean
