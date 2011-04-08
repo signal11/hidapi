@@ -2,16 +2,8 @@
 
 OS=$(shell uname)
 
-ifeq ($(OS), Darwin)
-	FILE=Makefile.mac
-endif
-
 ifneq (,$(findstring MINGW,$(OS)))
 	FILE=Makefile.mingw
-endif
-
-ifeq ($(OS), Linux)
-	FILE=Makefile.linux
 endif
 
 ifeq ($(FILE), )
