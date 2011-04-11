@@ -68,6 +68,8 @@ License
 --------
 HIDAPI may be used by anyone for any reason so long as the coypright header in the source code remains intact.
 
+For details, see LICENSE.txt.
+
 Download
 ---------
 It can be downloaded from github
@@ -85,6 +87,9 @@ Mac OS X:
 To build the Test GUI:
   On Windows, build the .sln file in the hidtest/ directory.
   On Linux and Mac, run make from the hidtest/ directory.
+
+To build the shared library:
+  (Only Linux) cd to the linux/ directory and run `make libhidapi.so`.
 
 To build using the DDK (old method):
 

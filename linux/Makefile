@@ -6,27 +6,32 @@
 # 2010-06-01
 ###########################################
 
-all: hidtest
+all: hidtest lib
 
 CC=gcc
 CXX=g++
 COBJS=hid-libusb.o
 CPPOBJS=../hidtest/hidtest.o
 OBJS=$(COBJS) $(CPPOBJS)
-CFLAGS+=-I../hidapi -Wall -g -c `pkg-config libusb-1.0 --cflags`
-LIBS=`pkg-config libusb-1.0 libudev --libs`
+LDFLAGS+=-Wall -fpic `pkg-config libusb-1.0 libudev --libs`
+CFLAGS+=-I../hidapi -Wall -g `pkg-config libusb-1.0 --cflags`
 
+lib: libhidapi.so
+
+libhidapi.so: hid-libusb.c ../hidapi/hidapi.h
+	$(CC) $(CFLAGS) $(LDFLAGS) -shared -fpic $^ -o libhidapi.so
 
 hidtest: $(OBJS)
-	g++ -Wall -g $^ $(LIBS) -o hidtest
+	g++ -Wall -g $^ $(LDFLAGS) -o hidtest
 
 $(COBJS): %.o: %.c
-	$(CC) $(CFLAGS) $< -o $@
+	$(CC) $(CFLAGS) -c $< -o $@
 
 $(CPPOBJS): %.o: %.cpp
-	$(CXX) $(CFLAGS) $< -o $@
+	$(CXX) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(OBJS) hidtest
+	rm -f $(OBJS) hidtest libhidapi.so
 
-.PHONY: clean
+.PHONY: clean lib
+
