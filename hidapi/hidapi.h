@@ -314,6 +314,8 @@ extern "C" {
 		int HID_API_EXPORT_CALL hid_get_indexed_string(hid_device *device, int string_index, wchar_t *string, size_t maxlen);
 
 		/** @brief Get a string describing the last error which occurred.
+     *
+     * always returns NULL with usb-libusb.c under Linux
 
 			@ingroup API
 			@param device A device handle returned from hid_open().
