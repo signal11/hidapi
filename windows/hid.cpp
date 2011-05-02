@@ -270,7 +270,7 @@ struct hid_device_info HID_API_EXPORT * HID_API_CALL hid_enumerate(unsigned shor
 		// Open a handle to the device
 		write_handle = CreateFileA(device_interface_detail_data->DevicePath,
 			GENERIC_WRITE |GENERIC_READ,
-			0x0, /*share mode*/
+			FILE_SHARE_READ | FILE_SHARE_WRITE, //0x0, /*share mode*/
 			NULL,
 			OPEN_EXISTING,
 			FILE_FLAG_OVERLAPPED,//FILE_ATTRIBUTE_NORMAL,
@@ -458,7 +458,7 @@ HID_API_EXPORT hid_device * HID_API_CALL hid_open_path(const char *path)
 	// Open a handle to the device
 	dev->device_handle = CreateFileA(path,
 			GENERIC_WRITE |GENERIC_READ,
-			0x0, /*share mode*/
+			FILE_SHARE_READ | FILE_SHARE_WRITE, //0x0, /*share mode*/
 			NULL,
 			OPEN_EXISTING,
 			FILE_FLAG_OVERLAPPED,//FILE_ATTRIBUTE_NORMAL,
