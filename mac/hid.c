@@ -191,11 +191,10 @@ static int get_string_property(IOHIDDeviceRef device, CFStringRef prop, wchar_t 
 			len,
 			&used_buf_len);
 		buf[len-1] = 0x00000000;
-		return used_buf_len;
+		return 0;
 	}
 	else
-		return 0;
-		
+		return -1;
 }
 
 static int get_string_property_utf8(IOHIDDeviceRef device, CFStringRef prop, char *buf, size_t len)
