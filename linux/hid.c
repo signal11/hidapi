@@ -178,7 +178,7 @@ static int get_device_string(hid_device *dev, const char *key, wchar_t *string, 
 			str = udev_device_get_sysattr_value(parent, key);
 			if (str) {
 				/* Convert the string from UTF-8 to wchar_t */
-				ret = mbstowcs(string, str, maxlen);
+				ret = mbstowcs(string, str, maxlen)==-1?-1:0;
 				goto end;
 			}
 		}
