@@ -301,6 +301,9 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 	/* Set up the HID Manager if it hasn't been done */
 	if (!hid_mgr)
 		init_hid_manager();
+	else
+		/* re-enumerate */
+		IOHIDManagerSetDeviceMatching(hid_mgr, NULL);
 	
 	/* Get a list of the Devices */
 	CFSetRef device_set = IOHIDManagerCopyDevices(hid_mgr);
