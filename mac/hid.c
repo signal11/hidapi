@@ -284,6 +284,8 @@ static void init_hid_manager(void)
 	/* Initialize all the HID Manager Objects */
 	hid_mgr = IOHIDManagerCreate(kCFAllocatorDefault, kIOHIDOptionsTypeNone);
 	IOHIDManagerSetDeviceMatching(hid_mgr, NULL);
+	IOHIDManagerScheduleWithRunLoop(hid_mgr, CFRunLoopGetCurrent(), kCFRunLoopDefaultMode);
+	IOHIDManagerOpen(hid_mgr, kIOHIDOptionsTypeNone);
 }
 
 
