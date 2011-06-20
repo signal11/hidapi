@@ -563,6 +563,10 @@ int HID_API_EXPORT HID_API_CALL hid_read(hid_device *dev, unsigned char *data, s
 	// we are in non-blocking mode. Get the number of bytes read. The actual
 	// data has been copied to the data[] array which was passed to ReadFile().
 	res = GetOverlappedResult(dev->device_handle, &ol, &bytes_read, TRUE/*wait*/);
+	
+	if (dev->blocking) {
+		CloseHandle(ev);
+	}
 
 	if (bytes_read > 0 && data[0] == 0x0) {
 		/* If report numbers aren't being used, but Windows sticks a report
