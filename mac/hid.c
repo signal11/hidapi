@@ -320,6 +320,9 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 
 		IOHIDDeviceRef dev = device_array[i];
 
+        if (!dev) {
+            continue;
+        }
 		dev_vid = get_vendor_id(dev);
 		dev_pid = get_product_id(dev);
 
