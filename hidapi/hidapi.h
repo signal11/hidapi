@@ -77,6 +77,17 @@ extern "C" {
 		};
 
 
+		/** @brief Deinitialize hidapi
+
+			Deinitialize libusb.
+
+			This function should be called after closing all open devices
+			and before your application terminates.
+
+			@ingroup API
+		*/
+		void HID_API_EXPORT HID_API_CALL hid_exit();
+
 		/** @brief Enumerate the HID Devices.
 
 			This function returns a linked list of all the HID devices

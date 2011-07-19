@@ -184,6 +184,13 @@ static void lookup_functions()
 }
 #endif
 
+
+void HID_API_EXPORT hid_exit()
+{
+	// TODO: Keep an handle on hid.dll
+	//       and call FreeLibrary(lib);
+}
+
 struct hid_device_info HID_API_EXPORT * HID_API_CALL hid_enumerate(unsigned short vendor_id, unsigned short product_id)
 {
 	BOOL res;

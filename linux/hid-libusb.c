@@ -378,6 +378,14 @@ static char *make_path(libusb_device *dev, int interface_number)
 	return strdup(str);
 }
 
+void HID_API_EXPORT hid_exit()
+{
+	if (initialized) {
+		libusb_exit(NULL);
+		initialized = 0;
+	}
+}
+
 struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, unsigned short product_id)
 {
 	libusb_device **devs;
