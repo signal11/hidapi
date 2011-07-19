@@ -770,6 +770,7 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 						res = libusb_open(usb_dev, &dev->device_handle);
 						if (res < 0) {
 							LOG("can't open device\n");
+							free(dev_path);
  							break;
 						}
 						good_open = 1;
@@ -781,6 +782,7 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 							if (res < 0) {
 								libusb_close(dev->device_handle);
 								LOG("Unable to detach Kernel Driver\n");
+								free(dev_path);
 								good_open = 0;
 								break;
 							}
@@ -789,6 +791,7 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 						res = libusb_claim_interface(dev->device_handle, intf_desc->bInterfaceNumber);
 						if (res < 0) {
 							LOG("can't claim interface %d: %d\n", intf_desc->bInterfaceNumber, res);
+							free(dev_path);
 							libusb_close(dev->device_handle);
 							good_open = 0;
 							break;
