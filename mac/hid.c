@@ -288,6 +288,10 @@ static void init_hid_manager(void)
 	IOHIDManagerOpen(hid_mgr, kIOHIDOptionsTypeNone);
 }
 
+void HID_API_EXPORT hid_exit()
+{
+	// TODO: Implement hid cleanup
+}
 
 struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, unsigned short product_id)
 {

@@ -193,6 +193,10 @@ end:
 	return ret;
 }
 
+void HID_API_EXPORT hid_exit()
+{
+	// Nothing to do (As far as i know)
+}
 
 struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, unsigned short product_id)
 {
