@@ -378,6 +378,28 @@ static char *make_path(libusb_device *dev, int interface_number)
 	return strdup(str);
 }
 
+
+int HID_API_EXPORT hid_init(void)
+{
+	if (!initialized) {
+		if (libusb_init(NULL))
+			return -1;
+		initialized = 1;
+	}
+
+	return 0;
+}
+
+int HID_API_EXPORT hid_exit(void)
+{
+	if (initialized) {
+		libusb_exit(NULL);
+		initialized = 0;
+	}
+
+	return 0;
+}
+
 struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, unsigned short product_id)
 {
 	libusb_device **devs;
@@ -391,11 +413,9 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 	
 	setlocale(LC_ALL,"");
 	
-	if (!initialized) {
-		libusb_init(NULL);
-		initialized = 1;
-	}
-	
+	if (!initialized)
+		hid_init();
+
 	num_devs = libusb_get_device_list(NULL, &devs);
 	if (num_devs < 0)
 		return NULL;
@@ -729,11 +749,9 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 	
 	setlocale(LC_ALL,"");
 	
-	if (!initialized) {
-		libusb_init(NULL);
-		initialized = 1;
-	}
-	
+	if (!initialized)
+		hid_init();
+
 	num_devs = libusb_get_device_list(NULL, &devs);
 	while ((usb_dev = devs[d++]) != NULL) {
 		struct libusb_device_descriptor desc;

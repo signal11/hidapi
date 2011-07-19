@@ -79,6 +79,24 @@ extern "C" {
 		};
 
 
+		/** @brief Initialize the HIDAPI library.
+
+			@ingroup API
+
+		    @returns
+				-1 on error.
+		*/
+		int HID_API_EXPORT HID_API_CALL hid_init(void);
+
+		/** @brief Finalize the HIDAPI library.
+
+			@ingroup API
+
+		    @returns
+				-1 on error.
+		*/
+		int HID_API_EXPORT HID_API_CALL hid_exit(void);
+
 		/** @brief Enumerate the HID Devices.
 
 			This function returns a linked list of all the HID devices
