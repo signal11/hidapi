@@ -116,6 +116,9 @@ struct hid_device_ {
 		size_t input_report_length;
 		void *last_error_str;
 		DWORD last_error_num;
+		BOOL read_pending;
+		char *read_buf;
+		OVERLAPPED ol;
 };
 
 static hid_device *new_hid_device()
@@ -126,6 +129,10 @@ static hid_device *new_hid_device()
 	dev->input_report_length = 0;
 	dev->last_error_str = NULL;
 	dev->last_error_num = 0;
+	dev->read_pending = FALSE;
+	dev->read_buf = NULL;
+	memset(&dev->ol, 0, sizeof(dev->ol));
+	dev->ol.hEvent = CreateEvent(NULL, FALSE, FALSE /*inital state f=nonsignaled*/, NULL);
 
 	return dev;
 }
@@ -478,6 +485,8 @@ HID_API_EXPORT hid_device * HID_API_CALL hid_open_path(const char *path)
 	dev->input_report_length = caps.InputReportByteLength;
 	HidD_FreePreparsedData(pp_data);
 
+	dev->read_buf = (char*) malloc(dev->input_report_length);
+
 	return dev;
 
 err_pp_data:
@@ -521,40 +530,35 @@ int HID_API_EXPORT HID_API_CALL hid_write(hid_device *dev, const unsigned char *
 
 int HID_API_EXPORT HID_API_CALL hid_read(hid_device *dev, unsigned char *data, size_t length)
 {
-	DWORD bytes_read;
+	DWORD bytes_read = 0;
 	BOOL res;
 
-	HANDLE ev;
-	ev = CreateEvent(NULL, FALSE, FALSE /*inital state f=nonsignaled*/, NULL);
+	// Copy the handle for convenience.
+	HANDLE ev = dev->ol.hEvent;
 
-	OVERLAPPED ol;
-	memset(&ol, 0, sizeof(ol));
-	ol.hEvent = ev;
-
-	// Limit the data to be returned. This ensures we get
-	// only one report returned per call to hid_read().
-	length = (length < dev->input_report_length)? length: dev->input_report_length;
-
-	res = ReadFile(dev->device_handle, data, length, &bytes_read, &ol);
-	
-	
-	if (!res) {
-		if (GetLastError() != ERROR_IO_PENDING) {
-			// ReadFile() has failed.
-			// Clean up and return error.
-			CloseHandle(ev);
-			goto end_of_function;
+	if (!dev->read_pending) {
+		// Start an Overlapped I/O read.
+		dev->read_pending = TRUE;
+		ResetEvent(ev);
+		res = ReadFile(dev->device_handle, dev->read_buf, dev->input_report_length, &bytes_read, &dev->ol);
+		
+		if (!res) {
+			if (GetLastError() != ERROR_IO_PENDING) {
+				// ReadFile() has failed.
+				// Clean up and return error.
+				CancelIo(dev->device_handle);
+				dev->read_pending = FALSE;
+				goto end_of_function;
+			}
 		}
 	}
 
 	if (!dev->blocking) {
 		// See if there is any data yet.
 		res = WaitForSingleObject(ev, 0);
-		CloseHandle(ev);
 		if (res != WAIT_OBJECT_0) {
-			// There was no data. Cancel this read and return.
-			CancelIo(dev->device_handle);
-			// Zero bytes available.
+			// There was no data this time. Return zero bytes available,
+			// but leave the Overlapped I/O running.
 			return 0;
 		}
 	}
@@ -562,24 +566,29 @@ int HID_API_EXPORT HID_API_CALL hid_read(hid_device *dev, unsigned char *data, s
 	// Either WaitForSingleObject() told us that ReadFile has completed, or
 	// we are in non-blocking mode. Get the number of bytes read. The actual
 	// data has been copied to the data[] array which was passed to ReadFile().
-	res = GetOverlappedResult(dev->device_handle, &ol, &bytes_read, TRUE/*wait*/);
+	res = GetOverlappedResult(dev->device_handle, &dev->ol, &bytes_read, TRUE/*wait*/);
 	
-	if (dev->blocking) {
-		CloseHandle(ev);
-	}
+	// Set pending back to false, even if GetOverlappedResult() returned error.
+	dev->read_pending = FALSE;
 
-	if (bytes_read > 0 && data[0] == 0x0) {
-		/* If report numbers aren't being used, but Windows sticks a report
-		   number (0x0) on the beginning of the report anyway. To make this
-		   work like the other platforms, and to make it work more like the
-		   HID spec, we'll skip over this byte. */
-		bytes_read--;
-		memmove(data, data+1, bytes_read);
+	if (res && bytes_read > 0) {
+		if (data[0] == 0x0) {
+			/* If report numbers aren't being used, but Windows sticks a report
+			   number (0x0) on the beginning of the report anyway. To make this
+			   work like the other platforms, and to make it work more like the
+			   HID spec, we'll skip over this byte. */
+			bytes_read--;
+			memcpy(data, dev->read_buf+1, length);
+		}
+		else {
+			/* Copy the whole buffer, report number and all. */
+			memcpy(data, dev->read_buf, length);
+		}
 	}
 	
 end_of_function:
 	if (!res) {
-		register_error(dev, "ReadFile");
+		register_error(dev, "GetOverlappedResult");
 		return -1;
 	}
 	
@@ -650,8 +659,11 @@ void HID_API_EXPORT HID_API_CALL hid_close(hid_device *dev)
 {
 	if (!dev)
 		return;
+	CancelIo(dev->device_handle);
+	CloseHandle(dev->ol.hEvent);
 	CloseHandle(dev->device_handle);
 	LocalFree(dev->last_error_str);
+	free(dev->read_buf);
 	free(dev);
 }
 
