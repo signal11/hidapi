@@ -572,7 +572,7 @@ int HID_API_EXPORT HID_API_CALL hid_read(hid_device *dev, unsigned char *data, s
 	dev->read_pending = FALSE;
 
 	if (res && bytes_read > 0) {
-		if (data[0] == 0x0) {
+		if (dev->read_buf[0] == 0x0) {
 			/* If report numbers aren't being used, but Windows sticks a report
 			   number (0x0) on the beginning of the report anyway. To make this
 			   work like the other platforms, and to make it work more like the
