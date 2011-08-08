@@ -35,6 +35,7 @@
 #include <sys/ioctl.h>
 #include <sys/utsname.h>
 #include <fcntl.h>
+#include <poll.h>
 
 /* Linux */
 #include <linux/hidraw.h>
@@ -437,9 +438,25 @@ int HID_API_EXPORT hid_write(hid_device *dev, const unsigned char *data, size_t 
 }
 
 
-int HID_API_EXPORT hid_read(hid_device *dev, unsigned char *data, size_t length)
+int HID_API_EXPORT hid_read_timeout(hid_device *dev, unsigned char *data, size_t length, int milliseconds)
 {
 	int bytes_read;
+
+	if (milliseconds != 0) {
+		/* milliseconds is -1 or > 0. In both cases, we want to
+		   call poll() and wait for data to arrive. -1 means
+		   INFINITE. */
+		int ret;
+		struct pollfd fds;
+
+		fds.fd = dev->device_handle;
+		fds.events = POLLIN;
+		fds.revents = 0;
+		ret = poll(&fds, 1, milliseconds);
+		if (ret == -1 || ret == 0)
+			/* Error or timeout */
+			return ret;
+	}
 
 	bytes_read = read(dev->device_handle, data, length);
 	if (bytes_read < 0 && errno == EAGAIN)
@@ -454,6 +471,11 @@ int HID_API_EXPORT hid_read(hid_device *dev, unsigned char *data, size_t length)
 	}
 
 	return bytes_read;
+}
+
+int HID_API_EXPORT hid_read(hid_device *dev, unsigned char *data, size_t length)
+{
+	return hid_read_timeout(dev, data, length, (dev->blocking)? -1: 0);
 }
 
 int HID_API_EXPORT hid_set_nonblocking(hid_device *dev, int nonblock)

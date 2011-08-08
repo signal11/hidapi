@@ -187,6 +187,26 @@ extern "C" {
 		*/
 		int  HID_API_EXPORT HID_API_CALL hid_write(hid_device *device, const unsigned char *data, size_t length);
 
+		/** @brief Read an Input report from a HID device with timeout.
+
+			Input reports are returned
+			to the host through the INTERRUPT IN endpoint. The first byte will
+			contain the Report number if the device uses numbered reports.
+
+			@ingroup API
+			@param device A device handle returned from hid_open().
+			@param data A buffer to put the read data into.
+			@param length The number of bytes to read. For devices with
+				multiple reports, make sure to read an extra byte for
+				the report number.
+			@param milliseconds timeout in milliseconds or -1 for blocking wait.
+
+			@returns
+				This function returns the actual number of bytes read and
+				-1 on error.
+		*/
+		int HID_API_EXPORT HID_API_CALL hid_read_timeout(hid_device *dev, unsigned char *data, size_t length, int milliseconds);
+
 		/** @brief Read an Input report from a HID device.
 
 			Input reports are returned

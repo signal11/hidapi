@@ -932,7 +932,7 @@ static int return_data(hid_device *dev, unsigned char *data, size_t length)
 }
 
 
-int HID_API_EXPORT hid_read(hid_device *dev, unsigned char *data, size_t length)
+int HID_API_EXPORT hid_read_timeout(hid_device *dev, unsigned char *data, size_t length, int milliseconds)
 {
 	int bytes_read = -1;
 
@@ -959,11 +959,31 @@ int HID_API_EXPORT hid_read(hid_device *dev, unsigned char *data, size_t length)
 		goto ret;
 	}
 	
-	if (dev->blocking) {
+	if (milliseconds == -1) {
+		/* Blocking */
 		pthread_cond_wait(&dev->condition, &dev->mutex);
 		bytes_read = return_data(dev, data, length);
 	}
+	else if (milliseconds > 0) {
+		/* Non-blocking, but called with timeout. */
+		int res;
+		struct timespec ts;
+		clock_gettime(CLOCK_REALTIME, &ts);
+		ts.tv_sec += milliseconds / 1000;
+		ts.tv_nsec += (milliseconds % 1000) * 1000000;
+		if (ts.tv_nsec >= 1000000000L) {
+			ts.tv_sec++;
+			ts.tv_nsec -= 1000000000L;
+		}
+		
+		res = pthread_cond_timedwait(&dev->condition, &dev->mutex, &ts);
+		if (res == 0)
+			bytes_read = return_data(dev, data, length) ;
+		else
+			bytes_read = 0;
+	}
 	else {
+		/* Purely non-blocking */
 		bytes_read = 0;
 	}
 
@@ -971,6 +991,11 @@ ret:
 	pthread_mutex_unlock(&dev->mutex);
 
 	return bytes_read;
+}
+
+int HID_API_EXPORT hid_read(hid_device *dev, unsigned char *data, size_t length)
+{
+	return hid_read_timeout(dev, data, length, dev->blocking ? -1 : 0);
 }
 
 int HID_API_EXPORT hid_set_nonblocking(hid_device *dev, int nonblock)

@@ -528,7 +528,7 @@ int HID_API_EXPORT HID_API_CALL hid_write(hid_device *dev, const unsigned char *
 }
 
 
-int HID_API_EXPORT HID_API_CALL hid_read(hid_device *dev, unsigned char *data, size_t length)
+int HID_API_EXPORT HID_API_CALL hid_read_timeout(hid_device *dev, unsigned char *data, size_t length, int milliseconds)
 {
 	DWORD bytes_read = 0;
 	BOOL res;
@@ -553,9 +553,9 @@ int HID_API_EXPORT HID_API_CALL hid_read(hid_device *dev, unsigned char *data, s
 		}
 	}
 
-	if (!dev->blocking) {
+	if (milliseconds >= 0) {
 		// See if there is any data yet.
-		res = WaitForSingleObject(ev, 0);
+		res = WaitForSingleObject(ev, milliseconds);
 		if (res != WAIT_OBJECT_0) {
 			// There was no data this time. Return zero bytes available,
 			// but leave the Overlapped I/O running.
@@ -593,6 +593,11 @@ end_of_function:
 	}
 	
 	return bytes_read;
+}
+
+int HID_API_EXPORT HID_API_CALL hid_read(hid_device *dev, unsigned char *data, size_t length)
+{
+	return hid_read_timeout(dev, data, length, (dev->blocking)? -1: 0);
 }
 
 int HID_API_EXPORT HID_API_CALL hid_set_nonblocking(hid_device *dev, int nonblock)
