@@ -44,6 +44,15 @@
 
 #include "hidapi.h"
 
+/* Definitions from linux/hidraw.h. Since these are new, some distros
+   may not have header files which contain them. */
+#ifndef HIDIOCSFEATURE
+#define HIDIOCSFEATURE(len)    _IOC(_IOC_WRITE|_IOC_READ, 'H', 0x06, len)
+#endif
+#ifndef HIDIOCGFEATURE
+#define HIDIOCGFEATURE(len)    _IOC(_IOC_WRITE|_IOC_READ, 'H', 0x07, len)
+#endif
+
 struct hid_device_ {
 	int device_handle;
 	int blocking;
