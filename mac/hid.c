@@ -612,7 +612,7 @@ static int return_data(hid_device *dev, unsigned char *data, size_t length)
 	return len;
 }
 
-int HID_API_EXPORT hid_read(hid_device *dev, unsigned char *data, size_t length)
+int HID_API_EXPORT hid_read_timeout(hid_device *dev, unsigned char *data, size_t length, int milliseconds)
 {
 	int ret_val = -1;
 
@@ -638,8 +638,9 @@ int HID_API_EXPORT hid_read(hid_device *dev, unsigned char *data, size_t length)
 	/* Move the device's run loop to this thread. */
 	IOHIDDeviceScheduleWithRunLoop(dev->device_handle, CFRunLoopGetCurrent(), dev->run_loop_mode);
 	
-	if (dev->blocking) {
-		/* Run the Run Loop until it stops timing out. In other
+	if (milliseconds < 0) {
+		/* Blocking read:
+		   Run the Run Loop until it stops timing out. In other
 		   words, until something happens. This is necessary because
 		   there is no INFINITE timeout value. */
 		SInt32 code;
@@ -678,7 +679,7 @@ int HID_API_EXPORT hid_read(hid_device *dev, unsigned char *data, size_t length)
 	else {
 		/* Non-blocking. See if the OS has any reports to give. */
 		SInt32 code;
-		code = CFRunLoopRunInMode(dev->run_loop_mode, 0, TRUE);
+		code = CFRunLoopRunInMode(dev->run_loop_mode, milliseconds, TRUE);
 		if (code == kCFRunLoopRunFinished) {
 			/* The run loop is finished, indicating an error
 			   or the device had been disconnected. */
@@ -701,6 +702,11 @@ ret:
 	/* Unlock */
 	pthread_mutex_unlock(&dev->mutex);
 	return ret_val;
+}
+
+int HID_API_EXPORT hid_read(hid_device *dev, unsigned char *data, size_t length)
+{
+	return hid_read_timeout(dev, data, length, (dev->blocking)? -1: 0);
 }
 
 int HID_API_EXPORT hid_set_nonblocking(hid_device *dev, int nonblock)
