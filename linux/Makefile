@@ -18,7 +18,7 @@ LIBS=`pkg-config libusb-1.0 libudev --libs`
 
 
 hidtest: $(OBJS)
-	g++ -Wall -g $^ $(LIBS) -o hidtest
+	$(CXX) -Wall -g $^ $(LIBS) -o hidtest
 
 $(COBJS): %.o: %.c
 	$(CC) $(CFLAGS) $< -o $@
