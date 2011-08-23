@@ -8,15 +8,17 @@
 
 all: hidtest
 
-CC?=gcc
-CFLAGS?=-Wall -g
-CXX?=g++
-CXXFLAGS?=-Wall -g
-COBJS=hid-libusb.o
-CPPOBJS=../hidtest/hidtest.o
-OBJS=$(COBJS) $(CPPOBJS)
-LIBS=`pkg-config libusb-1.0 libudev --libs`
-INCLUDES?=-I../hidapi `pkg-config libusb-1.0 --cflags`
+CC       ?= gcc
+CFLAGS   ?= -Wall -g
+
+CXX      ?= g++
+CXXFLAGS ?= -Wall -g
+
+COBJS     = hid-libusb.o
+CPPOBJS   = ../hidtest/hidtest.o
+OBJS      = $(COBJS) $(CPPOBJS)
+LIBS      = `pkg-config libusb-1.0 libudev --libs`
+INCLUDES ?= -I../hidapi `pkg-config libusb-1.0 --cflags`
 
 
 hidtest: $(OBJS)
