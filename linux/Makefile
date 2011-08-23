@@ -8,8 +8,8 @@
 
 all: hidtest
 
-CC=gcc
-CXX=g++
+CC?=gcc
+CXX?=g++
 COBJS=hid-libusb.o
 CPPOBJS=../hidtest/hidtest.o
 OBJS=$(COBJS) $(CPPOBJS)
