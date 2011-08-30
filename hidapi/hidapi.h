@@ -69,7 +69,9 @@ extern "C" {
 			    (Windows/Mac only).*/
 			unsigned short usage;
 			/** The USB interface which this logical device
-			    represents (Linux/libusb implementation only). */
+			    represents. Valid on the Linux/libusb implementation
+			    in all cases, and valid on the Windows implementation
+			    only if the device contains more than one interface. */
 			int interface_number;
 
 			/** Pointer to the next device */
