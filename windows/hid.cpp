@@ -367,8 +367,24 @@ struct hid_device_info HID_API_EXPORT * HID_API_CALL hid_enumerate(unsigned shor
 			/* Release Number */
 			cur_dev->release_number = attrib.VersionNumber;
 
-			/* Interface Number (Unsupported on Windows)*/
+			/* Interface Number. It can sometimes be parsed out of the path
+			   on Windows if a device has multiple interfaces. See
+			   http://msdn.microsoft.com/en-us/windows/hardware/gg487473 or
+			   search for "Hardware IDs for HID Devices" at MSDN. If it's not
+			   in the path, it's set to -1. */
 			cur_dev->interface_number = -1;
+			if (cur_dev->path) {
+				char *interface_component = strstr(cur_dev->path, "&mi_");
+				if (interface_component) {
+					char *hex_str = interface_component + 4;
+					char *endptr = NULL;
+					cur_dev->interface_number = strtol(hex_str, &endptr, 16);
+					if (endptr == hex_str) {
+						/* The parsing failed. Set interface_number to -1. */
+						cur_dev->interface_number = -1;
+					}
+				}
+			}
 		}
 
 cont_close:
