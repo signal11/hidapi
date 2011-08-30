@@ -367,8 +367,20 @@ struct hid_device_info HID_API_EXPORT * HID_API_CALL hid_enumerate(unsigned shor
 			/* Release Number */
 			cur_dev->release_number = attrib.VersionNumber;
 
-			/* Interface Number (Unsupported on Windows)*/
+			/* Interface Number (Unsupported on Windows directly but might be able to parse out of path)*/
 			cur_dev->interface_number = -1;
+			if (cur_dev->path) {
+				char * interfaceComponent = strstr(cur_dev->path, "&mi_");
+				if (interfaceComponent) {
+					char * hexPtr = interfaceComponent + 4;
+					char * orig = hexPtr;
+					cur_dev->interface_number = strtoul(hexPtr, &hexPtr, 16);
+					if (hexPtr == orig) {
+						/* couldn't parse out a hex num - set back to -1 */
+						cur_dev->interface_number = -1;
+					}
+				}
+			}
 		}
 
 cont_close:
