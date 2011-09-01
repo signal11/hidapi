@@ -36,7 +36,7 @@
 
 extern "C" {
 	#include <setupapi.h>
-	#include "WinIoCTL.h"
+	#include <winioctl.h>
 	#ifdef HIDAPI_USE_DDK
 		#include <hidsdi.h>
 	#endif
