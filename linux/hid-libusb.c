@@ -682,7 +682,7 @@ static void *read_thread(void *param)
 		struct timeval tv;
 
 		tv.tv_sec = 0;
-		tv.tv_usec = 100; //TODO: Fix this value.
+		tv.tv_usec = 100000; //TODO: Fix this value.
 		res = libusb_handle_events_timeout(NULL, &tv);
 		if (res < 0) {
 			/* There was an error. Break out of this loop. */
