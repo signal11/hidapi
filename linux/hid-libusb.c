@@ -679,11 +679,7 @@ static void *read_thread(void *param)
 	/* Handle all the events. */
 	while (!dev->shutdown_thread) {
 		int res;
-		struct timeval tv;
-
-		tv.tv_sec = 0;
-		tv.tv_usec = 100; //TODO: Fix this value.
-		res = libusb_handle_events_timeout(NULL, &tv);
+		res = libusb_handle_events(NULL);
 		if (res < 0) {
 			/* There was an error. Break out of this loop. */
 			break;
@@ -696,6 +692,15 @@ static void *read_thread(void *param)
 		/* The transfer was cancelled, so wait for its completion. */
 		libusb_handle_events(NULL);
 	}
+	
+	/* Now that the read thread is stopping, Wake any threads which are
+	   waiting on data (in hid_read_timeout()). Do this under a mutex to
+	   make sure that a thread which is about to go to sleep waiting on
+	   the condition acutally will go to sleep before the condition is
+	   signaled. */
+	pthread_mutex_lock(&dev->mutex);
+	pthread_cond_broadcast(&dev->condition);
+	pthread_mutex_unlock(&dev->mutex);
 
 	/* The dev->transfer->buffer and dev->transfer objects are cleaned up
 	   in hid_close(). They are not cleaned up here because this thread
@@ -943,8 +948,12 @@ int HID_API_EXPORT hid_read_timeout(hid_device *dev, unsigned char *data, size_t
 	
 	if (milliseconds == -1) {
 		/* Blocking */
-		pthread_cond_wait(&dev->condition, &dev->mutex);
-		bytes_read = return_data(dev, data, length);
+		while (!dev->input_reports && !dev->shutdown_thread) {
+			pthread_cond_wait(&dev->condition, &dev->mutex);
+		}
+		if (dev->input_reports) {
+			bytes_read = return_data(dev, data, length);
+		}
 	}
 	else if (milliseconds > 0) {
 		/* Non-blocking, but called with timeout. */
@@ -958,11 +967,29 @@ int HID_API_EXPORT hid_read_timeout(hid_device *dev, unsigned char *data, size_t
 			ts.tv_nsec -= 1000000000L;
 		}
 		
-		res = pthread_cond_timedwait(&dev->condition, &dev->mutex, &ts);
-		if (res == 0)
-			bytes_read = return_data(dev, data, length) ;
-		else
-			bytes_read = 0;
+		while (!dev->input_reports && !dev->shutdown_thread) {
+			res = pthread_cond_timedwait(&dev->condition, &dev->mutex, &ts);
+			if (res == 0) {
+				if (dev->input_reports) {
+					bytes_read = return_data(dev, data, length);
+					break;
+				}
+				
+				/* If we're here, there was a spurious wake up
+				   or the read thread was shutdown. Run the
+				   loop again (ie: don't break). */
+			}
+			else if (res == ETIMEDOUT) {
+				/* Timed out. */
+				bytes_read = 0;
+				break;
+			}
+			else {
+				/* Error. */
+				bytes_read = -1;
+				break;
+			}
+		}
 	}
 	else {
 		/* Purely non-blocking */
