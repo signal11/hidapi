@@ -22,6 +22,10 @@
 
 #include <windows.h>
 
+#ifndef _NTDEF_
+typedef LONG NTSTATUS;
+#endif
+
 #ifdef __MINGW32__
 #include <ntdef.h>
 #include <winbase.h>
