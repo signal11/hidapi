@@ -918,6 +918,12 @@ static int return_data(hid_device *dev, unsigned char *data, size_t length)
 	return len;
 }
 
+static void cleanup_mutex(void *param)
+{
+	hid_device *dev = param;
+	pthread_mutex_unlock(&dev->mutex);
+}
+
 
 int HID_API_EXPORT hid_read_timeout(hid_device *dev, unsigned char *data, size_t length, int milliseconds)
 {
@@ -931,6 +937,7 @@ int HID_API_EXPORT hid_read_timeout(hid_device *dev, unsigned char *data, size_t
 #endif
 
 	pthread_mutex_lock(&dev->mutex);
+	pthread_cleanup_push(&cleanup_mutex, dev);
 
 	/* There's an input report queued up. Return it. */
 	if (dev->input_reports) {
@@ -998,6 +1005,7 @@ int HID_API_EXPORT hid_read_timeout(hid_device *dev, unsigned char *data, size_t
 
 ret:
 	pthread_mutex_unlock(&dev->mutex);
+	pthread_cleanup_pop(0);
 
 	return bytes_read;
 }
