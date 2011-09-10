@@ -288,6 +288,15 @@ static void init_hid_manager(void)
 	IOHIDManagerOpen(hid_mgr, kIOHIDOptionsTypeNone);
 }
 
+int HID_API_EXPORT hid_init(void)
+{
+	return 0;
+}
+
+int HID_API_EXPORT hid_exit(void)
+{
+	return 0;
+}
 
 struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, unsigned short product_id)
 {
@@ -503,7 +512,7 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 		len = make_path(os_dev, cbuf, sizeof(cbuf));
 		if (!strcmp(cbuf, path)) {
 			// Matched Paths. Open this Device.
-			IOReturn ret = IOHIDDeviceOpen(os_dev, kIOHIDOptionsTypeNone);
+			IOReturn ret = IOHIDDeviceOpen(os_dev, kIOHIDOptionsTypeSeizeDevice);
 			if (ret == kIOReturnSuccess) {
 				char str[32];
 				CFIndex max_input_report_len;
@@ -742,7 +751,7 @@ void HID_API_EXPORT hid_close(hid_device *dev)
 	   been unplugged. If it's been unplugged, then calling
 	   IOHIDDeviceClose() will crash. */
 	if (!dev->disconnected) {
-		IOHIDDeviceClose(dev->device_handle, kIOHIDOptionsTypeNone);
+		IOHIDDeviceClose(dev->device_handle, kIOHIDOptionsTypeSeizeDevice);
 	}
 
 	free_hid_device(dev);
