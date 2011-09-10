@@ -178,6 +178,8 @@ int main(int argc, char* argv[])
 		printf("%02hhx ", buf[i]);
 	printf("\n");
 
+	hid_close(handle);
+
 #ifdef WIN32
 	system("pause");
 #endif
