@@ -75,16 +75,32 @@ It can be downloaded from github
 
 Build Instructions
 -------------------
-Windows:
-  Build the .sln file in the windows/ directory.
-Linux:
-  cd to the linux/ directory and run make.
-Mac OS X:
-  cd to the mac/ directory and run make.
+To build the console test program:
+  Windows:
+    Build the .sln file in the windows/ directory.
+  Linux:
+    cd to the linux/ directory and run make.
+  Mac OS X:
+    cd to the mac/ directory and run make.
 
 To build the Test GUI:
-  On Windows, build the .sln file in the hidtest/ directory.
-  On Linux and Mac, run make from the hidtest/ directory.
+  The test GUI uses Fox toolkit, available from www.fox-toolkit.org.
+  On Debian-based systems such as Ubuntu, install Fox using the following:
+	sudo apt-get install libfox-1.6-dev
+  On Mac OSX, install Fox from ports:
+	sudo port install fox
+  On Windows, download the hidapi-externals.zip file from the main download
+  site and extract it just outside of hidapi, so that hidapi-externals and
+  hidapi are on the same level, as shown:
+
+     Parent_Folder
+       |
+       +hidapi
+       +hidapi-externals
+
+  Then to build:
+    On Windows, build the .sln file in the testgui/ directory.
+    On Linux and Mac, run make from the testgui/ directory.
 
 To build using the DDK (old method):
 
@@ -98,3 +114,4 @@ To build using the DDK (old method):
 
 Signal 11 Software - 2010-04-11
                      2010-07-28
+                     2011-09-10
