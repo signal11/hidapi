@@ -203,6 +203,17 @@ end:
 	return ret;
 }
 
+int HID_API_EXPORT hid_init(void)
+{
+	/* Nothing to do for this in the Linux/hidraw implementation. */
+	return 0;
+}
+
+int HID_API_EXPORT hid_exit(void)
+{
+	/* Nothing to do for this in the Linux/hidraw implementation. */
+	return 0;
+}
 
 struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, unsigned short product_id)
 {
