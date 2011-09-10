@@ -34,7 +34,9 @@
 
 //#define HIDAPI_USE_DDK
 
+#ifdef __cplusplus
 extern "C" {
+#endif
 	#include <setupapi.h>
 	#include "WinIoCTL.h"
 	#ifdef HIDAPI_USE_DDK
@@ -46,7 +48,10 @@ extern "C" {
 		CTL_CODE(FILE_DEVICE_KEYBOARD, (id), METHOD_OUT_DIRECT, FILE_ANY_ACCESS)
 	#define IOCTL_HID_GET_FEATURE                   HID_OUT_CTL_CODE(100)
 
-}
+#ifdef __cplusplus
+} // extern "C"
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -58,7 +63,9 @@ extern "C" {
 	#pragma warning(disable:4996)
 #endif
 
+#ifdef __cplusplus
 extern "C" {
+#endif
 
 #ifndef HIDAPI_USE_DDK
 	// Since we're not building with the DDK, and the HID header
@@ -125,7 +132,7 @@ static hid_device *new_hid_device()
 {
 	hid_device *dev = (hid_device*) calloc(1, sizeof(hid_device));
 	dev->device_handle = INVALID_HANDLE_VALUE;
-	dev->blocking = true;
+	dev->blocking = TRUE;
 	dev->input_report_length = 0;
 	dev->last_error_str = NULL;
 	dev->last_error_num = 0;
@@ -187,7 +194,7 @@ static void lookup_functions()
 		//FreeLibrary(lib);
 #undef RESOLVE
 	}
-	initialized = true;
+	initialized = TRUE;
 }
 #endif
 
@@ -228,31 +235,32 @@ struct hid_device_info HID_API_EXPORT * HID_API_CALL hid_enumerate(unsigned shor
 	struct hid_device_info *root = NULL; // return object
 	struct hid_device_info *cur_dev = NULL;
 
-#ifndef HIDAPI_USE_DDK
-	if (!initialized)
-		lookup_functions();
-#endif
-
 	// Windows objects for interacting with the driver.
 	GUID InterfaceClassGuid = {0x4d1e55b2, 0xf16f, 0x11cf, {0x88, 0xcb, 0x00, 0x11, 0x11, 0x00, 0x00, 0x30} };
 	SP_DEVINFO_DATA devinfo_data;
 	SP_DEVICE_INTERFACE_DATA device_interface_data;
 	SP_DEVICE_INTERFACE_DETAIL_DATA_A *device_interface_detail_data = NULL;
 	HDEVINFO device_info_set = INVALID_HANDLE_VALUE;
+	int device_index = 0;
+
+#ifndef HIDAPI_USE_DDK
+	if (!initialized)
+		lookup_functions();
+#endif
 
 	// Initialize the Windows objects.
 	devinfo_data.cbSize = sizeof(SP_DEVINFO_DATA);
 	device_interface_data.cbSize = sizeof(SP_DEVICE_INTERFACE_DATA);
 
-
 	// Get information for all the devices belonging to the HID class.
 	device_info_set = SetupDiGetClassDevsA(&InterfaceClassGuid, NULL, NULL, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
 	
 	// Iterate over each device in the HID class, looking for the right one.
-	int device_index = 0;
+	
 	for (;;) {
 		HANDLE write_handle = INVALID_HANDLE_VALUE;
 		DWORD required_size = 0;
+		HIDD_ATTRIBUTES attrib;
 
 		res = SetupDiEnumDeviceInterfaces(device_info_set,
 			NULL,
@@ -310,7 +318,6 @@ struct hid_device_info HID_API_EXPORT * HID_API_CALL hid_enumerate(unsigned shor
 
 
 		// Get the Vendor ID and Product ID for this device.
-		HIDD_ATTRIBUTES attrib;
 		attrib.Size = sizeof(HIDD_ATTRIBUTES);
 		HidD_GetAttributes(write_handle, &attrib);
 		//wprintf(L"Product/Vendor: %x %x\n", attrib.ProductID, attrib.VendorID);
@@ -331,7 +338,7 @@ struct hid_device_info HID_API_EXPORT * HID_API_CALL hid_enumerate(unsigned shor
 			size_t len;
 
 			/* VID/PID match. Create the record. */
-			tmp = (hid_device_info*) calloc(1, sizeof(struct hid_device_info));
+			tmp = (struct hid_device_info*) calloc(1, sizeof(struct hid_device_info));
 			if (cur_dev) {
 				cur_dev->next = tmp;
 			}
@@ -832,5 +839,6 @@ int __cdecl main(int argc, char* argv[])
 }
 #endif
 
+#ifdef __cplusplus
 } // extern "C"
-
+#endif
