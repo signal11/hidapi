@@ -180,6 +180,9 @@ MainWindow::MainWindow(FXApp *app)
 
 MainWindow::~MainWindow()
 {
+	if (connected_device)
+		hid_close(connected_device);
+	hid_exit();
 	delete title_font;
 }
 
