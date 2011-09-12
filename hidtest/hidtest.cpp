@@ -180,6 +180,9 @@ int main(int argc, char* argv[])
 
 	hid_close(handle);
 
+	/* Free static HIDAPI objects. */
+	hid_exit();
+
 #ifdef WIN32
 	system("pause");
 #endif
