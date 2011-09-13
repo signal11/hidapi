@@ -118,6 +118,7 @@ extern "C" {
 	static HidD_FreePreparsedData_ HidD_FreePreparsedData;
 	static HidP_GetCaps_ HidP_GetCaps;
 
+	static HMODULE lib_handle = NULL;
 	static BOOLEAN initialized = FALSE;
 #endif // HIDAPI_USE_DDK
 
@@ -180,11 +181,11 @@ static void register_error(hid_device *device, const char *op)
 }
 
 #ifndef HIDAPI_USE_DDK
-static void lookup_functions()
+static int lookup_functions()
 {
-	HMODULE lib = LoadLibraryA("hid.dll");
-	if (lib) {
-#define RESOLVE(x) x = (x##_)GetProcAddress(lib, #x);
+	lib_handle = LoadLibraryA("hid.dll");
+	if (lib_handle) {
+#define RESOLVE(x) x = (x##_)GetProcAddress(lib_handle, #x); if (!x) return -1;
 		RESOLVE(HidD_GetAttributes);
 		RESOLVE(HidD_GetSerialNumberString);
 		RESOLVE(HidD_GetManufacturerString);
@@ -195,10 +196,10 @@ static void lookup_functions()
 		RESOLVE(HidD_GetPreparsedData);
 		RESOLVE(HidD_FreePreparsedData);
 		RESOLVE(HidP_GetCaps);
-		//FreeLibrary(lib);
 #undef RESOLVE
 	}
-	initialized = TRUE;
+	else
+		return -1;
 }
 #endif
 
@@ -233,6 +234,31 @@ static HANDLE open_device(const char *path)
 	return handle;
 }
 
+int HID_API_EXPORT hid_init(void)
+{
+#ifndef HIDAPI_USE_DDK
+	if (!initialized) {
+		if (lookup_functions() < 0) {
+			hid_exit();
+			return -1;
+		}
+		initialized = TRUE;
+	}
+#endif
+	return 0;
+}
+
+int HID_API_EXPORT hid_exit(void)
+{
+#ifndef HIDAPI_USE_DDK
+	if (lib_handle)
+		FreeLibrary(lib_handle);
+	lib_handle = NULL;
+	initialized = FALSE;
+#endif
+	return 0;
+}
+
 struct hid_device_info HID_API_EXPORT * HID_API_CALL hid_enumerate(unsigned short vendor_id, unsigned short product_id)
 {
 	BOOL res;
@@ -247,10 +273,8 @@ struct hid_device_info HID_API_EXPORT * HID_API_CALL hid_enumerate(unsigned shor
 	HDEVINFO device_info_set = INVALID_HANDLE_VALUE;
 	int device_index = 0;
 
-#ifndef HIDAPI_USE_DDK
-	if (!initialized)
-		lookup_functions();
-#endif
+	if (hid_init() < 0)
+		return NULL;
 
 	// Initialize the Windows objects.
 	devinfo_data.cbSize = sizeof(SP_DEVINFO_DATA);
@@ -500,10 +524,9 @@ HID_API_EXPORT hid_device * HID_API_CALL hid_open_path(const char *path)
 	BOOLEAN res;
 	NTSTATUS nt_res;
 
-#ifndef HIDAPI_USE_DDK
-	if (!initialized)
-		lookup_functions();
-#endif
+	if (hid_init() < 0) {
+		return NULL;
+	}
 
 	dev = new_hid_device();
 
