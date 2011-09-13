@@ -8,14 +8,37 @@ with USB and Bluetooth HID-Class devices on Windows, Linux, and Mac OS X.
 On Windows, a DLL is built.  On other platforms (and optionally on Windows),
 the single source file can simply be dropped into a target application.
 
+HIDAPI has four back-ends:
+	* Windows (using hid.dll)
+	* Linux/hidraw (using the Kernel's hidraw driver)
+	* Linux/libusb (using libusb-1.0)
+	* Mac (using IOHidManager)
+
+On Linux, either the hidraw or the libusb back-end can be used. There are
+tradeoffs, and the functionality supported is slightly different.
+
+Linux/hidraw (linux/hid.c):
+This back-end uses the hidraw interface in the Linux kernel.  While this
+back-end will support both USB and Bluetooth, it has some limitations on
+kernels prior to 2.6.39, including the inability to send or receive feature
+reports.  In addition, it will only communicate with devices which have
+hidraw nodes associated with them.  Keyboards, mice, and some other devices
+which are blacklisted from having hidraw nodes will not work. Fortunately,
+for nearly all the uses of hidraw, this is not a problem.
+
+Linux/libusb (linux/hid-libusb.c):
+This back-end uses libusb-1.0 to communicate directly to a USB device. This
+back-end will of course not work with Bluetooth devices.
+
 What Does the API Look Like?
 -----------------------------
-The API wraps the functionality of the most commonly used of the hid.dll
-functions.  The sample program, which communicates with the USB Generic HID
-sample which is part of the Microchip Application Library (in folder
-"Microchip Solutions\USB Device - HID - Custom Demos\Generic HID - Firmware"
-when the Microchip Application Framework is installed), looks like this
-(with error checking removed for simplicity):
+The API provides the the most commonly used HID functions including sending
+and receiving of input, output, and feature reports.  The sample program,
+which communicates with the USB Generic HID sample which is part of the
+Microchip Application Library (in folder "Microchip Solutions\USB Device
+- HID - Custom Demos\Generic HID - Firmware" when the Microchip Application
+Framework is installed), looks like this (with error checking removed for
+simplicity):
 
 #include <windows.h>
 #include <stdio.h>
@@ -74,8 +97,7 @@ int main(int argc, char* argv[])
 
 License
 --------
-HIDAPI may be used by anyone for any reason so long as the coypright header
-in the source code remains intact.
+HIDAPI may be used by one of three licenses as outlined in LICENSE.txt.
 
 Download
 ---------
