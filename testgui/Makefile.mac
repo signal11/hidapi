@@ -11,10 +11,11 @@ all: testgui
 CC=gcc
 CXX=g++
 COBJS=../mac/hid.o
-CPPOBJS=test.o mac_support.o
-OBJS=$(COBJS) $(CPPOBJS)
+CPPOBJS=test.o
+OBJCOBJS=mac_support_cocoa.o
+OBJS=$(COBJS) $(CPPOBJS) $(OBJCOBJS)
 CFLAGS=-I../hidapi -Wall -g -c `fox-config --cflags`
-LIBS=`fox-config --libs` -framework IOKit -framework CoreFoundation -framework Carbon
+LIBS=`fox-config --libs` -framework IOKit -framework CoreFoundation -framework Cocoa
 
 
 testgui: $(OBJS)
@@ -29,7 +30,11 @@ $(COBJS): %.o: %.c
 $(CPPOBJS): %.o: %.cpp
 	$(CXX) $(CFLAGS) $< -o $@
 
+$(OBJCOBJS): %.o: %.m
+	$(CXX) $(CFLAGS) -x objective-c++ $< -o $@
+
+
 clean:
-	rm *.o testgui
+	rm $(OBJS) testgui
 
 .PHONY: clean
