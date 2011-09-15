@@ -330,7 +330,7 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 				   hid_dev,
 				   "usb",
 				   "usb_interface");
-			if (dev) {
+			if (intf_dev) {
 				str = udev_device_get_sysattr_value(intf_dev, "bInterfaceNumber");
 				cur_dev->interface_number = (str)? strtol(str, NULL, 16): -1;
 			}
