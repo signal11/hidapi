@@ -322,8 +322,16 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 			str = udev_device_get_sysattr_value(dev, "bcdDevice");
 			cur_dev->release_number = (str)? strtol(str, NULL, 16): 0x0;
 			
-			/* Interface Number (Unsupported on Linux/hidraw) */
+			/* Interface Number */
 			cur_dev->interface_number = -1;
+			dev = udev_device_get_parent_with_subsystem_devtype(
+				   hid_dev,
+				   "usb",
+				   "usb_interface");
+			if (dev) {
+				str = udev_device_get_sysattr_value(dev, "bInterfaceNumber");
+				cur_dev->interface_number = (str)? strtol(str, NULL, 16): -1;
+			}
 
 		}
 		else
