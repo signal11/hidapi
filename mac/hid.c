@@ -667,6 +667,10 @@ static void *read_thread(void *param)
 		}
 	}
 
+	/* Wake up any threads blocking in hid_read*()
+	   so they don't block forever. */
+	pthread_cond_broadcast(&dev->condition);
+
 	/* Close the OS handle to the device, but only if it's not
 	   been unplugged. If it's been unplugged, then calling
 	   IOHIDDeviceClose() will crash. */
@@ -821,6 +825,9 @@ static int cond_wait(const hid_device *dev, pthread_cond_t *cond, pthread_mutex_
 		   data in the queue before returning, and if not, go back
 		   to sleep. See the pthread_cond_timedwait() man page for
 		   details. */
+		
+		if (dev->shutdown_thread || dev->disconnected)
+			return -1;
 	}
 	
 	return 0;
@@ -838,6 +845,9 @@ static int cond_timedwait(const hid_device *dev, pthread_cond_t *cond, pthread_m
 		   data in the queue before returning, and if not, go back
 		   to sleep. See the pthread_cond_timedwait() man page for
 		   details. */
+		
+		if (dev->shutdown_thread || dev->disconnected)
+			return -1;
 	}
 	
 	return 0;
@@ -876,8 +886,14 @@ int HID_API_EXPORT hid_read_timeout(hid_device *dev, unsigned char *data, size_t
 	
 	if (milliseconds == -1) {
 		/* Blocking */
-		cond_wait(dev, &dev->condition, &dev->mutex);
-		bytes_read = return_data(dev, data, length);
+		int res;
+		res = cond_wait(dev, &dev->condition, &dev->mutex);
+		if (res == 0)
+			bytes_read = return_data(dev, data, length);
+		else {
+			/* There was an error, or a device disconnection. */
+			bytes_read = -1;
+		}
 	}
 	else if (milliseconds > 0) {
 		/* Non-blocking, but called with timeout. */
@@ -896,8 +912,10 @@ int HID_API_EXPORT hid_read_timeout(hid_device *dev, unsigned char *data, size_t
 		res = cond_timedwait(dev, &dev->condition, &dev->mutex, &ts);
 		if (res == 0)
 			bytes_read = return_data(dev, data, length);
-		else
+		else if (res == ETIMEDOUT)
 			bytes_read = 0;
+		else
+			bytes_read = -1;
 	}
 	else {
 		/* Purely non-blocking */
