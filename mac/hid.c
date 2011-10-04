@@ -667,9 +667,14 @@ static void *read_thread(void *param)
 		}
 	}
 
-	/* Wake up any threads blocking in hid_read*()
-	   so they don't block forever. */
+	/* Now that the read thread is stopping, Wake any threads which are
+	   waiting on data (in hid_read_timeout()). Do this under a mutex to
+	   make sure that a thread which is about to go to sleep waiting on
+	   the condition acutally will go to sleep before the condition is
+	   signaled. */
+	pthread_mutex_lock(&dev->mutex);
 	pthread_cond_broadcast(&dev->condition);
+	pthread_mutex_unlock(&dev->mutex);
 
 	/* Close the OS handle to the device, but only if it's not
 	   been unplugged. If it's been unplugged, then calling
@@ -972,13 +977,15 @@ void HID_API_EXPORT hid_close(hid_device *dev)
 		return;
 
 	/* Disconnect the report callback before close. */
-	IOHIDDeviceRegisterInputReportCallback(
-		dev->device_handle, dev->input_report_buf, dev->max_input_report_len,
-		NULL, dev);
-	IOHIDManagerRegisterDeviceRemovalCallback(hid_mgr, NULL, dev);
-	IOHIDDeviceUnscheduleFromRunLoop(dev->device_handle, dev->run_loop, dev->run_loop_mode);
-	IOHIDDeviceScheduleWithRunLoop(dev->device_handle, CFRunLoopGetMain(), kCFRunLoopDefaultMode);
-
+	if (!dev->disconnected) {
+		IOHIDDeviceRegisterInputReportCallback(
+			dev->device_handle, dev->input_report_buf, dev->max_input_report_len,
+			NULL, dev);
+		IOHIDManagerRegisterDeviceRemovalCallback(hid_mgr, NULL, dev);
+		IOHIDDeviceUnscheduleFromRunLoop(dev->device_handle, dev->run_loop, dev->run_loop_mode);
+		IOHIDDeviceScheduleWithRunLoop(dev->device_handle, CFRunLoopGetMain(), kCFRunLoopDefaultMode);
+	}
+	
 	/* Cause read_thread() to stop. */
 	dev->shutdown_thread = 1;
 	
