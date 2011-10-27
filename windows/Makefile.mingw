@@ -10,8 +10,8 @@ all: hidtest
 
 CC=gcc
 CXX=g++
-COBJS=
-CPPOBJS=../hidtest/hidtest.o hid.o
+COBJS=hid.o
+CPPOBJS=../hidtest/hidtest.o
 OBJS=$(COBJS) $(CPPOBJS)
 CFLAGS=-I../hidapi -g -c
 LIBS= -lsetupapi

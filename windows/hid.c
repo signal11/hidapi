@@ -200,6 +200,8 @@ static int lookup_functions()
 	}
 	else
 		return -1;
+
+	return 0;
 }
 #endif
 
