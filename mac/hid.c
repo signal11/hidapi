@@ -378,7 +378,11 @@ static int init_hid_manager(void)
 	IOHIDManagerSetDeviceMatching(hid_mgr, NULL);
 	IOHIDManagerScheduleWithRunLoop(hid_mgr, CFRunLoopGetCurrent(), kCFRunLoopDefaultMode);
 	res = IOHIDManagerOpen(hid_mgr, kIOHIDOptionsTypeNone);
-	return (res == kIOReturnSuccess)? 0: -1;
+	if(res == kIOReturnSuccess)
+		return 0;
+	
+	fprintf(stderr, "IOReturn error code: 0x%x\n", err_get_code(res));
+	return -1;
 }
 
 int HID_API_EXPORT hid_init(void)
@@ -414,7 +418,8 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 	setlocale(LC_ALL,"");
 
 	/* Set up the HID Manager if it hasn't been done */
-	hid_init();
+	if(hid_init() < 0)
+		return NULL;
 	
 	/* Get a list of the Devices */
 	CFSetRef device_set = IOHIDManagerCopyDevices(hid_mgr);
@@ -700,7 +705,8 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 	dev = new_hid_device();
 
 	/* Set up the HID Manager if it hasn't been done */
-	hid_init();
+	if(hid_init() < 0)
+		return NULL;
 
 	CFSetRef device_set = IOHIDManagerCopyDevices(hid_mgr);
 	
