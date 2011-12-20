@@ -6,7 +6,7 @@
 # 2010-06-01
 ###########################################
 
-all: hidtest
+all: hidtest lib
 
 CC       ?= gcc
 CFLAGS   ?= -Wall -g
@@ -20,6 +20,10 @@ OBJS      = $(COBJS) $(CPPOBJS)
 LIBS      = `pkg-config libusb-1.0 libudev --libs`
 INCLUDES ?= -I../hidapi `pkg-config libusb-1.0 --cflags`
 
+lib: libhidapi.so
+
+libhidapi.so: hid-libusb.c ../hidapi/hidapi.h
+	$(CC) $(CFLAGS) $(INCLUDES) $(LDFLAGS) $(LIBS) -shared -fpic $^ -o libhidapi.so
 
 hidtest: $(OBJS)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) $^ $(LIBS) -o hidtest
@@ -31,6 +35,6 @@ $(CPPOBJS): %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $(INCLUDES) $< -o $@
 
 clean:
-	rm -f $(OBJS) hidtest
+	rm -f $(OBJS) hidtest libhidapi.so
 
 .PHONY: clean
