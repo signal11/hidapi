@@ -101,12 +101,12 @@ struct input_report {
 };
 
 struct hid_device_ {
-	IOHIDDeviceRef device_handle;
-	int blocking;
+	volatile IOHIDDeviceRef device_handle;
+	volatile int blocking;
 	int uses_numbered_reports;
-	int disconnected;
+	volatile int disconnected;
 	CFStringRef run_loop_mode;
-	CFRunLoopRef run_loop;
+	volatile CFRunLoopRef run_loop;
 	CFRunLoopSourceRef source;
 	uint8_t *input_report_buf;
 	CFIndex max_input_report_len;
@@ -117,7 +117,7 @@ struct hid_device_ {
 	pthread_cond_t condition;
 	pthread_barrier_t barrier; /* Ensures correct startup sequence */
 	pthread_barrier_t shutdown_barrier; /* Ensures correct shutdown sequence */
-	int shutdown_thread;
+	volatile int shutdown_thread;
 	
 	hid_device *next;
 };
@@ -698,7 +698,9 @@ static void *read_thread(void *param)
 	   been unplugged. If it's been unplugged, then calling
 	   IOHIDDeviceClose() will crash. */
 	if (!dev->disconnected) {
-		IOHIDDeviceClose(dev->device_handle, kIOHIDOptionsTypeNone);
+		if (dev->device_handle) {
+			IOHIDDeviceRegisterInputReportCallback(dev->device_handle, NULL, 0, NULL, NULL);
+		}
 	}
 	
 	/* Wait here until hid_close() is called and makes it past
@@ -995,11 +997,9 @@ void HID_API_EXPORT hid_close(hid_device *dev)
 		return;
 
 	/* Disconnect the report callback before close. */
-	if (!dev->disconnected) {
-		IOHIDDeviceRegisterInputReportCallback(
-			dev->device_handle, dev->input_report_buf, dev->max_input_report_len,
-			NULL, dev);
-		IOHIDManagerRegisterDeviceRemovalCallback(hid_mgr, NULL, dev);
+	if (!dev->disconnected && dev->device_handle) {
+		IOHIDDeviceRegisterInputReportCallback(dev->device_handle, NULL, 0, NULL, NULL);
+		IOHIDManagerRegisterDeviceRemovalCallback(hid_mgr, NULL, NULL);
 		IOHIDDeviceUnscheduleFromRunLoop(dev->device_handle, dev->run_loop, dev->run_loop_mode);
 		IOHIDDeviceScheduleWithRunLoop(dev->device_handle, CFRunLoopGetMain(), kCFRunLoopDefaultMode);
 	}
@@ -1021,7 +1021,11 @@ void HID_API_EXPORT hid_close(hid_device *dev)
 	   been unplugged. If it's been unplugged, then calling
 	   IOHIDDeviceClose() will crash. */
 	if (!dev->disconnected) {
-		IOHIDDeviceClose(dev->device_handle, kIOHIDOptionsTypeNone);
+		if (dev->device_handle) {
+			IOHIDDeviceRef dev_handle = dev->device_handle;
+			dev->device_handle = NULL;
+			IOHIDDeviceClose(dev_handle, kIOHIDOptionsTypeNone);
+		}
 	}
 	
 	/* Clear out the queue of received reports. */
