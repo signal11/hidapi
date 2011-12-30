@@ -638,6 +638,7 @@ int HID_API_EXPORT HID_API_CALL hid_read_timeout(hid_device *dev, unsigned char 
 	if (!dev->read_pending) {
 		// Start an Overlapped I/O read.
 		dev->read_pending = TRUE;
+		memset(dev->read_buf, 0, dev->input_report_length);
 		ResetEvent(ev);
 		res = ReadFile(dev->device_handle, dev->read_buf, dev->input_report_length, &bytes_read, &dev->ol);
 		
@@ -676,12 +677,15 @@ int HID_API_EXPORT HID_API_CALL hid_read_timeout(hid_device *dev, unsigned char 
 			   number (0x0) on the beginning of the report anyway. To make this
 			   work like the other platforms, and to make it work more like the
 			   HID spec, we'll skip over this byte. */
+			size_t copy_len;
 			bytes_read--;
-			memcpy(data, dev->read_buf+1, length);
+			copy_len = length > bytes_read ? bytes_read : length;
+			memcpy(data, dev->read_buf+1, copy_len);
 		}
 		else {
 			/* Copy the whole buffer, report number and all. */
-			memcpy(data, dev->read_buf, length);
+			size_t copy_len = length > bytes_read ? bytes_read : length;
+			memcpy(data, dev->read_buf, copy_len);
 		}
 	}
 	
