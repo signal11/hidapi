@@ -704,13 +704,6 @@ static void *read_thread(void *param)
 	pthread_cond_broadcast(&dev->condition);
 	pthread_mutex_unlock(&dev->mutex);
 
-	/* Close the OS handle to the device, but only if it's not
-	   been unplugged. If it's been unplugged, then calling
-	   IOHIDDeviceClose() will crash. */
-	if (!dev->disconnected) {
-		IOHIDDeviceClose(dev->device_handle, kIOHIDOptionsTypeNone);
-	}
-	
 	/* Wait here until hid_close() is called and makes it past
 	   the call to CFRunLoopWakeUp(). This thread still needs to
 	   be valid when that function is called on the other thread. */
