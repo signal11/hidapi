@@ -125,6 +125,7 @@ extern "C" {
 struct hid_device_ {
 		HANDLE device_handle;
 		BOOL blocking;
+		USHORT output_report_length;
 		size_t input_report_length;
 		void *last_error_str;
 		DWORD last_error_num;
@@ -138,6 +139,7 @@ static hid_device *new_hid_device()
 	hid_device *dev = (hid_device*) calloc(1, sizeof(hid_device));
 	dev->device_handle = INVALID_HANDLE_VALUE;
 	dev->blocking = TRUE;
+	dev->output_report_length = 0;
 	dev->input_report_length = 0;
 	dev->last_error_str = NULL;
 	dev->last_error_num = 0;
@@ -553,6 +555,7 @@ HID_API_EXPORT hid_device * HID_API_CALL hid_open_path(const char *path)
 		register_error(dev, "HidP_GetCaps");	
 		goto err_pp_data;
 	}
+	dev->output_report_length = caps.OutputReportByteLength;
 	dev->input_report_length = caps.InputReportByteLength;
 	HidD_FreePreparsedData(pp_data);
 
@@ -574,15 +577,35 @@ int HID_API_EXPORT HID_API_CALL hid_write(hid_device *dev, const unsigned char *
 	BOOL res;
 
 	OVERLAPPED ol;
+	unsigned char *buf;
 	memset(&ol, 0, sizeof(ol));
 
-	res = WriteFile(dev->device_handle, data, length, NULL, &ol);
+	/* Make sure the right number of bytes are passed to WriteFile. Windows
+	   expects the number of bytes which are in the _longest_ report (plus
+	   one for the report number) bytes even if the data is a report
+	   which is shorter than that. Windows gives us this value in
+	   caps.OutputReportByteLength. If a user passes in fewer bytes than this,
+	   create a temporary buffer which is the proper size. */
+	if (length >= dev->output_report_length) {
+		/* The user passed the right number of bytes. Use the buffer as-is. */
+		buf = (unsigned char *) data;
+	} else {
+		/* Create a temporary buffer and copy the user's data
+		   into it, padding the rest with zeros. */
+		buf = (unsigned char *) malloc(dev->output_report_length);
+		memcpy(buf, data, length);
+		memset(buf + length, 0, dev->output_report_length - length);
+		length = dev->output_report_length;
+	}
+
+	res = WriteFile(dev->device_handle, buf, length, NULL, &ol);
 	
 	if (!res) {
 		if (GetLastError() != ERROR_IO_PENDING) {
 			// WriteFile() failed. Return error.
 			register_error(dev, "WriteFile");
-			return -1;
+			bytes_written = -1;
+			goto end_of_function;
 		}
 	}
 
@@ -592,8 +615,13 @@ int HID_API_EXPORT HID_API_CALL hid_write(hid_device *dev, const unsigned char *
 	if (!res) {
 		// The Write operation failed.
 		register_error(dev, "WriteFile");
-		return -1;
+		bytes_written = -1;
+		goto end_of_function;
 	}
+
+end_of_function:
+	if (buf != data)
+		free(buf);
 
 	return bytes_written;
 }
