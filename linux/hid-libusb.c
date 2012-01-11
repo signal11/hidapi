@@ -107,6 +107,7 @@ struct hid_device_ {
 };
 
 static int initialized = 0;
+static libusb_context *usbcontext = NULL;
 
 uint16_t get_usb_code_for_current_locale(void);
 static int return_data(hid_device *dev, unsigned char *data, size_t length);
@@ -385,7 +386,7 @@ static char *make_path(libusb_device *dev, int interface_number)
 int HID_API_EXPORT hid_init(void)
 {
 	if (!initialized) {
-		if (libusb_init(NULL))
+		if (libusb_init(&usbcontext))
 			return -1;
 		initialized = 1;
 	}
@@ -396,7 +397,8 @@ int HID_API_EXPORT hid_init(void)
 int HID_API_EXPORT hid_exit(void)
 {
 	if (initialized) {
-		libusb_exit(NULL);
+		libusb_exit(usbcontext);
+		usbcontext = NULL;
 		initialized = 0;
 	}
 
@@ -419,7 +421,7 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 	if (!initialized)
 		hid_init();
 
-	num_devs = libusb_get_device_list(NULL, &devs);
+	num_devs = libusb_get_device_list(usbcontext, &devs);
 	if (num_devs < 0)
 		return NULL;
 	while ((dev = devs[i++]) != NULL) {
@@ -702,7 +704,7 @@ static void *read_thread(void *param)
 	/* Handle all the events. */
 	while (!dev->shutdown_thread) {
 		int res;
-		res = libusb_handle_events(NULL);
+		res = libusb_handle_events(usbcontext);
 		if (res < 0) {
 			/* There was an error. Break out of this loop. */
 			break;
@@ -713,7 +715,7 @@ static void *read_thread(void *param)
 	   if no transfers are pending, but that's OK. */
 	if (libusb_cancel_transfer(dev->transfer) == 0) {
 		/* The transfer was cancelled, so wait for its completion. */
-		libusb_handle_events(NULL);
+		libusb_handle_events(usbcontext);
 	}
 	
 	/* Now that the read thread is stopping, Wake any threads which are
@@ -755,7 +757,7 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 	if (!initialized)
 		hid_init();
 
-	num_devs = libusb_get_device_list(NULL, &devs);
+	num_devs = libusb_get_device_list(usbcontext, &devs);
 	while ((usb_dev = devs[d++]) != NULL) {
 		struct libusb_device_descriptor desc;
 		struct libusb_config_descriptor *conf_desc = NULL;
