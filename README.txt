@@ -34,11 +34,11 @@ What Does the API Look Like?
 -----------------------------
 The API provides the the most commonly used HID functions including sending
 and receiving of input, output, and feature reports.  The sample program,
-which communicates with the USB Generic HID sample which is part of the
-Microchip Application Library (in folder "Microchip Solutions\USB Device
-- HID - Custom Demos\Generic HID - Firmware" when the Microchip Application
-Framework is installed), looks like this (with error checking removed for
-simplicity):
+which communicates with a heavily modified version the USB Generic HID
+sample which is part of the Microchip Application Library (in folder
+"Microchip Solutions\USB Device - HID - Custom Demos\Generic HID - Firmware"
+when the Microchip Application Framework is installed), looks like this
+(with error checking removed for simplicity):
 
 #include <windows.h>
 #include <stdio.h>
