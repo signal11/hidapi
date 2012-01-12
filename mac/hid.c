@@ -734,6 +734,9 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 	/* give the IOHIDManager a chance to update itself */
 	process_pending_events();
 
+	/* give the IOHIDManager a chance to update itself */
+	process_pending_events();
+
 	CFSetRef device_set = IOHIDManagerCopyDevices(hid_mgr);
 	
 	num_devices = CFSetGetCount(device_set);
