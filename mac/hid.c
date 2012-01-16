@@ -387,26 +387,32 @@ static int make_path(IOHIDDeviceRef device, char *buf, size_t len)
 	return res+1;
 }
 
+/* Initialize the IOHIDManager. Return 0 for success and -1 for failure. */
 static int init_hid_manager(void)
 {
 	IOReturn res;
 	
 	/* Initialize all the HID Manager Objects */
 	hid_mgr = IOHIDManagerCreate(kCFAllocatorDefault, kIOHIDOptionsTypeNone);
-	IOHIDManagerSetDeviceMatching(hid_mgr, NULL);
-	IOHIDManagerScheduleWithRunLoop(hid_mgr, CFRunLoopGetCurrent(), kCFRunLoopDefaultMode);
-	res = IOHIDManagerOpen(hid_mgr, kIOHIDOptionsTypeNone);
-	return (res == kIOReturnSuccess)? 0: -1;
+	if (hid_mgr) {
+		IOHIDManagerSetDeviceMatching(hid_mgr, NULL);
+		IOHIDManagerScheduleWithRunLoop(hid_mgr, CFRunLoopGetCurrent(), kCFRunLoopDefaultMode);
+		return 0;
+	}
+	
+	return -1;
 }
 
+/* Initialize the IOHIDManager if necessary. This is the public function, and
+   it is safe to call this function repeatedly. Return 0 for success and -1
+   for failure. */
 int HID_API_EXPORT hid_init(void)
 {
 	if (!hid_mgr) {
-		if (init_hid_manager() < 0) {
-			hid_exit();
-			return -1;
-		}
+		return init_hid_manager();
 	}
+
+	/* Already initialized. */
 	return 0;
 }
 
@@ -439,7 +445,8 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 	setlocale(LC_ALL,"");
 
 	/* Set up the HID Manager if it hasn't been done */
-	hid_init();
+	if (hid_init() < 0)
+		return NULL;
 	
 	/* give the IOHIDManager a chance to update itself */
 	process_pending_events();
@@ -721,7 +728,8 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 	dev = new_hid_device();
 
 	/* Set up the HID Manager if it hasn't been done */
-	hid_init();
+	if (hid_init() < 0)
+		return NULL;
 
 	/* give the IOHIDManager a chance to update itself */
 	process_pending_events();
