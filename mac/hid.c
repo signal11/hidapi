@@ -118,8 +118,6 @@ struct hid_device_ {
 	pthread_barrier_t barrier; /* Ensures correct startup sequence */
 	pthread_barrier_t shutdown_barrier; /* Ensures correct shutdown sequence */
 	int shutdown_thread;
-	
-	hid_device *next;
 };
 
 static hid_device *new_hid_device(void)
@@ -135,7 +133,6 @@ static hid_device *new_hid_device(void)
 	dev->input_report_buf = NULL;
 	dev->input_reports = NULL;
 	dev->shutdown_thread = 0;
-	dev->next = NULL;
 
 	/* Thread objects */
 	pthread_mutex_init(&dev->mutex, NULL);
