@@ -207,33 +207,21 @@ static int lookup_functions()
 }
 #endif
 
-static HANDLE open_device(const char *path)
+static HANDLE open_device(const char *path, BOOL enumerate)
 {
 	HANDLE handle;
+	DWORD desired_access = (enumerate)? 0: (GENERIC_WRITE | GENERIC_READ);
+	DWORD share_mode = (enumerate)?
+	                      FILE_SHARE_READ|FILE_SHARE_WRITE:
+	                      FILE_SHARE_READ;
 
-	/* First, try to open with sharing mode turned off. This will make it so
-	   that a HID device can only be opened once. This is to be consistent
-	   with the behavior on the other platforms. */
 	handle = CreateFileA(path,
-		GENERIC_WRITE |GENERIC_READ,
-		0, /*share mode*/
+		desired_access,
+		share_mode,
 		NULL,
 		OPEN_EXISTING,
 		FILE_FLAG_OVERLAPPED,//FILE_ATTRIBUTE_NORMAL,
 		0);
-
-	if (handle == INVALID_HANDLE_VALUE) {
-		/* Couldn't open the device. Some devices must be opened
-		   with sharing enabled (even though they are only opened once),
-		   so try it here. */
-		handle = CreateFileA(path,
-			GENERIC_WRITE |GENERIC_READ,
-			FILE_SHARE_READ|FILE_SHARE_WRITE, /*share mode*/
-			NULL,
-			OPEN_EXISTING,
-			FILE_FLAG_OVERLAPPED,//FILE_ATTRIBUTE_NORMAL,
-			0);
-	}
 
 	return handle;
 }
@@ -339,7 +327,7 @@ struct hid_device_info HID_API_EXPORT * HID_API_CALL hid_enumerate(unsigned shor
 		//wprintf(L"HandleName: %s\n", device_interface_detail_data->DevicePath);
 
 		// Open a handle to the device
-		write_handle = open_device(device_interface_detail_data->DevicePath);
+		write_handle = open_device(device_interface_detail_data->DevicePath, TRUE);
 
 		// Check validity of write_handle.
 		if (write_handle == INVALID_HANDLE_VALUE) {
@@ -535,7 +523,7 @@ HID_API_EXPORT hid_device * HID_API_CALL hid_open_path(const char *path)
 	dev = new_hid_device();
 
 	// Open a handle to the device
-	dev->device_handle = open_device(path);
+	dev->device_handle = open_device(path, FALSE);
 
 	// Check validity of write_handle.
 	if (dev->device_handle == INVALID_HANDLE_VALUE) {
