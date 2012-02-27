@@ -409,17 +409,22 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 	libusb_device_handle *handle;
 	ssize_t num_devs;
 	int i = 0;
-	
+
 	struct hid_device_info *root = NULL; // return object
 	struct hid_device_info *cur_dev = NULL;
-	
+	char locale[64];
+	char *tmp = setlocale(LC_ALL, NULL);
+	strncpy(locale, tmp, 64);
+
 	setlocale(LC_ALL,"");
-	
+
 	hid_init();
 
 	num_devs = libusb_get_device_list(usb_context, &devs);
-	if (num_devs < 0)
+	if (num_devs < 0) {
+		setlocale(LC_ALL, locale);
 		return NULL;
+	}
 	while ((dev = devs[i++]) != NULL) {
 		struct libusb_device_descriptor desc;
 		struct libusb_config_descriptor *conf_desc = NULL;
@@ -429,7 +434,7 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 		int res = libusb_get_device_descriptor(dev, &desc);
 		unsigned short dev_vid = desc.idVendor;
 		unsigned short dev_pid = desc.idProduct;
-		
+
 		/* HID's are defined at the interface level. */
 		if (desc.bDeviceClass != LIBUSB_CLASS_PER_INTERFACE)
 			continue;
@@ -560,6 +565,7 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 	}
 
 	libusb_free_device_list(devs, 1);
+	setlocale(LC_ALL, locale);
 
 	return root;
 }

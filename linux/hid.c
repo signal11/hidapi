@@ -163,13 +163,17 @@ static int get_device_string(hid_device *dev, const char *key, wchar_t *string, 
 	struct udev_device *udev_dev, *parent;
 	struct stat s;
 	int ret = -1;
-	
+	char locale[64];
+	char *tmp = setlocale(LC_ALL, NULL);
+	strncpy(locale, tmp, 64);
+
 	setlocale(LC_ALL,"");
 
 	/* Create the udev object */
 	udev = udev_new();
 	if (!udev) {
 		printf("Can't create udev\n");
+		setlocale(LC_ALL, locale);
 		return -1;
 	}
 
@@ -199,6 +203,7 @@ end:
 	// parent doesn't need to be (and can't be) unref'd.
 	// I'm not sure why, but it'll throw double-free() errors.
 	udev_unref(udev);
+	setlocale(LC_ALL, locale);
 
 	return ret;
 }
