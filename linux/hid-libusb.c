@@ -385,8 +385,16 @@ static char *make_path(libusb_device *dev, int interface_number)
 int HID_API_EXPORT hid_init(void)
 {
 	if (!usb_context) {
+		const char *locale;
+
+		/* Init Libusb */
 		if (libusb_init(&usb_context))
 			return -1;
+
+		/* Set the locale if it's not set. */
+		locale = setlocale(LC_CTYPE, NULL);
+		if (!locale)
+			setlocale(LC_CTYPE, "");
 	}
 
 	return 0;
@@ -412,8 +420,6 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 	
 	struct hid_device_info *root = NULL; // return object
 	struct hid_device_info *cur_dev = NULL;
-	
-	setlocale(LC_ALL,"");
 	
 	hid_init();
 
