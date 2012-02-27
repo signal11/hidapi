@@ -441,13 +441,18 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 	struct hid_device_info *cur_dev = NULL;
 	CFIndex num_devices;
 	int i;
-	
+	char locale[64];
+	char *tmp = setlocale(LC_ALL, NULL);
+	strncpy(locale, tmp, 64);
+
 	setlocale(LC_ALL,"");
 
 	/* Set up the HID Manager if it hasn't been done */
-	if (hid_init() < 0)
+	if (hid_init() < 0) {
+		setlocale(LC_ALL, locale);
 		return NULL;
-	
+	}
+
 	/* give the IOHIDManager a chance to update itself */
 	process_pending_events();
 
@@ -521,10 +526,11 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 			cur_dev->interface_number = -1;
 		}
 	}
-	
+
 	free(device_array);
 	CFRelease(device_set);
-	
+	setlocale(LC_ALL, locale);
+
 	return root;
 }
 
