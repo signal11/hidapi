@@ -754,8 +754,6 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 	int d = 0;
 	int good_open = 0;
 	
-	setlocale(LC_ALL,"");
-	
 	hid_init();
 
 	num_devs = libusb_get_device_list(usb_context, &devs);
