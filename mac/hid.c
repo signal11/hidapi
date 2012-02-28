@@ -291,10 +291,10 @@ static int get_string_property(IOHIDDeviceRef device, CFStringRef prop, wchar_t 
 			&used_buf_len);
 
 		buf[chars_copied] = 0;
-		return chars_copied;
+		return 0;
 	}
 	else
-		return 0;
+		return -1;
 		
 }
 
