@@ -337,7 +337,7 @@ static wchar_t *get_usb_string(libusb_device_handle *dev, uint8_t idx)
 	
 	buf[sizeof(buf)-1] = '\0';
 	
-	if (len+1 < sizeof(buf))
+	if ((unsigned)(len+1) < sizeof(buf))
 		buf[len+1] = '\0';
 	
 	/* Initialize iconv. */
@@ -745,18 +745,19 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 {
 	hid_device *dev = NULL;
 
-	dev = new_hid_device();
-
 	libusb_device **devs;
 	libusb_device *usb_dev;
-	ssize_t num_devs;
+	/*ssize_t num_devs;*/
 	int res;
 	int d = 0;
 	int good_open = 0;
 	
+	dev = new_hid_device();
+
 	hid_init();
 
-	num_devs = libusb_get_device_list(usb_context, &devs);
+	/*num_devs = */
+	libusb_get_device_list(usb_context, &devs);
 	while ((usb_dev = devs[d++]) != NULL) {
 		struct libusb_device_descriptor desc;
 		struct libusb_config_descriptor *conf_desc = NULL;
@@ -1172,6 +1173,7 @@ int HID_API_EXPORT_CALL hid_get_indexed_string(hid_device *dev, int string_index
 
 HID_API_EXPORT const wchar_t * HID_API_CALL  hid_error(hid_device *dev)
 {
+	(void) dev;
 	return NULL;
 }
 
@@ -1325,6 +1327,7 @@ uint16_t get_usb_code_for_current_locale(void)
 	char *locale;
 	char search_string[64];
 	char *ptr;
+	struct lang_map_entry *lang;
 	
 	/* Get the current locale. */
 	locale = setlocale(0, NULL);
@@ -1347,7 +1350,7 @@ uint16_t get_usb_code_for_current_locale(void)
 	}
 
 	/* Find the entry which matches the string code of our locale. */
-	struct lang_map_entry *lang = lang_map;
+	lang = lang_map;
 	while (lang->string_code) {
 		if (!strcmp(lang->string_code, search_string)) {
 			return lang->usb_code;

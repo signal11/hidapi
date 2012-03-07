@@ -47,6 +47,7 @@ typedef struct pthread_barrier {
 
 static int pthread_barrier_init(pthread_barrier_t *barrier, const pthread_barrierattr_t *attr, unsigned int count)
 {
+	(void) attr;
 	if(count == 0) {
 		errno = EINVAL;
 		return -1;
@@ -170,11 +171,14 @@ static hid_device *new_hid_device(void)
 
 static void free_hid_device(hid_device *dev)
 {
+	struct input_report *rpt;
+	hid_device *d;
+
 	if (!dev)
 		return;
 	
 	/* Delete any input reports still left over. */
-	struct input_report *rpt = dev->input_reports;
+	rpt = dev->input_reports;
 	while (rpt) {
 		struct input_report *next = rpt->next;
 		free(rpt->data);
@@ -199,7 +203,7 @@ static void free_hid_device(hid_device *dev)
 
 	/* Remove it from the device list. */
 	pthread_mutex_lock(&device_list_mutex);
-	hid_device *d = device_list;
+	d = device_list;
 	if (d == dev) {
 		device_list = d->next;
 	}
@@ -273,14 +277,15 @@ static int get_string_property(IOHIDDeviceRef device, CFStringRef prop, wchar_t 
 	buf[0] = 0;
 
 	if (str) {
-		len --;
-
 		CFIndex str_len = CFStringGetLength(str);
 		CFRange range;
-		range.location = 0;
-		range.length = (str_len > len)? len: str_len;
 		CFIndex used_buf_len;
 		CFIndex chars_copied;
+
+		len --;
+
+		range.location = 0;
+		range.length = ((size_t)str_len > len)? len: (size_t)str_len;
 		chars_copied = CFStringGetBytes(str,
 			range,
 			kCFStringEncodingUTF32LE,
@@ -309,14 +314,15 @@ static int get_string_property_utf8(IOHIDDeviceRef device, CFStringRef prop, cha
 	buf[0] = 0;
 
 	if (str) {
-		len--;
-
 		CFIndex str_len = CFStringGetLength(str);
 		CFRange range;
-		range.location = 0;
-		range.length = (str_len > len)? len: str_len;
 		CFIndex used_buf_len;
 		CFIndex chars_copied;
+
+		len--;
+
+		range.location = 0;
+		range.length = ((size_t)str_len > len)? len: (size_t)str_len;
 		chars_copied = CFStringGetBytes(str,
 			range,
 			kCFStringEncodingUTF8,
@@ -380,7 +386,7 @@ static int make_path(IOHIDDeviceRef device, char *buf, size_t len)
 	pid = get_product_id(device);
 
 	res = snprintf(buf, len, "%s_%04hx_%04hx_%p",
-	                   transport, vid, pid, device);
+	                   transport, vid, pid, (void *)device);
 	
 	
 	buf[len-1] = '\0';
@@ -390,8 +396,6 @@ static int make_path(IOHIDDeviceRef device, char *buf, size_t len)
 /* Initialize the IOHIDManager. Return 0 for success and -1 for failure. */
 static int init_hid_manager(void)
 {
-	IOReturn res;
-	
 	/* Initialize all the HID Manager Objects */
 	hid_mgr = IOHIDManagerCreate(kCFAllocatorDefault, kIOHIDOptionsTypeNone);
 	if (hid_mgr) {
@@ -441,6 +445,8 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 	struct hid_device_info *cur_dev = NULL;
 	CFIndex num_devices;
 	int i;
+	CFSetRef device_set;
+	IOHIDDeviceRef *device_array;
 	
 	/* Set up the HID Manager if it hasn't been done */
 	if (hid_init() < 0)
@@ -450,11 +456,11 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 	process_pending_events();
 
 	/* Get a list of the Devices */
-	CFSetRef device_set = IOHIDManagerCopyDevices(hid_mgr);
+	device_set = IOHIDManagerCopyDevices(hid_mgr);
 
 	/* Convert the list into a C array so we can iterate easily. */	
 	num_devices = CFSetGetCount(device_set);
-	IOHIDDeviceRef *device_array = calloc(num_devices, sizeof(IOHIDDeviceRef));
+	device_array = calloc(num_devices, sizeof(IOHIDDeviceRef));
 	CFSetGetValues(device_set, (const void **) device_array);
 
 	/* Iterate over each device, making an entry for it. */	
@@ -580,9 +586,13 @@ hid_device * HID_API_EXPORT hid_open(unsigned short vendor_id, unsigned short pr
 static void hid_device_removal_callback(void *context, IOReturn result,
                                         void *sender, IOHIDDeviceRef dev_ref)
 {
+	hid_device *d;
+	(void) context;
+	(void) result;
+	(void) sender;
 	/* Stop the Run Loop for this device. */
 	pthread_mutex_lock(&device_list_mutex);
-	hid_device *d = device_list;
+	d = device_list;
 	while (d) {
 		if (d->device_handle == dev_ref) {
 			d->disconnected = 1;
@@ -603,6 +613,11 @@ static void hid_report_callback(void *context, IOReturn result, void *sender,
 {
 	struct input_report *rpt;
 	hid_device *dev = context;
+
+	(void) result;
+	(void) sender;
+	(void) report_type;
+	(void) report_id;
 
 	/* Make a new Input Report object */
 	rpt = calloc(1, sizeof(struct input_report));
@@ -656,13 +671,14 @@ static void perform_signal_callback(void *context)
 static void *read_thread(void *param)
 {
 	hid_device *dev = param;
+	CFRunLoopSourceContext ctx;
+	SInt32 code;
 	
 	/* Move the device's run loop to this thread. */
 	IOHIDDeviceScheduleWithRunLoop(dev->device_handle, CFRunLoopGetCurrent(), dev->run_loop_mode);
 
 	/* Create the RunLoopSource which is used to signal the
 	   event loop to stop when hid_close() is called. */
-	CFRunLoopSourceContext ctx;
 	memset(&ctx, 0, sizeof(ctx));
 	ctx.version = 0;
 	ctx.info = dev;
@@ -679,7 +695,6 @@ static void *read_thread(void *param)
 
 	/* Run the Event Loop. CFRunLoopRunInMode() will dispatch HID input
 	   reports into the hid_report_callback(). */
-	SInt32 code;
 	while (!dev->shutdown_thread && !dev->disconnected) {
 		code = CFRunLoopRunInMode(dev->run_loop_mode, 1000/*sec*/, FALSE);
 		/* Return if the device has been disconnected */
@@ -722,6 +737,8 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
   	int i;
 	hid_device *dev = NULL;
 	CFIndex num_devices;
+	CFSetRef device_set;
+	IOHIDDeviceRef *device_array;
 	
 	dev = new_hid_device();
 
@@ -732,10 +749,10 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 	/* give the IOHIDManager a chance to update itself */
 	process_pending_events();
 
-	CFSetRef device_set = IOHIDManagerCopyDevices(hid_mgr);
+	device_set = IOHIDManagerCopyDevices(hid_mgr);
 	
 	num_devices = CFSetGetCount(device_set);
-	IOHIDDeviceRef *device_array = calloc(num_devices, sizeof(IOHIDDeviceRef));
+	device_array = calloc(num_devices, sizeof(IOHIDDeviceRef));
 	CFSetGetValues(device_set, (const void **) device_array);	
 	for (i = 0; i < num_devices; i++) {
 		char cbuf[BUF_LEN];
@@ -759,7 +776,7 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 				
 				/* Create the Run Loop Mode for this device.
 				   printing the reference seems to work. */
-				sprintf(str, "HIDAPI_%p", os_dev);
+				sprintf(str, "HIDAPI_%p", (void *)os_dev);
 				dev->run_loop_mode = 
 					CFStringCreateWithCString(NULL, str, kCFStringEncodingASCII);
 				
@@ -1064,6 +1081,10 @@ int HID_API_EXPORT_CALL hid_get_serial_number_string(hid_device *dev, wchar_t *s
 int HID_API_EXPORT_CALL hid_get_indexed_string(hid_device *dev, int string_index, wchar_t *string, size_t maxlen)
 {
 	/* TODO: */
+	(void) dev;
+	(void) string_index;
+	(void) string;
+	(void) maxlen;
 
 	return 0;
 }
@@ -1072,6 +1093,7 @@ int HID_API_EXPORT_CALL hid_get_indexed_string(hid_device *dev, int string_index
 HID_API_EXPORT const wchar_t * HID_API_CALL  hid_error(hid_device *dev)
 {
 	/* TODO: */
+	(void) dev;
 
 	return NULL;
 }
