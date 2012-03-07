@@ -329,8 +329,8 @@ end:
         free(product_name_utf8);
 
 	udev_device_unref(udev_dev);
-	// parent and hid_dev don't need to be (and can't be) unref'd.
-	// I'm not sure why, but they'll throw double-free() errors.
+	/* parent and hid_dev don't need to be (and can't be) unref'd.
+	   I'm not sure why, but they'll throw double-free() errors. */
 	udev_unref(udev);
 
 	return ret;
@@ -361,9 +361,9 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 	struct udev_enumerate *enumerate;
 	struct udev_list_entry *devices, *dev_list_entry;
 
-	struct hid_device_info *root = NULL; // return object
+	struct hid_device_info *root = NULL; /* return object */
 	struct hid_device_info *cur_dev = NULL;
-	struct hid_device_info *prev_dev = NULL; // previous device
+	struct hid_device_info *prev_dev = NULL; /* previous device */
 
 	hid_init();
 
@@ -385,10 +385,10 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 		const char *sysfs_path;
 		const char *dev_path;
 		const char *str;
-		struct udev_device *raw_dev; // The device's hidraw udev node.
-		struct udev_device *hid_dev; // The device's HID udev node.
-		struct udev_device *usb_dev; // The device's USB udev node.
-		struct udev_device *intf_dev; // The device's interface (in the USB sense).
+		struct udev_device *raw_dev; /* The device's hidraw udev node. */
+		struct udev_device *hid_dev; /* The device's HID udev node. */
+		struct udev_device *usb_dev; /* The device's USB udev node. */
+		struct udev_device *intf_dev; /* The device's interface (in the USB sense). */
 		unsigned short dev_vid;
 		unsigned short dev_pid;
 		char *serial_number_utf8 = NULL;
@@ -615,10 +615,10 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 		}
 	}
 
-	// OPEN HERE //
+	/* OPEN HERE */
 	dev->device_handle = open(path, O_RDWR);
 
-	// If we have a good handle, return it.
+	/* If we have a good handle, return it. */
 	if (dev->device_handle > 0) {
 
 		/* Get the report descriptor */
@@ -648,7 +648,7 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 		return dev;
 	}
 	else {
-		// Unable to open any devices.
+		/* Unable to open any devices. */
 		free(dev);
 		return NULL;
 	}
