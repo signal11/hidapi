@@ -234,14 +234,15 @@ static int get_string_property(IOHIDDeviceRef device, CFStringRef prop, wchar_t 
 	buf[0] = 0;
 
 	if (str) {
-		len --;
-
 		CFIndex str_len = CFStringGetLength(str);
 		CFRange range;
-		range.location = 0;
-		range.length = (str_len > len)? len: str_len;
 		CFIndex used_buf_len;
 		CFIndex chars_copied;
+
+		len --;
+
+		range.location = 0;
+		range.length = ((size_t)str_len > len)? len: (size_t)str_len;
 		chars_copied = CFStringGetBytes(str,
 			range,
 			kCFStringEncodingUTF32LE,
@@ -618,6 +619,7 @@ static void perform_signal_callback(void *context)
 static void *read_thread(void *param)
 {
 	hid_device *dev = param;
+	SInt32 code;
 
 	/* Move the device's run loop to this thread. */
 	IOHIDDeviceScheduleWithRunLoop(dev->device_handle, CFRunLoopGetCurrent(), dev->run_loop_mode);
@@ -641,7 +643,6 @@ static void *read_thread(void *param)
 
 	/* Run the Event Loop. CFRunLoopRunInMode() will dispatch HID input
 	   reports into the hid_report_callback(). */
-	SInt32 code;
 	while (!dev->shutdown_thread && !dev->disconnected) {
 		code = CFRunLoopRunInMode(dev->run_loop_mode, 1000/*sec*/, FALSE);
 		/* Return if the device has been disconnected */
