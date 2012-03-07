@@ -437,7 +437,7 @@ static void process_pending_events() {
 
 struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, unsigned short product_id)
 {
-	struct hid_device_info *root = NULL; // return object
+	struct hid_device_info *root = NULL; /* return object */
 	struct hid_device_info *cur_dev = NULL;
 	CFIndex num_devices;
 	int i;
@@ -489,7 +489,7 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 			}
 			cur_dev = tmp;
 
-			// Get the Usage Page and Usage for this device.
+			/* Get the Usage Page and Usage for this device. */
 			cur_dev->usage_page = get_int_property(dev, CFSTR(kIOHIDPrimaryUsagePageKey));
 			cur_dev->usage = get_int_property(dev, CFSTR(kIOHIDPrimaryUsageKey));
 
@@ -650,7 +650,7 @@ static void hid_report_callback(void *context, IOReturn result, void *sender,
 static void perform_signal_callback(void *context)
 {
 	hid_device *dev = context;
-	CFRunLoopStop(dev->run_loop); //TODO: CFRunLoopGetCurrent()
+	CFRunLoopStop(dev->run_loop); /*TODO: CFRunLoopGetCurrent()*/
 }
 
 static void *read_thread(void *param)
@@ -744,7 +744,7 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 		
 		len = make_path(os_dev, cbuf, sizeof(cbuf));
 		if (!strcmp(cbuf, path)) {
-			// Matched Paths. Open this Device.
+			/* Matched Paths. Open this Device. */
 			IOReturn ret = IOHIDDeviceOpen(os_dev, kIOHIDOptionsTypeNone);
 			if (ret == kIOReturnSuccess) {
 				char str[32];
@@ -1063,7 +1063,7 @@ int HID_API_EXPORT_CALL hid_get_serial_number_string(hid_device *dev, wchar_t *s
 
 int HID_API_EXPORT_CALL hid_get_indexed_string(hid_device *dev, int string_index, wchar_t *string, size_t maxlen)
 {
-	// TODO:
+	/* TODO: */
 
 	return 0;
 }
@@ -1071,7 +1071,7 @@ int HID_API_EXPORT_CALL hid_get_indexed_string(hid_device *dev, int string_index
 
 HID_API_EXPORT const wchar_t * HID_API_CALL  hid_error(hid_device *dev)
 {
-	// TODO:
+	/* TODO: */
 
 	return NULL;
 }

@@ -112,7 +112,7 @@ static int uses_numbered_reports(__u8 *report_descriptor, __u32 size) {
 			return 1;
 		}
 		
-		//printf("key: %02hhx\n", key);
+		/*printf("key: %02hhx\n", key);*/
 		
 		if ((key & 0xf0) == 0xf0) {
 			/* This is a Long Item. The next byte contains the
@@ -194,8 +194,8 @@ static int get_device_string(hid_device *dev, const char *key, wchar_t *string, 
 
 end:
 	udev_device_unref(udev_dev);
-	// parent doesn't need to be (and can't be) unref'd.
-	// I'm not sure why, but it'll throw double-free() errors.
+	/* parent doesn't need to be (and can't be) unref'd. */
+	/* I'm not sure why, but it'll throw double-free() errors. */
 	udev_unref(udev);
 
 	return ret;
@@ -225,7 +225,7 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 	struct udev_enumerate *enumerate;
 	struct udev_list_entry *devices, *dev_list_entry;
 	
-	struct hid_device_info *root = NULL; // return object
+	struct hid_device_info *root = NULL; /* return object */
 	struct hid_device_info *cur_dev = NULL;
 
 	hid_init();
@@ -248,9 +248,9 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 		const char *sysfs_path;
 		const char *dev_path;
 		const char *str;
-		struct udev_device *hid_dev; // The device's HID udev node.
-		struct udev_device *dev; // The actual hardware device.
-		struct udev_device *intf_dev; // The device's interface (in the USB sense).
+		struct udev_device *hid_dev; /* The device's HID udev node. */
+		struct udev_device *dev; /* The actual hardware device. */
+		struct udev_device *intf_dev; /* The device's interface (in the USB sense). */
 		unsigned short dev_vid;
 		unsigned short dev_pid;
 		
@@ -420,17 +420,17 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 		ret = sscanf(name.release, "%d.%d.%d", &major, &minor, &release);
 		if (ret == 3) {
 			kernel_version = major << 16 | minor << 8 | release;
-			//printf("Kernel Version: %d\n", kernel_version);
+			/*printf("Kernel Version: %d\n", kernel_version);*/
 		}
 		else {
 			printf("Couldn't sscanf() version string %s\n", name.release);
 		}
 	}
 
-	// OPEN HERE //
+	/* OPEN HERE */
 	dev->device_handle = open(path, O_RDWR);
 
-	// If we have a good handle, return it.
+	/* If we have a good handle, return it. */
 	if (dev->device_handle > 0) {
 
 		/* Get the report descriptor */
@@ -460,7 +460,7 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 		return dev;
 	}
 	else {
-		// Unable to open any devices.
+		/* Unable to open any devices. */
 		free(dev);
 		return NULL;
 	}
