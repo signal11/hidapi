@@ -207,13 +207,13 @@ static int lookup_functions()
 }
 #endif
 
-static HANDLE open_device(const char *path, BOOL enumerate)
+static HANDLE open_device(const char *path, BOOL request_rw)
 {
 	HANDLE handle;
-	DWORD desired_access = (enumerate)? 0: (GENERIC_WRITE | GENERIC_READ);
-	DWORD share_mode = (enumerate)?
-	                      FILE_SHARE_READ|FILE_SHARE_WRITE:
-	                      FILE_SHARE_READ;
+	DWORD desired_access = (request_rw)?(GENERIC_WRITE|GENERIC_READ):0;
+	DWORD share_mode = (request_rw)?
+							FILE_SHARE_READ:
+							FILE_SHARE_READ|FILE_SHARE_WRITE;
 
 	handle = CreateFileA(path,
 		desired_access,
@@ -327,7 +327,7 @@ struct hid_device_info HID_API_EXPORT * HID_API_CALL hid_enumerate(unsigned shor
 		//wprintf(L"HandleName: %s\n", device_interface_detail_data->DevicePath);
 
 		// Open a handle to the device
-		write_handle = open_device(device_interface_detail_data->DevicePath, TRUE);
+		write_handle = open_device(device_interface_detail_data->DevicePath, FALSE);
 
 		// Check validity of write_handle.
 		if (write_handle == INVALID_HANDLE_VALUE) {
@@ -523,7 +523,15 @@ HID_API_EXPORT hid_device * HID_API_CALL hid_open_path(const char *path)
 	dev = new_hid_device();
 
 	// Open a handle to the device
-	dev->device_handle = open_device(path, FALSE);
+	dev->device_handle = open_device(path, TRUE);
+
+	// If the device is a system keyboard/mouse, Windows (2k+) takes exclusive
+	// read/write access. Feature reports can still be sent, but only if
+	// neither read nor write access is requested.
+	if (dev->device_handle == INVALID_HANDLE_VALUE &&
+		GetLastError() == ERROR_ACCESS_DENIED) {
+		dev->device_handle = open_device(path, FALSE);
+	}
 
 	// Check validity of write_handle.
 	if (dev->device_handle == INVALID_HANDLE_VALUE) {
