@@ -291,10 +291,10 @@ static int get_string_property(IOHIDDeviceRef device, CFStringRef prop, wchar_t 
 			&used_buf_len);
 
 		buf[chars_copied] = 0;
-		return chars_copied;
+		return 0;
 	}
 	else
-		return 0;
+		return -1;
 		
 }
 
@@ -442,8 +442,6 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 	CFIndex num_devices;
 	int i;
 	
-	setlocale(LC_ALL,"");
-
 	/* Set up the HID Manager if it hasn't been done */
 	if (hid_init() < 0)
 		return NULL;
@@ -1127,8 +1125,6 @@ int main(void)
 	CFIndex num_devices = CFSetGetCount(device_set);
 	IOHIDDeviceRef *device_array = calloc(num_devices, sizeof(IOHIDDeviceRef));
 	CFSetGetValues(device_set, (const void **) device_array);
-	
-	setlocale(LC_ALL, "");
 	
 	for (i = 0; i < num_devices; i++) {
 		IOHIDDeviceRef dev = device_array[i];
