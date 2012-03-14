@@ -72,10 +72,10 @@ extern "C" {
 #endif
 
 #ifndef HIDAPI_USE_DDK
-	/* Since we're not building with the DDK, and the HID header */
-	/* files aren't part of the SDK, we have to define all this */
-	/* stuff here. In lookup_functions(), the function pointers */
-	/* defined below are set. */
+	/* Since we're not building with the DDK, and the HID header
+	   files aren't part of the SDK, we have to define all this
+	   stuff here. In lookup_functions(), the function pointers
+	   defined below are set. */
 	typedef struct _HIDD_ATTRIBUTES{
 		ULONG Size;
 		USHORT VendorID;
@@ -165,8 +165,8 @@ static void register_error(hid_device *device, const char *op)
 		(LPWSTR)&msg, 0/*sz*/,
 		NULL);
 	
-	/* Get rid of the CR and LF that FormatMessage() sticks at the */
-	/* end of the message. Thanks Microsoft! */
+	/* Get rid of the CR and LF that FormatMessage() sticks at the
+	   end of the message. Thanks Microsoft! */
 	ptr = msg;
 	while (*ptr) {
 		if (*ptr == '\r') {
@@ -176,8 +176,8 @@ static void register_error(hid_device *device, const char *op)
 		ptr++;
 	}
 
-	/* Store the message off in the Device entry so that  */
-	/* the hid_error() function can pick it up. */
+	/* Store the message off in the Device entry so that
+	   the hid_error() function can pick it up. */
 	LocalFree(device->last_error_str);
 	device->last_error_str = msg;
 }
@@ -289,14 +289,14 @@ struct hid_device_info HID_API_EXPORT * HID_API_CALL hid_enumerate(unsigned shor
 			&device_interface_data);
 		
 		if (!res) {
-			/* A return of FALSE from this function means that */
-			/* there are no more devices. */
+			/* A return of FALSE from this function means that
+			   there are no more devices. */
 			break;
 		}
 
-		/* Call with 0-sized detail size, and let the function */
-		/* tell us how long the detail struct needs to be. The */
-		/* size is put in &required_size. */
+		/* Call with 0-sized detail size, and let the function
+		   tell us how long the detail struct needs to be. The
+		   size is put in &required_size. */
 		res = SetupDiGetDeviceInterfaceDetailA(device_info_set,
 			&device_interface_data,
 			NULL,
@@ -308,9 +308,9 @@ struct hid_device_info HID_API_EXPORT * HID_API_CALL hid_enumerate(unsigned shor
 		device_interface_detail_data = (SP_DEVICE_INTERFACE_DETAIL_DATA_A*) malloc(required_size);
 		device_interface_detail_data->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA_A);
 
-		/* Get the detailed data for this device. The detail data gives us */
-		/* the device path for this device, which is then passed into */
-		/* CreateFile() to get a handle to the device. */
+		/* Get the detailed data for this device. The detail data gives us
+		   the device path for this device, which is then passed into
+		   CreateFile() to get a handle to the device. */
 		res = SetupDiGetDeviceInterfaceDetailA(device_info_set,
 			&device_interface_data,
 			device_interface_detail_data,
@@ -342,8 +342,8 @@ struct hid_device_info HID_API_EXPORT * HID_API_CALL hid_enumerate(unsigned shor
 		HidD_GetAttributes(write_handle, &attrib);
 		/*wprintf(L"Product/Vendor: %x %x\n", attrib.ProductID, attrib.VendorID);*/
 
-		/* Check the VID/PID to see if we should add this */
-		/* device to the enumeration list. */
+		/* Check the VID/PID to see if we should add this
+		   device to the enumeration list. */
 		if ((vendor_id == 0x0 && product_id == 0x0) || 
 			(attrib.VendorID == vendor_id && attrib.ProductID == product_id)) {
 
@@ -597,8 +597,7 @@ int HID_API_EXPORT HID_API_CALL hid_write(hid_device *dev, const unsigned char *
 		}
 	}
 
-	/* Wait here until the write is done. This makes */
-	/* hid_write() synchronous. */
+	/* Wait here until the write is done. This makes hid_write() synchronous. */
 	res = GetOverlappedResult(dev->device_handle, &ol, &bytes_written, TRUE/*wait*/);
 	if (!res) {
 		/* The Write operation failed. */
@@ -645,15 +644,15 @@ int HID_API_EXPORT HID_API_CALL hid_read_timeout(hid_device *dev, unsigned char 
 		/* See if there is any data yet. */
 		res = WaitForSingleObject(ev, milliseconds);
 		if (res != WAIT_OBJECT_0) {
-			/* There was no data this time. Return zero bytes available, */
-			/* but leave the Overlapped I/O running. */
+			/* There was no data this time. Return zero bytes available,
+			   but leave the Overlapped I/O running. */
 			return 0;
 		}
 	}
 
-	/* Either WaitForSingleObject() told us that ReadFile has completed, or */
-	/* we are in non-blocking mode. Get the number of bytes read. The actual */
-	/* data has been copied to the data[] array which was passed to ReadFile(). */
+	/* Either WaitForSingleObject() told us that ReadFile has completed, or
+	   we are in non-blocking mode. Get the number of bytes read. The actual
+	   data has been copied to the data[] array which was passed to ReadFile(). */
 	res = GetOverlappedResult(dev->device_handle, &dev->ol, &bytes_read, TRUE/*wait*/);
 	
 	/* Set pending back to false, even if GetOverlappedResult() returned error. */
@@ -739,8 +738,8 @@ int HID_API_EXPORT HID_API_CALL hid_get_feature_report(hid_device *dev, unsigned
 		}
 	}
 
-	/* Wait here until the write is done. This makes */
-	/* hid_get_feature_report() synchronous. */
+	/* Wait here until the write is done. This makes
+	   hid_get_feature_report() synchronous. */
 	res = GetOverlappedResult(dev->device_handle, &ol, &bytes_returned, TRUE/*wait*/);
 	if (!res) {
 		/* The operation failed. */
