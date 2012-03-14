@@ -156,13 +156,14 @@ static void register_error(hid_device *device, const char *op)
 {
 	WCHAR *ptr, *msg;
 
+	(void) op;
 	FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER |
 		FORMAT_MESSAGE_FROM_SYSTEM |
 		FORMAT_MESSAGE_IGNORE_INSERTS,
 		NULL,
 		GetLastError(),
 		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-		(LPWSTR)&msg, 0/*sz*/,
+		(LPVOID)&msg, 0/*sz*/,
 		NULL);
 	
 	/* Get rid of the CR and LF that FormatMessage() sticks at the
