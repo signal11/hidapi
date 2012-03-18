@@ -10,4 +10,5 @@ Release
 *.dll
 *.pdb
 *.o
+*.so
 hidtest
