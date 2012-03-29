@@ -11,4 +11,5 @@ Release
 *.pdb
 *.o
 *.so
-hidtest
+hidtest-hidraw
+hidtest-libusb
