@@ -37,10 +37,10 @@ hidtest-libusb: $(COBJS_LIBUSB) $(CPPOBJS)
 	$(CXX) $(LDFLAGS) $^ $(LIBS_USB) -o $@
 
 # Shared Libs
-libhidapi-libusb.so: $(OBJS_LIBUSB)
+libhidapi-libusb.so: $(COBJS_LIBUSB)
 	$(CC) $(LDFLAGS) $(LIBS_USB) -shared -fpic -Wl,-soname,$@.0 $^ -o $@
 
-libhidapi-hidraw.so: $(OBJS_HIDRAW)
+libhidapi-hidraw.so: $(COBJS_HIDRAW)
 	$(CC) $(LDFLAGS) $(LIBS_UDEV) -shared -fpic -Wl,-soname,$@.0 $^ -o $@
 
 # Objects
