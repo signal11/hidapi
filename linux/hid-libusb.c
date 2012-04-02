@@ -187,7 +187,7 @@ static uint32_t get_bytes(uint8_t *rpt, size_t len, size_t num_bytes, size_t cur
 static int get_usage(uint8_t *report_descriptor, size_t size,
                      unsigned short *usage_page, unsigned short *usage)
 {
-	int i = 0;
+	unsigned int i = 0;
 	int size_code;
 	int data_len, key_size;
 	int usage_found = 0, usage_page_found = 0;
@@ -488,6 +488,7 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 										get_usb_string(handle, desc.iProduct);
 
 #ifdef INVASIVE_GET_USAGE
+{
 							/*
 							This section is removed because it is too
 							invasive on the system. Getting a Usage Page
@@ -544,6 +545,7 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 									if (res < 0)
 										LOG("Couldn't re-attach kernel driver.\n");
 								}
+}
 #endif /*******************/
 
 								libusb_close(handle);
