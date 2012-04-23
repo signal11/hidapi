@@ -28,6 +28,7 @@ LIBS_USB  = `pkg-config libusb-1.0 --libs`
 LIBS_UDEV = `pkg-config libudev --libs`
 LIBS      = $(LIBS_USB) $(LIBS_UDEV)
 INCLUDES ?= -I../hidapi `pkg-config libusb-1.0 --cflags`
+SOVERSION = 0
 
 
 # Console Test Program
@@ -39,12 +40,12 @@ hidtest-libusb: $(COBJS_LIBUSB) $(CPPOBJS)
 
 # Shared Libs
 libhidapi-libusb.so: $(COBJS_LIBUSB)
-	$(CC) $(LDFLAGS) $(LIBS_USB) $(LIBS_HIDAPI) -shared -fpic -Wl,-soname,$@.0 $^ -o $@.0
-	ln -s $@.0 $@
+	$(CC) $(LDFLAGS) $(LIBS_USB) $(LIBS_HIDAPI) -shared -fpic -Wl,-soname,$@.$(SOVERSION) $^ -o $@.$(SOVERSION)
+	ln -s $@.$(SOVERSION) $@
 
 libhidapi-hidraw.so: $(COBJS_HIDRAW)
-	$(CC) $(LDFLAGS) $(LIBS_UDEV) -shared -fpic -Wl,-soname,$@.0 $^ -o $@.0
-	ln -s $@.0 $@
+	$(CC) $(LDFLAGS) $(LIBS_UDEV) -shared -fpic -Wl,-soname,$@.$(SOVERSION) $^ -o $@.$(SOVERSION)
+	ln -s $@.$(SOVERSION) $@
 
 # Objects
 $(COBJS): %.o: %.c
