@@ -622,6 +622,7 @@ hid_device * hid_open(unsigned short vendor_id, unsigned short product_id, const
 static void read_callback(struct libusb_transfer *transfer)
 {
 	hid_device *dev = transfer->user_data;
+	int res;
 	
 	if (transfer->status == LIBUSB_TRANSFER_COMPLETED) {
 
@@ -674,7 +675,11 @@ static void read_callback(struct libusb_transfer *transfer)
 	}
 	
 	/* Re-submit the transfer object. */
-	libusb_submit_transfer(transfer);
+	res = libusb_submit_transfer(transfer);
+	if (res != 0) {
+		LOG("Unable to submit URB. libusb error code: %d\n", res);
+		dev->shutdown_thread = 1;
+	}
 }
 
 
