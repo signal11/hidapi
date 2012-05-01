@@ -115,18 +115,7 @@ static int return_data(hid_device *dev, unsigned char *data, size_t length);
 static hid_device *new_hid_device(void)
 {
 	hid_device *dev = calloc(1, sizeof(hid_device));
-	dev->device_handle = NULL;
-	dev->input_endpoint = 0;
-	dev->output_endpoint = 0;
-	dev->input_ep_max_packet_size = 0;
-	dev->interface = 0;
-	dev->manufacturer_index = 0;
-	dev->product_index = 0;
-	dev->serial_index = 0;
 	dev->blocking = 1;
-	dev->shutdown_thread = 0;
-	dev->transfer = NULL;
-	dev->input_reports = NULL;
 	
 	pthread_mutex_init(&dev->mutex, NULL);
 	pthread_cond_init(&dev->condition, NULL);
@@ -361,10 +350,8 @@ static wchar_t *get_usb_string(libusb_device_handle *dev, uint8_t idx)
 	if (len < 0)
 		return NULL;
 	
-	buf[sizeof(buf)-1] = '\0';
-	
-	if (len+1 < sizeof(buf))
-		buf[len+1] = '\0';
+	/* buf does not need to be explicitly NULL-terminated because
+	   it is only passed into iconv() which does not need it. */
 	
 	/* Initialize iconv. */
 	ic = iconv_open("WCHAR_T", "UTF-16LE");
