@@ -8,6 +8,7 @@
  8/22/2009
  Linux Version - 6/2/2010
  Libusb Version - 8/13/2010
+ FreeBSD Version - 11/1/2011
 
  Copyright 2009, All Rights Reserved.
  
@@ -62,7 +63,7 @@ extern "C" {
 /* Uncomment to enable the retrieval of Usage and Usage Page in
 hid_enumerate(). Warning, this is very invasive as it requires the detach
 and re-attach of the kernel driver. See comments inside hid_enumerate().
-Linux/libusb HIDAPI programs are encouraged to use the interface number
+libusb HIDAPI programs are encouraged to use the interface number
 instead to differentiate between interfaces on a composite HID device. */
 /*#define INVASIVE_GET_USAGE*/
 
@@ -146,7 +147,7 @@ static void free_hid_device(hid_device *dev)
 }
 
 #if 0
-//TODO: Implement this funciton on Linux.
+//TODO: Implement this funciton on hidapi/libusb..
 static void register_error(hid_device *device, const char *op)
 {
 
@@ -255,6 +256,27 @@ static int get_usage(uint8_t *report_descriptor, size_t size,
 }
 #endif // INVASIVE_GET_USAGE
 
+#ifdef __FreeBSD__
+/* The FreeBSD version of libusb doesn't have this funciton. In mainline
+   libusb, it's inlined in libusb.h. This function will bear a striking
+   resemblence to that one, because there's about one way to code it.
+
+   Note that the data parameter is Unicode in UTF-16LE encoding.
+   Return value is the number of bytes in data, or LIBUSB_ERROR_*.
+ */
+static inline int libusb_get_string_descriptor(libusb_device_handle *dev,
+	uint8_t descriptor_index, uint16_t lang_id,
+	unsigned char *data, int length)
+{
+	return libusb_control_transfer(dev,
+		LIBUSB_ENDPOINT_IN | 0x0, /* Endpoint 0 IN */
+		LIBUSB_REQUEST_GET_DESCRIPTOR,
+		(LIBUSB_DT_STRING << 8) | descriptor_index,
+		lang_id, data, (uint16_t) length, 1000);
+}
+
+#endif
+
 
 /* Get the first language the device says it reports. This comes from
    USB string #0. */
@@ -317,7 +339,11 @@ static wchar_t *get_usb_string(libusb_device_handle *dev, uint8_t idx)
 	size_t inbytes;
 	size_t outbytes;
 	size_t res;
+#ifdef __FreeBSD__
+	const char *inptr;
+#else
 	char *inptr;
+#endif
 	char *outptr;
 
 	/* Determine which language to use. */
@@ -341,19 +367,23 @@ static wchar_t *get_usb_string(libusb_device_handle *dev, uint8_t idx)
 		buf[len+1] = '\0';
 	
 	/* Initialize iconv. */
-	ic = iconv_open("UTF-32", "UTF-16");
-	if (ic == (iconv_t)-1)
+	ic = iconv_open("WCHAR_T", "UTF-16LE");
+	if (ic == (iconv_t)-1) {
+		LOG("iconv_open() failed\n");
 		return NULL;
+	}
 	
-	/* Convert to UTF-32 (wchar_t on glibc systems).
+	/* Convert to native wchar_t (UTF-32 on glibc/BSD systems).
 	   Skip the first character (2-bytes). */
 	inptr = buf+2;
 	inbytes = len-2;
 	outptr = (char*) wbuf;
 	outbytes = sizeof(wbuf);
 	res = iconv(ic, &inptr, &inbytes, &outptr, &outbytes);
-	if (res == (size_t)-1)
+	if (res == (size_t)-1) {
+		LOG("iconv() failed\n");
 		goto err;
+	}
 
 	/* Write the terminating NULL. */
 	wbuf[sizeof(wbuf)/sizeof(wbuf[0])-1] = 0x00000000;
@@ -361,7 +391,7 @@ static wchar_t *get_usb_string(libusb_device_handle *dev, uint8_t idx)
 		*((wchar_t*)outptr) = 0x00000000;
 	
 	/* Allocate and copy the string. */
-	str = wcsdup(wbuf+1);
+	str = wcsdup(wbuf);
 
 err:
 	iconv_close(ic);

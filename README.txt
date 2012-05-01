@@ -1,17 +1,19 @@
-HID API for Windows, Linux, and Mac OS X
+HID API for Windows, Linux, FreeBSD and Mac OS X
 
 About
 ------
 
 HIDAPI is a multi-platform library which allows an application to interface
-with USB and Bluetooth HID-Class devices on Windows, Linux, and Mac OS X. 
-On Windows, a DLL is built.  On other platforms (and optionally on Windows),
-the single source file can simply be dropped into a target application.
+with USB and Bluetooth HID-Class devices on Windows, Linux, FreeBSD, and Mac
+OS X.  On Windows, a DLL is built.  On other platforms (and optionally on
+Windows), the single source file can simply be dropped into a target
+application.
 
 HIDAPI has four back-ends:
 	* Windows (using hid.dll)
 	* Linux/hidraw (using the Kernel's hidraw driver)
 	* Linux/libusb (using libusb-1.0)
+	* FreeBSD (using libusb-1.0)
 	* Mac (using IOHidManager)
 
 On Linux, either the hidraw or the libusb back-end can be used. There are
@@ -26,7 +28,7 @@ hidraw nodes associated with them.  Keyboards, mice, and some other devices
 which are blacklisted from having hidraw nodes will not work. Fortunately,
 for nearly all the uses of hidraw, this is not a problem.
 
-Linux/libusb (linux/hid-libusb.c):
+Linux/FreeBSD/libusb (libusb/hid-libusb.c):
 This back-end uses libusb-1.0 to communicate directly to a USB device. This
 back-end will of course not work with Bluetooth devices.
 
@@ -110,7 +112,10 @@ To build the console test program:
   Windows:
     Build the .sln file in the windows/ directory.
   Linux:
-    cd to the linux/ directory and run make.
+    For the hidraw implementation, cd to the linux/ directory and run make.
+    For the libusb implementation, cd to the libusb/ directory and run make.
+  FreeBSD:
+    cd to the libusb/ directory and run gmake.
   Mac OS X:
     cd to the mac/ directory and run make.
 
@@ -118,6 +123,8 @@ To build the Test GUI:
   The test GUI uses Fox toolkit, available from www.fox-toolkit.org.
   On Debian-based systems such as Ubuntu, install Fox using the following:
 	sudo apt-get install libfox-1.6-dev
+  On FreeBSD, install iconv and Fox as root:
+	pkg_add -r gmake libiconv fox16
   On Mac OSX, install Fox from ports:
 	sudo port install fox
   On Windows, download the hidapi-externals.zip file from the main download
@@ -132,6 +139,7 @@ To build the Test GUI:
   Then to build:
     On Windows, build the .sln file in the testgui/ directory.
     On Linux and Mac, run make from the testgui/ directory.
+    On FreeBSD, run gmake from the testgui/ directory.
 
 To build using the DDK (old method):
 
@@ -151,3 +159,4 @@ To build using the DDK (old method):
 Signal 11 Software - 2010-04-11
                      2010-07-28
                      2011-09-10
+                     2012-05-01
