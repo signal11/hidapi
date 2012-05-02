@@ -23,8 +23,8 @@ COBJS_HIDRAW = hid.o
 COBJS = $(COBJS_LIBUSB) $(COBJS_HIDRAW)
 CPPOBJS   = ../hidtest/hidtest.o
 OBJS      = $(COBJS) $(CPPOBJS)
-LIBS_USB  = `pkg-config libusb-1.0 --libs`
-LIBS_UDEV = `pkg-config libudev --libs`
+LIBS_USB  = `pkg-config libusb-1.0 --libs` -lrt
+LIBS_UDEV = `pkg-config libudev --libs` -lrt
 LIBS      = $(LIBS_USB) $(LIBS_UDEV)
 INCLUDES ?= -I../hidapi `pkg-config libusb-1.0 --cflags`
 
