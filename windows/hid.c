@@ -26,11 +26,6 @@
 typedef LONG NTSTATUS;
 #endif
 
-#ifdef __MINGW32__
-#include <ntdef.h>
-#include <winbase.h>
-#endif
-
 #ifdef __CYGWIN__
 #include <ntdef.h>
 #define _wcsdup wcsdup
