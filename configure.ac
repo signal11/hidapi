@@ -8,9 +8,17 @@ LT_INIT
 AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_OBJC
+PKG_PROG_PKG_CONFIG
 
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
+hidapi_lib_error() {
+	echo ""
+	echo "  Library $1 was not found on this system."
+	echo "  Please install it and re-run ./configure"
+	echo ""
+	exit 1
+}
 
 AC_MSG_CHECKING([operating system])
 AC_MSG_RESULT($host)
@@ -46,15 +54,14 @@ case $host in
 	AC_DEFINE(OS_FREEBSD, 1, [FreeBSD implementation])
 	AC_SUBST(OS_FREEBSD)
 	backend="freebsd"
-	PKG_CHECK_MODULES([libusb], [libusb])
-	LIBS_LIBUSB_PRIVATE+=" $libusb_LIBS"
-	CFLAGS_LIBUSB+=" $libusb_CFLAGS"
-	AC_CHECK_LIB([pthread], [pthread_create], [LIBS_LIBUSB_PRIVATE+=" -lpthread"])
-	AC_CHECK_LIB([iconv], [iconv_open], [LIBS_LIBUSB_PRIVATE+=" -liconv"])
 
 	CFLAGS="$CFLAGS -I/usr/local/include"
-	LDFLAGS="$LDFLAGS -I/usr/local/lib"
+	LDFLAGS="$LDFLAGS -L/usr/local/lib"
 	LIBS="${LIBS}"
+	AC_CHECK_LIB([usb], [libusb_init], [LIBS_LIBUSB_PRIVATE="${LIBS_LIBUSB_PRIVATE} -lusb"], [hidapi_lib_error libusb])
+	AC_CHECK_LIB([pthread], [pthread_create], [LIBS_LIBUSB_PRIVATE="${LIBS_LIBUSB_PRIVATE} -lpthread"], [hidapi_lib_error libpthread])
+	AC_CHECK_LIB([iconv], [iconv_open], [LIBS_LIBUSB_PRIVATE="${LIBS_LIBUSB_PRIVATE} -liconv"], [hidapi_lib_error libiconv])
+	echo libs_priv: $LIBS_LIBUSB_PRIVATE
 	;;
 *)
 	AC_MSG_ERROR([HIDAPI is not supported on your operating system yet])
@@ -85,14 +92,15 @@ if test "x$testgui_enabled" != "xno"; then
 	else
 		# On non-Mac platforms, use pkg-config to find fox.
 		PKG_CHECK_MODULES([fox], [fox])
-		LIBS_TESTGUI+=" $fox_LIBS"
-		CFLAGS_TESTGUI+=" $fox_CFLAGS"
+		LIBS_TESTGUI="${LIBS_TESTGUI} $fox_LIBS"
+		if test "x$backend" = xfreebsd; then
+			LIBS_TESTGUI="${LIBS_TESTGUI} -L/usr/local/lib"
+		fi
+		CFLAGS_TESTGUI="${CFLAGS_TESTGUI} $fox_CFLAGS"
 	fi
 fi
 AC_SUBST([LIBS_TESTGUI])
 AC_SUBST([CFLAGS_TESTGUI])
-
-
 
 # OS info for Automake
 AM_CONDITIONAL(OS_LINUX, test "x$backend" = xlinux)
