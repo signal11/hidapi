@@ -7,4 +7,4 @@ Name: hidapi-hidraw
 Description: C Library for USB/Bluetooth HID device access from Linux, Mac OS X, FreeBSD, and Windows. This is the hidraw implementation.
 Version: @VERSION@
 Libs: -L${libdir} -lhidapi-hidraw
-Cflags: -I{includedir}/hidapi
+Cflags: -I${includedir}/hidapi
