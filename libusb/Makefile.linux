@@ -22,7 +22,7 @@ COBJS_LIBUSB = hid.o
 COBJS = $(COBJS_LIBUSB)
 CPPOBJS   = ../hidtest/hidtest.o
 OBJS      = $(COBJS) $(CPPOBJS)
-LIBS_USB  = `pkg-config libusb-1.0 --libs` -lrt
+LIBS_USB  = `pkg-config libusb-1.0 --libs` -lrt -lpthread
 LIBS      = $(LIBS_USB)
 INCLUDES ?= -I../hidapi `pkg-config libusb-1.0 --cflags`
 
