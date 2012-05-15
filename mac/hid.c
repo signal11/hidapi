@@ -750,6 +750,7 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 				char str[32];
 
 				free(device_array);
+				CFRetain(os_dev);
 				CFRelease(device_set);
 				dev->device_handle = os_dev;
 				
@@ -1042,6 +1043,7 @@ void HID_API_EXPORT hid_close(hid_device *dev)
 		return_data(dev, NULL, 0);
 	}
 	pthread_mutex_unlock(&dev->mutex);
+	CFRelease(dev->device_handle);
 
 	free_hid_device(dev);
 }
