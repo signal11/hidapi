@@ -474,8 +474,8 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 		dev_pid = get_product_id(dev);
 
 		/* Check the VID/PID against the arguments */
-		if ((vendor_id == 0x0 && product_id == 0x0) ||
-		    (vendor_id == dev_vid && product_id == dev_pid)) {
+		if ((vendor_id == 0x0 || vendor_id == dev_vid)
+			&& (product_id == 0x0 || product_id == dev_pid)) {
 			struct hid_device_info *tmp;
 			size_t len;
 
@@ -745,7 +745,7 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 		len = make_path(os_dev, cbuf, sizeof(cbuf));
 		if (!strcmp(cbuf, path)) {
 			// Matched Paths. Open this Device.
-			IOReturn ret = IOHIDDeviceOpen(os_dev, kIOHIDOptionsTypeNone);
+			IOReturn ret = IOHIDDeviceOpen(os_dev, kIOHIDOptionsTypeSeizeDevice);
 			if (ret == kIOReturnSuccess) {
 				char str[32];
 
@@ -1034,7 +1034,7 @@ void HID_API_EXPORT hid_close(hid_device *dev)
 	   been unplugged. If it's been unplugged, then calling
 	   IOHIDDeviceClose() will crash. */
 	if (!dev->disconnected) {
-		IOHIDDeviceClose(dev->device_handle, kIOHIDOptionsTypeNone);
+		IOHIDDeviceClose(dev->device_handle, kIOHIDOptionsTypeSeizeDevice);
 	}
 	
 	/* Clear out the queue of received reports. */

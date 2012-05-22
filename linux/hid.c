@@ -282,8 +282,8 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 		dev_pid = (str)? strtol(str, NULL, 16): 0x0;
 
 		/* Check the VID/PID against the arguments */
-		if ((vendor_id == 0x0 && product_id == 0x0) ||
-		    (vendor_id == dev_vid && product_id == dev_pid)) {
+		if ((vendor_id == 0x0 || vendor_id == dev_vid)
+			&& (product_id == 0x0 || product_id == dev_pid)) {
 			struct hid_device_info *tmp;
 			size_t len;
 
