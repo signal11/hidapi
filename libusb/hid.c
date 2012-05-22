@@ -730,8 +730,16 @@ static void *read_thread(void *param)
 		int res;
 		res = libusb_handle_events(usb_context);
 		if (res < 0) {
-			/* There was an error. Break out of this loop. */
-			break;
+			/* There was an error. */
+			LOG("read_thread(): libusb reports error # %d\n", res);
+
+			/* Break out of this loop only on fatal error.*/
+			if (res != LIBUSB_ERROR_BUSY &&
+			    res != LIBUSB_ERROR_TIMEOUT &&
+			    res != LIBUSB_ERROR_OVERFLOW &&
+			    res != LIBUSB_ERROR_INTERRUPTED) {
+				break;
+			}
 		}
 	}
 	
