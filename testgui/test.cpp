@@ -54,16 +54,20 @@ private:
 	FXButton *output_button;
 	FXLabel *connected_label;
 	FXTextField *output_text;
+	FXTextField *output_len;
 	FXButton *feature_button;
 	FXButton *get_feature_button;
 	FXTextField *feature_text;
+	FXTextField *feature_len;
 	FXTextField *get_feature_text;
+	FXTextField *get_feature_len;
 	FXText *input_text;
 	FXFont *title_font;
 	
 	struct hid_device_info *devices;
 	hid_device *connected_device;
 	size_t getDataFromTextField(FXTextField *tf, char *buf, size_t len);
+	size_t getLengthFromTextField(FXTextField *tf, size_t len);
 
 
 protected:
@@ -150,20 +154,23 @@ MainWindow::MainWindow(FXApp *app)
 	
 	// Output Group Box
 	FXGroupBox *gb = new FXGroupBox(vf, "Output", FRAME_GROOVE|LAYOUT_FILL_X);
-	FXMatrix *matrix = new FXMatrix(gb, 2, MATRIX_BY_COLUMNS|LAYOUT_FILL_X);
+	FXMatrix *matrix = new FXMatrix(gb, 3, MATRIX_BY_COLUMNS|LAYOUT_FILL_X);
 	//hf = new FXHorizontalFrame(gb, LAYOUT_FILL_X);
 	output_text = new FXTextField(matrix, 40, NULL, 0, TEXTFIELD_NORMAL|LAYOUT_FILL_X|LAYOUT_FILL_COLUMN);
 	output_text->setText("1 0x81 0");
+	output_len = new FXTextField(matrix, 10, NULL, 0, TEXTFIELD_NORMAL|LAYOUT_FILL_X|LAYOUT_FILL_COLUMN);
 	output_button = new FXButton(matrix, "Send Output Report", NULL, this, ID_SEND_OUTPUT_REPORT, BUTTON_NORMAL|LAYOUT_FILL_X);
 	output_button->disable();
 	//new FXHorizontalFrame(matrix, LAYOUT_FILL_X);
 
 	//hf = new FXHorizontalFrame(gb, LAYOUT_FILL_X);
 	feature_text = new FXTextField(matrix, 40, NULL, 0, TEXTFIELD_NORMAL|LAYOUT_FILL_X|LAYOUT_FILL_COLUMN);
+	feature_len = new FXTextField(matrix, 10, NULL, 0, TEXTFIELD_NORMAL|LAYOUT_FILL_X|LAYOUT_FILL_COLUMN);
 	feature_button = new FXButton(matrix, "Send Feature Report", NULL, this, ID_SEND_FEATURE_REPORT, BUTTON_NORMAL|LAYOUT_FILL_X);
 	feature_button->disable();
 
 	get_feature_text = new FXTextField(matrix, 40, NULL, 0, TEXTFIELD_NORMAL|LAYOUT_FILL_X|LAYOUT_FILL_COLUMN);
+	get_feature_len = new FXTextField(matrix, 10, NULL, 0, TEXTFIELD_NORMAL|LAYOUT_FILL_X|LAYOUT_FILL_COLUMN);
 	get_feature_button = new FXButton(matrix, "Get Feature Report", NULL, this, ID_GET_FEATURE_REPORT, BUTTON_NORMAL|LAYOUT_FILL_X);
 	get_feature_button->disable();
 
@@ -325,13 +332,42 @@ MainWindow::getDataFromTextField(FXTextField *tf, char *buf, size_t len)
 	return i;
 }
 
+size_t
+MainWindow::getLengthFromTextField(FXTextField *tf, size_t len)
+{
+	// must be called after getDataFromTextField()...
+	// on Windows the exact expected length is required...
+	FXString data = tf->getText();
+	const FXchar *d = data.text();
+	size_t i = 0;
+	
+	// Copy the string from the GUI.
+	size_t sz = strlen(d);
+	if (sz > 0) {
+		char *str = (char*) malloc(sz+1);
+		strcpy(str, d);
+
+		char *endptr;
+		i = (size_t)strtol(str, &endptr, 0);
+
+		free(str);
+		return i;
+	}
+	else {
+		// if length is not passed in use the data length determined by getDataFromTextField
+		return len;
+	}
+}
+
 long
 MainWindow::onSendOutputReport(FXObject *sender, FXSelector sel, void *ptr)
 {
 	char buf[256];
 	size_t len;
 	len = getDataFromTextField(output_text, buf, sizeof(buf));
-	
+	// for Windows we need to send the exact buffer size.
+	len = getLengthFromTextField(output_len, len);
+
 	int res = hid_write(connected_device, (const unsigned char*)buf, len);
 	if (res < 0) {
 		FXMessageBox::error(this, MBOX_OK, "Error Writing", "Could not write to device. Error reported was: %ls", hid_error(connected_device));
@@ -346,11 +382,10 @@ MainWindow::onSendFeatureReport(FXObject *sender, FXSelector sel, void *ptr)
 	char buf[256];
 	size_t len;
 	len = getDataFromTextField(feature_text, buf, sizeof(buf));
-	for (unsigned int i = 0; i < len; i++) {
-		printf("%02hhx\n", buf[i]);
-	}
-	
-	int res = hid_send_feature_report(connected_device, (const unsigned char*)buf, len);
+	// for Windows we need to send the exact buffer size.
+	len = getLengthFromTextField(feature_len, len);
+
+	int res = hid_send_feature_report(connected_device, (const unsigned char*)buf, len); 
 	if (res < 0) {
 		FXMessageBox::error(this, MBOX_OK, "Error Writing", "Could not send feature report to device. Error reported was: %ls", hid_error(connected_device));
 	}
@@ -367,8 +402,9 @@ MainWindow::onGetFeatureReport(FXObject *sender, FXSelector sel, void *ptr)
 	if (len != 1) {
 		FXMessageBox::error(this, MBOX_OK, "Too many numbers", "Enter only a single report number in the text field");
 	}
-	
-	int res = hid_get_feature_report(connected_device, (unsigned char*)buf, sizeof(buf));
+	len = getLengthFromTextField(get_feature_len, len);
+
+	int res = hid_get_feature_report(connected_device, (unsigned char*)buf, len);
 	if (res < 0) {
 		FXMessageBox::error(this, MBOX_OK, "Error Getting Report", "Could not get feature report from device. Error reported was: %ls", hid_error(connected_device));
 	}
