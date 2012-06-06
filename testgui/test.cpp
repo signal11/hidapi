@@ -368,10 +368,7 @@ MainWindow::onSendOutputReport(FXObject *sender, FXSelector sel, void *ptr)
 	// for Windows we need to send the exact buffer size.
 	len = getLengthFromTextField(output_len, len);
 
-	char *xbuf = (char*) malloc(len+1);
-	memcpy(xbuf, buf, len);
-
-	int res = hid_write(connected_device, (const unsigned char*)xbuf, len);
+	int res = hid_write(connected_device, (const unsigned char*)buf, len);
 	if (res < 0) {
 		FXMessageBox::error(this, MBOX_OK, "Error Writing", "Could not write to device. Error reported was: %ls", hid_error(connected_device));
 	}
@@ -388,14 +385,7 @@ MainWindow::onSendFeatureReport(FXObject *sender, FXSelector sel, void *ptr)
 	// for Windows we need to send the exact buffer size.
 	len = getLengthFromTextField(feature_len, len);
 
-	char *xbuf = (char*) malloc(len+1);
-	memcpy(xbuf, buf, len);
-
-	for (unsigned int i = 0; i < len; i++) {
-		printf("%02hhx\n", buf[i]);
-	}
-	
-	int res = hid_send_feature_report(connected_device, (const unsigned char*)xbuf, len); // &xbuf[0]
+	int res = hid_send_feature_report(connected_device, (const unsigned char*)buf, len); 
 	if (res < 0) {
 		FXMessageBox::error(this, MBOX_OK, "Error Writing", "Could not send feature report to device. Error reported was: %ls", hid_error(connected_device));
 	}
