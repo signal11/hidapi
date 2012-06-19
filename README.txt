@@ -46,7 +46,9 @@ which communicates with a heavily hacked up version of the Microchip USB
 Generic HID sample looks like this (with error checking removed for
 simplicity):
 
+#ifdef WIN32
 #include <windows.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include "hidapi.h"
@@ -60,6 +62,9 @@ int main(int argc, char* argv[])
 	wchar_t wstr[MAX_STR];
 	hid_device *handle;
 	int i;
+
+	// Initialize the hidapi library
+	res = hid_init();
 
 	// Open the device using the VID, PID,
 	// and optionally the Serial number.
@@ -92,11 +97,14 @@ int main(int argc, char* argv[])
 	res = hid_write(handle, buf, 65);
 
 	// Read requested state
-	hid_read(handle, buf, 65);
+	res = hid_read(handle, buf, 65);
 
 	// Print out the returned buffer.
 	for (i = 0; i < 4; i++)
 		printf("buf[%d]: %d\n", i, buf[i]);
+
+	// Finalize the hidapi library
+	res = hid_exit();
 
 	return 0;
 }
