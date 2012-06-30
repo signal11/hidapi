@@ -7,7 +7,7 @@ LT_INIT
 
 AC_PROG_CC
 AC_PROG_CXX
-AC_PROG_RANLIB
+AC_PROG_OBJC
 
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
@@ -76,9 +76,18 @@ AC_ARG_ENABLE([testgui],
 AM_CONDITIONAL([BUILD_TESTGUI], [test "x$testgui_enabled" != "xno"])
 
 if test "x$testgui_enabled" != "xno"; then
-	PKG_CHECK_MODULES([fox], [fox])
-	LIBS_TESTGUI+=" $fox_LIBS"
-	CFLAGS_TESTGUI+=" $fox_CFLAGS"
+	if test "x$backend" = xdarwin; then
+		# On Mac OS, don't use pkg-config.
+		LIBS_TESTGUI+=`/opt/local/bin/fox-config --libs`
+		LIBS_TESTGUI+=" -framework Cocoa"
+		CFLAGS_TESTGUI+=`/opt/local/bin/fox-config --cflags`
+		OBJCFLAGS+=" -x objective-c++"
+	else
+		# On non-Mac platforms, use pkg-config to find fox.
+		PKG_CHECK_MODULES([fox], [fox])
+		LIBS_TESTGUI+=" $fox_LIBS"
+		CFLAGS_TESTGUI+=" $fox_CFLAGS"
+	fi
 fi
 AC_SUBST([LIBS_TESTGUI])
 AC_SUBST([CFLAGS_TESTGUI])

@@ -6,7 +6,7 @@
 # 2010-07-03
 ###########################################
 
-all: testgui
+all: hidapi-testgui
 
 CC=gcc
 CXX=g++
@@ -18,11 +18,11 @@ CFLAGS=-I../hidapi -Wall -g -c `fox-config --cflags`
 LIBS=`fox-config --libs` -framework IOKit -framework CoreFoundation -framework Cocoa
 
 
-testgui: $(OBJS)
-	g++ -Wall -g $^ $(LIBS) -o testgui
+hidapi-testgui: $(OBJS)
+	g++ -Wall -g $^ $(LIBS) -o hidapi-testgui
 	./copy_to_bundle.sh
-	#cp TestGUI.app/Contents/MacOS/testgui  TestGUI.app/Contents/MacOS/tg 
-	#cp start.sh TestGUI.app/Contents/MacOS/testgui 
+	#cp TestGUI.app/Contents/MacOS/hidapi-testgui  TestGUI.app/Contents/MacOS/tg 
+	#cp start.sh TestGUI.app/Contents/MacOS/hidapi-testgui 
 
 $(COBJS): %.o: %.c
 	$(CC) $(CFLAGS) $< -o $@
@@ -35,6 +35,6 @@ $(OBJCOBJS): %.o: %.m
 
 
 clean:
-	rm $(OBJS) testgui
+	rm $(OBJS) hidapi-testgui
 
 .PHONY: clean
