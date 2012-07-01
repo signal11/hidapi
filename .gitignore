@@ -12,7 +12,6 @@ install-sh
 libusb/Makefile.in
 linux/Makefile.in
 ltmain.sh
-m4/
 mac/Makefile.in
 missing
 testgui/Makefile.in
