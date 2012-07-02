@@ -4,7 +4,6 @@ if OS_FREEBSD
 pkgconfigdir=$(prefix)/libdata/pkgconfig
 else
 pkgconfigdir=$(libdir)/pkgconfig
-echo $pkgconfigdir
 endif
 
 if OS_LINUX
