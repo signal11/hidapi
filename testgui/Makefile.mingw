@@ -10,11 +10,11 @@ all: testgui
 
 CC=gcc
 CXX=g++
-COBJS=
-CPPOBJS=../windows/hid.o test.o
+COBJS=../windows/hid.o
+CPPOBJS=test.o
 OBJS=$(COBJS) $(CPPOBJS)
 CFLAGS=-I../hidapi -I../../hidapi-externals/fox/include -g -c
-LIBS= -lsetupapi -L../../hidapi-externals/fox/lib -lFOX-1.6 -lgdi32 -Wl,--enable-auto-import -lkernel32
+LIBS= -lsetupapi -L../../hidapi-externals/fox/lib -lFOX-1.6 -lgdi32 -Wl,--enable-auto-import -static-libgcc -static-libstdc++ -lkernel32
 
 
 testgui: $(OBJS)
