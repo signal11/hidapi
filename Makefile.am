@@ -1,4 +1,5 @@
 
+ACLOCAL_AMFLAGS = -I m4
 
 if OS_FREEBSD
 pkgconfigdir=$(prefix)/libdata/pkgconfig
@@ -25,6 +26,10 @@ endif
 
 if OS_FREEBSD
 SUBDIRS += libusb
+endif
+
+if OS_WINDOWS
+SUBDIRS += windows
 endif
 
 if BUILD_TESTGUI
