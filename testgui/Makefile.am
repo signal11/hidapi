@@ -34,3 +34,11 @@ bin_PROGRAMS = hidapi-testgui
 hidapi_testgui_SOURCES = test.cpp
 hidapi_testgui_LDADD = $(srcdir)/../libusb/libhidapi.la $(LIBS_TESTGUI)
 endif
+
+## Windows
+if OS_WINDOWS
+bin_PROGRAMS = hidapi-testgui
+
+hidapi_testgui_SOURCES = test.cpp
+hidapi_testgui_LDADD = $(srcdir)/../windows/libhidapi.la $(LIBS_TESTGUI)
+endif

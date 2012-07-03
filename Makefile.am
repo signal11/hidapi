@@ -1,10 +1,10 @@
 
+ACLOCAL_AMFLAGS = -I m4
 
 if OS_FREEBSD
 pkgconfigdir=$(prefix)/libdata/pkgconfig
 else
 pkgconfigdir=$(libdir)/pkgconfig
-echo $pkgconfigdir
 endif
 
 if OS_LINUX
@@ -26,6 +26,10 @@ endif
 
 if OS_FREEBSD
 SUBDIRS += libusb
+endif
+
+if OS_WINDOWS
+SUBDIRS += windows
 endif
 
 if BUILD_TESTGUI

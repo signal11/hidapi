@@ -2,8 +2,8 @@ AC_PREREQ([2.65])
 AC_INIT([hidapi], [0.8], [alan@signal11.us])
 AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([foreign -Wall -Werror])
+AC_CONFIG_MACRO_DIR([m4])
 LT_INIT
-
 
 AC_PROG_CC
 AC_PROG_CXX
@@ -63,6 +63,16 @@ case $host in
 	AC_CHECK_LIB([iconv], [iconv_open], [LIBS_LIBUSB_PRIVATE="${LIBS_LIBUSB_PRIVATE} -liconv"], [hidapi_lib_error libiconv])
 	echo libs_priv: $LIBS_LIBUSB_PRIVATE
 	;;
+*-mingw*)
+	AC_MSG_RESULT([ (Windows back-end, using MinGW)])
+	backend="windows"
+	win_implementation="mingw"
+	;;
+*-cygwin*)
+	AC_MSG_RESULT([ (Windows back-end, using Cygwin)])
+	backend="windows"
+	win_implementation="cygwin"
+	;;
 *)
 	AC_MSG_ERROR([HIDAPI is not supported on your operating system yet])
 esac
@@ -73,6 +83,14 @@ AC_SUBST([LIBS_HIDRAW])
 AC_SUBST([LIBS_LIBUSB])
 AC_SUBST([CFLAGS_LIBUSB])
 AC_SUBST([CFLAGS_HIDRAW])
+
+if test "x$backend" = xwindows; then
+	AC_DEFINE(OS_WINDOWS, 1, [Windows implementations])
+	AC_SUBST(OS_WINDOWS)
+	LDFLAGS="${LDFLAGS} -no-undefined"
+	LIBS="${LIBS} -lsetupapi"
+fi
+
 
 # Test GUI
 AC_ARG_ENABLE([testgui],
@@ -89,8 +107,18 @@ if test "x$testgui_enabled" != "xno"; then
 		LIBS_TESTGUI+=" -framework Cocoa"
 		CFLAGS_TESTGUI+=`/opt/local/bin/fox-config --cflags`
 		OBJCFLAGS+=" -x objective-c++"
+	elif test "x$backend" = xwindows; then
+		# On Windows, just set the paths for Fox toolkit
+		if test "x$win_implementation" = xmingw; then
+			CFLAGS_TESTGUI="-I\$(srcdir)/../../hidapi-externals/fox/include -g -c"
+			LIBS_TESTGUI=" -mwindows \$(srcdir)/../../hidapi-externals/fox/lib/libFOX-1.6.a -lgdi32 -Wl,--enable-auto-import -static-libgcc -static-libstdc++ -lkernel32"
+		else
+			# Cygwin
+			CFLAGS_TESTGUI="-DWIN32 -I\$(srcdir)/../../hidapi-externals/fox/include -g -c"
+			LIBS_TESTGUI="\$(srcdir)/../../hidapi-externals/fox/lib/libFOX-cygwin-1.6.a -lgdi32 -Wl,--enable-auto-import -static-libgcc -static-libstdc++ -lkernel32"
+		fi
 	else
-		# On non-Mac platforms, use pkg-config to find fox.
+		# On Linux and FreeBSD platforms, use pkg-config to find fox.
 		PKG_CHECK_MODULES([fox], [fox])
 		LIBS_TESTGUI="${LIBS_TESTGUI} $fox_LIBS"
 		if test "x$backend" = xfreebsd; then
@@ -106,6 +134,7 @@ AC_SUBST([CFLAGS_TESTGUI])
 AM_CONDITIONAL(OS_LINUX, test "x$backend" = xlinux)
 AM_CONDITIONAL(OS_DARWIN, test "x$backend" = xdarwin)
 AM_CONDITIONAL(OS_FREEBSD, test "x$backend" = xfreebsd)
+AM_CONDITIONAL(OS_WINDOWS, test "x$backend" = xwindows)
 
 AC_CONFIG_HEADERS([config.h])
 
@@ -116,5 +145,5 @@ else
 	AC_CONFIG_FILES([pc/hidapi.pc])
 fi
 
-AC_CONFIG_FILES([Makefile linux/Makefile libusb/Makefile mac/Makefile testgui/Makefile])
+AC_CONFIG_FILES([Makefile linux/Makefile libusb/Makefile mac/Makefile windows/Makefile testgui/Makefile])
 AC_OUTPUT
