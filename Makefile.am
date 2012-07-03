@@ -35,3 +35,7 @@ endif
 if BUILD_TESTGUI
 SUBDIRS += testgui
 endif
+
+EXTRA_DIST = 
+
+dist_doc_DATA = README.txt AUTHORS.txt

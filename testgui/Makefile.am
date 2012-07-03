@@ -42,3 +42,13 @@ bin_PROGRAMS = hidapi-testgui
 hidapi_testgui_SOURCES = test.cpp
 hidapi_testgui_LDADD = $(srcdir)/../windows/libhidapi.la $(LIBS_TESTGUI)
 endif
+
+EXTRA_DIST = \
+ copy_to_bundle.sh \
+ Makefile.freebsd \
+ Makefile.linux \
+ Makefile.mac \
+ Makefile.mingw \
+ TestGUI.app/ \
+ testgui.sln \
+ testgui.vcproj
