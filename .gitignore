@@ -18,10 +18,8 @@ testgui/Makefile.in
 windows/Makefile.in
 
 Makefile
-autoscan.log
 config.h
 config.log
 config.status
-configure.scan
 stamp-h1
 libtool
