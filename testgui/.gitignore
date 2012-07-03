@@ -10,4 +10,10 @@ Release
 *.dll
 *.pdb
 *.o
-testgui
+hidapi-testgui
+hidapi-hidraw-testgui
+hidapi-libusb-testgui
+.deps
+.libs
+*.la
+*.lo

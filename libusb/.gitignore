@@ -1,4 +1,8 @@
 *.o
 *.so
-hidtest
+*.la
+*.lo
+*.a
+.libs
+.deps
 hidtest-libusb
