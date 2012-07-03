@@ -36,6 +36,6 @@ if BUILD_TESTGUI
 SUBDIRS += testgui
 endif
 
-EXTRA_DIST = 
+EXTRA_DIST = udev doxygen
 
-dist_doc_DATA = README.txt AUTHORS.txt
+dist_doc_DATA = README.txt AUTHORS.txt LICENSE-bsd.txt LICENSE-gpl3.txt LICENSE-orig.txt LICENSE.txt
