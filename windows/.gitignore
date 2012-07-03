@@ -9,3 +9,7 @@ Release
 *.suo
 *.dll
 *.pdb
+.deps
+.libs
+*.lo
+*.la
