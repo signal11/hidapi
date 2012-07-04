@@ -145,5 +145,5 @@ else
 	AC_CONFIG_FILES([pc/hidapi.pc])
 fi
 
-AC_CONFIG_FILES([Makefile linux/Makefile libusb/Makefile mac/Makefile windows/Makefile testgui/Makefile])
+AC_CONFIG_FILES([Makefile linux/Makefile libusb/Makefile mac/Makefile windows/Makefile hidtest/Makefile testgui/Makefile])
 AC_OUTPUT

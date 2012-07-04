@@ -13,7 +13,6 @@ else
 pkgconfig_DATA=pc/hidapi.pc
 endif
 
-
 SUBDIRS=
 
 if OS_LINUX
@@ -31,6 +30,8 @@ endif
 if OS_WINDOWS
 SUBDIRS += windows
 endif
+
+SUBDIRS += hidtest
 
 if BUILD_TESTGUI
 SUBDIRS += testgui
