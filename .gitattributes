@@ -1,0 +1,4 @@
+* text=auto
+
+bootstrap text eol=lf
+configure.ac text eol=lf
