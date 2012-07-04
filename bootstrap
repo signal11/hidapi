@@ -1,1 +1,2 @@
-autoreconf -ivf
+#!/bin/sh -x
+autoreconf --install --verbose --force
