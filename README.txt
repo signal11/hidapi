@@ -129,11 +129,9 @@ shared library, you will need to build it from the HIDAPI source
 distribution.  If you choose instead to embed HIDAPI directly into your
 application, you can skip the building and look at the provided platform
 Makefiles for guidance.  These platform Makefiles are located in linux/
-libusb/ mac/ and windows/ and are called Makefile.PLATFORM where PLATFORM is
-the name of the platform (eg: Makefile.linux or Makefile.mac).
-In addition, Visual Studio projects are provided. Even if you're going to
-embed HIDAPI into your project, it is still beneficial to build the example
-programs.
+libusb/ mac/ and windows/ and are called Makefile-manual.  In addition,
+Visual Studio projects are provided.  Even if you're going to embed HIDAPI
+into your project, it is still beneficial to build the example programs.
 
 
 Prerequisites:
@@ -238,13 +236,13 @@ really be used as examples only. If you want to build a system-wide shared
 library, use the Autotools method described above.
 
 	To build HIDAPI using the manual makefiles, change to the directory
-	of your platform and run make:
-		cd linux/ make -F Makefile-manual
+	of your platform and run make. For example, on Linux run:
+		cd linux/
+		make -f Makefile-manual
 
 	To build the Test GUI using the manual makefiles:
 		cd testgui/
-		make -F Makefile-manual
-
+		make -f Makefile-manual
 
 Building on Windows:
 ---------------------
