@@ -171,5 +171,11 @@ fi
 
 AC_SUBST(LTLDFLAGS)
 
-AC_CONFIG_FILES([Makefile linux/Makefile libusb/Makefile mac/Makefile windows/Makefile hidtest/Makefile testgui/Makefile])
+AC_CONFIG_FILES([Makefile \
+	hidtest/Makefile \
+	libusb/Makefile \
+	linux/Makefile \
+	mac/Makefile \
+	testgui/Makefile \
+	windows/Makefile])
 AC_OUTPUT
