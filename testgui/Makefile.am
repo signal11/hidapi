@@ -1,21 +1,21 @@
 
-AM_CPPFLAGS = -I$(srcdir)/../hidapi/ $(CFLAGS_TESTGUI)
+AM_CPPFLAGS = -I$(top_srcdir)/hidapi/ $(CFLAGS_TESTGUI)
 
 if OS_LINUX
 ## Linux
 bin_PROGRAMS = hidapi-hidraw-testgui hidapi-libusb-testgui
 
 hidapi_hidraw_testgui_SOURCES = test.cpp
-hidapi_hidraw_testgui_LDADD = $(srcdir)/../linux/libhidapi-hidraw.la $(LIBS_TESTGUI)
+hidapi_hidraw_testgui_LDADD = $(top_builddir)/linux/libhidapi-hidraw.la $(LIBS_TESTGUI)
 
 hidapi_libusb_testgui_SOURCES = test.cpp
-hidapi_libusb_testgui_LDADD = $(srcdir)/../libusb/libhidapi-libusb.la $(LIBS_TESTGUI)
+hidapi_libusb_testgui_LDADD = $(top_builddir)/libusb/libhidapi-libusb.la $(LIBS_TESTGUI)
 else
 ## Other OS's
 bin_PROGRAMS = hidapi-testgui
 
 hidapi_testgui_SOURCES = test.cpp
-hidapi_testgui_LDADD = $(srcdir)/../$(backend)/libhidapi.la $(LIBS_TESTGUI)
+hidapi_testgui_LDADD = $(top_builddir)/$(backend)/libhidapi.la $(LIBS_TESTGUI)
 endif
 
 if OS_DARWIN

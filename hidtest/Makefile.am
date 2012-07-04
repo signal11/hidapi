@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -I$(srcdir)/../hidapi/
+AM_CPPFLAGS = -I$(top_srcdir)/hidapi/
 
 ## Linux
 if OS_LINUX
