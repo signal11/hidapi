@@ -46,6 +46,7 @@ case $host in
 	AC_DEFINE(OS_LINUX, 1, [Linux implementations])
 	AC_SUBST(OS_LINUX)
 	backend="linux"
+	os="linux"
 
 	# HIDAPI/hidraw libs
 	PKG_CHECK_MODULES([libudev], [libudev])
@@ -64,14 +65,16 @@ case $host in
 	AC_MSG_RESULT([ (Mac OS X back-end)])
 	AC_DEFINE(OS_DARWIN, 1, [Mac implementation])
 	AC_SUBST(OS_DARWIN)
-	backend="darwin"
+	backend="mac"
+	os="darwin"
 	LIBS="${LIBS} -framework IOKit -framework CoreFoundation"
 	;;
 *-freebsd*)
 	AC_MSG_RESULT([ (FreeBSD back-end)])
 	AC_DEFINE(OS_FREEBSD, 1, [FreeBSD implementation])
 	AC_SUBST(OS_FREEBSD)
-	backend="freebsd"
+	backend="libusb"
+	os="freebsd"
 
 	CFLAGS="$CFLAGS -I/usr/local/include"
 	LDFLAGS="$LDFLAGS -L/usr/local/lib"
@@ -84,11 +87,13 @@ case $host in
 *-mingw*)
 	AC_MSG_RESULT([ (Windows back-end, using MinGW)])
 	backend="windows"
+	os="windows"
 	win_implementation="mingw"
 	;;
 *-cygwin*)
 	AC_MSG_RESULT([ (Windows back-end, using Cygwin)])
 	backend="windows"
+	os="windows"
 	win_implementation="cygwin"
 	;;
 *)
@@ -102,7 +107,7 @@ AC_SUBST([LIBS_LIBUSB])
 AC_SUBST([CFLAGS_LIBUSB])
 AC_SUBST([CFLAGS_HIDRAW])
 
-if test "x$backend" = xwindows; then
+if test "x$os" = xwindows; then
 	AC_DEFINE(OS_WINDOWS, 1, [Windows implementations])
 	AC_SUBST(OS_WINDOWS)
 	LDFLAGS="${LDFLAGS} -no-undefined"
@@ -119,13 +124,13 @@ AC_ARG_ENABLE([testgui],
 AM_CONDITIONAL([BUILD_TESTGUI], [test "x$testgui_enabled" != "xno"])
 
 if test "x$testgui_enabled" != "xno"; then
-	if test "x$backend" = xdarwin; then
+	if test "x$os" = xdarwin; then
 		# On Mac OS, don't use pkg-config.
 		LIBS_TESTGUI+=`/opt/local/bin/fox-config --libs`
 		LIBS_TESTGUI+=" -framework Cocoa"
 		CFLAGS_TESTGUI+=`/opt/local/bin/fox-config --cflags`
 		OBJCFLAGS+=" -x objective-c++"
-	elif test "x$backend" = xwindows; then
+	elif test "x$os" = xwindows; then
 		# On Windows, just set the paths for Fox toolkit
 		if test "x$win_implementation" = xmingw; then
 			CFLAGS_TESTGUI="-I\$(srcdir)/../../hidapi-externals/fox/include -g -c"
@@ -139,7 +144,7 @@ if test "x$testgui_enabled" != "xno"; then
 		# On Linux and FreeBSD platforms, use pkg-config to find fox.
 		PKG_CHECK_MODULES([fox], [fox])
 		LIBS_TESTGUI="${LIBS_TESTGUI} $fox_LIBS"
-		if test "x$backend" = xfreebsd; then
+		if test "x$os" = xfreebsd; then
 			LIBS_TESTGUI="${LIBS_TESTGUI} -L/usr/local/lib"
 		fi
 		CFLAGS_TESTGUI="${CFLAGS_TESTGUI} $fox_CFLAGS"
@@ -147,16 +152,17 @@ if test "x$testgui_enabled" != "xno"; then
 fi
 AC_SUBST([LIBS_TESTGUI])
 AC_SUBST([CFLAGS_TESTGUI])
+AC_SUBST([backend])
 
 # OS info for Automake
-AM_CONDITIONAL(OS_LINUX, test "x$backend" = xlinux)
-AM_CONDITIONAL(OS_DARWIN, test "x$backend" = xdarwin)
-AM_CONDITIONAL(OS_FREEBSD, test "x$backend" = xfreebsd)
-AM_CONDITIONAL(OS_WINDOWS, test "x$backend" = xwindows)
+AM_CONDITIONAL(OS_LINUX, test "x$os" = xlinux)
+AM_CONDITIONAL(OS_DARWIN, test "x$os" = xdarwin)
+AM_CONDITIONAL(OS_FREEBSD, test "x$os" = xfreebsd)
+AM_CONDITIONAL(OS_WINDOWS, test "x$os" = xwindows)
 
 AC_CONFIG_HEADERS([config.h])
 
-if test "x$backend" = "xlinux"; then
+if test "x$os" = "xlinux"; then
 	AC_CONFIG_FILES([pc/hidapi-hidraw.pc])
 	AC_CONFIG_FILES([pc/hidapi-libusb.pc])
 else

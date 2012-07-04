@@ -16,6 +16,6 @@ else
 noinst_PROGRAMS = hidtest
 
 hidtest_SOURCES = hidtest.cpp
-hidtest_LDADD = $(srcdir)/../libusb/libhidapi.la
+hidtest_LDADD = $(srcdir)/../$(backend)/libhidapi.la
 
 endif
