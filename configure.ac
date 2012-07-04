@@ -21,12 +21,15 @@ LTLDFLAGS="-version-info ${lt_current}:${lt_revision}:${lt_age}"
 AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([foreign -Wall -Werror])
 AC_CONFIG_MACRO_DIR([m4])
+
+m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 LT_INIT
 
 AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_OBJC
 PKG_PROG_PKG_CONFIG
+
 
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
