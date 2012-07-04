@@ -10,3 +10,8 @@ Release
 *.dll
 *.pdb
 *.o
+.deps/
+.libs/
+hidtest-hidraw
+hidtest-libusb
+hidtest
