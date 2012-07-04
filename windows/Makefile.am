@@ -1,6 +1,6 @@
 lib_LTLIBRARIES = libhidapi.la
 libhidapi_la_SOURCES = hid.c
-libhidapi_la_LDFLAGS = -version-info 0:0:0
+libhidapi_la_LDFLAGS = $(LTLDFLAGS)
 AM_CPPFLAGS = -I$(srcdir)/../hidapi/
 libhidapi_la_LIBADD = $(LIBS)
 

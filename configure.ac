@@ -1,5 +1,23 @@
 AC_PREREQ([2.65])
-AC_INIT([hidapi], [0.8], [alan@signal11.us])
+
+# Version number. This is currently the only place.
+m4_define([HIDAPI_MAJOR],   0)
+m4_define([HIDAPI_MINOR],   7)
+m4_define([HIDAPI_RELEASE], 0)
+m4_define([HIDAPI_RC],      +)
+m4_define([VERSION_STRING], HIDAPI_MAJOR[.]HIDAPI_MINOR[.]HIDAPI_RELEASE[]HIDAPI_RC)
+
+AC_INIT([hidapi], VERSION_STRING, [alan@signal11.us])
+
+# Library soname version
+# Follow the following rules (particularly the ones in the second link):
+#  http://www.gnu.org/software/libtool/manual/html_node/Updating-version-info.html
+#  http://sourceware.org/autobook/autobook/autobook_91.html
+lt_current="0"
+lt_revision="0"
+lt_age="0"
+LTLDFLAGS="-version-info ${lt_current}:${lt_revision}:${lt_age}"
+
 AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([foreign -Wall -Werror])
 AC_CONFIG_MACRO_DIR([m4])
@@ -144,6 +162,8 @@ if test "x$backend" = "xlinux"; then
 else
 	AC_CONFIG_FILES([pc/hidapi.pc])
 fi
+
+AC_SUBST(LTLDFLAGS)
 
 AC_CONFIG_FILES([Makefile linux/Makefile libusb/Makefile mac/Makefile windows/Makefile hidtest/Makefile testgui/Makefile])
 AC_OUTPUT
