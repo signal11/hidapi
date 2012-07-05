@@ -11,5 +11,6 @@ EXTRA_DIST = \
   ddk_build \
   hidapi.vcproj \
   hidtest.vcproj \
+  Makefile-manual \
   Makefile.mingw \
   hidapi.sln

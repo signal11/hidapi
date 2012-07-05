@@ -16,3 +16,5 @@ endif
 
 hdrdir = $(includedir)/hidapi
 hdr_HEADERS = $(top_srcdir)/hidapi/hidapi.h
+
+EXTRA_DIST = Makefile-manual

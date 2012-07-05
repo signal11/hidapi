@@ -30,6 +30,7 @@ endif
 
 EXTRA_DIST = \
  copy_to_bundle.sh \
+ Makefile-manual \
  Makefile.freebsd \
  Makefile.linux \
  Makefile.mac \
