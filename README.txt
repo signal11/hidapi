@@ -319,9 +319,9 @@ Building HIDAPI
 Build HIDAPI:
 
 	PKG_CONFIG_DIR= \
-	PKG_CONFIG_LIBDIR=${STAGING}/lib/pkgconfig:${STAGING}/share/pkgconfig \
-	PKG_CONFIG_SYSROOT_DIR=${STAGING} \
-	./configure --host=arm-linux --prefix=${STAGING}
+	PKG_CONFIG_LIBDIR=$STAGING/lib/pkgconfig:$STAGING/share/pkgconfig \
+	PKG_CONFIG_SYSROOT_DIR=$STAGING \
+	./configure --host=$HOST --prefix=$STAGING
 
 
 Signal 11 Software - 2010-04-11
