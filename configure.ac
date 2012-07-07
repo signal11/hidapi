@@ -60,18 +60,19 @@ case $host in
 	backend="linux"
 	os="linux"
 
+	# libs required for both implementations
+	AC_CHECK_LIB([rt], [clock_gettime], [LIBS_LIBUSB_PRIVATE+=" -lrt"], [hidapi_lib_error librt])
+
 	# HIDAPI/hidraw libs
-	PKG_CHECK_MODULES([libudev], [libudev])
+	PKG_CHECK_MODULES([libudev], [libudev], true, [hidapi_lib_error libudev])
 	LIBS_HIDRAW_PR+=" $libudev_LIBS"
 	CFLAGS_HIDRAW+=" $libudev_CFLAGS"
-	AC_CHECK_LIB([rt], [clock_gettime], [LIBS_HIDRAW_PR+=" -lrt"])
 	
 	# HIDAPI/libusb libs
-	PKG_CHECK_MODULES([libusb], [libusb-1.0])
+	PKG_CHECK_MODULES([libusb], [libusb-1.0], true, [hidapi_lib_error libusb-1.0])
 	LIBS_LIBUSB_PRIVATE+=" $libusb_LIBS"
 	CFLAGS_LIBUSB+=" $libusb_CFLAGS"
-	AC_CHECK_LIB([rt], [clock_gettime], [LIBS_LIBUSB_PRIVATE+=" -lrt"])
-	AC_CHECK_LIB([pthread], [pthread_create], [LIBS_LIBUSB_PRIVATE+=" -lpthread"])
+	AC_CHECK_LIB([pthread], [pthread_create], [LIBS_LIBUSB_PRIVATE+=" -lpthread"], [hidapi_lib_error libpthread])
 	;;
 *-darwin*)
 	AC_MSG_RESULT([ (Mac OS X back-end)])
