@@ -41,6 +41,15 @@ hidapi_lib_error() {
 	exit 1
 }
 
+hidapi_prog_error() {
+	echo ""
+	echo "  Program $1 was not found on this system."
+	echo "  This program is part of $2."
+	echo "  Please install it and re-run ./configure"
+	echo ""
+	exit 1
+}
+
 AC_MSG_CHECKING([operating system])
 AC_MSG_RESULT($host)
 case $host in
@@ -129,9 +138,13 @@ AM_CONDITIONAL([BUILD_TESTGUI], [test "x$testgui_enabled" != "xno"])
 if test "x$testgui_enabled" != "xno"; then
 	if test "x$os" = xdarwin; then
 		# On Mac OS, don't use pkg-config.
-		LIBS_TESTGUI+=`/opt/local/bin/fox-config --libs`
-		LIBS_TESTGUI+=" -framework Cocoa"
-		CFLAGS_TESTGUI+=`/opt/local/bin/fox-config --cflags`
+		AC_CHECK_PROG([foxconfig], [fox-config], [fox-config], false)
+		if test "x$foxconfig" = "xfalse"; then
+			hidapi_prog_error fox-config "FOX Toolkit"
+		fi
+		LIBS_TESTGUI+=`$foxconfig --libs`
+		LIBS_TESTGUI+=" -framework Cocoa -L/usr/X11R6/lib"
+		CFLAGS_TESTGUI+=`$foxconfig --cflags`
 		OBJCFLAGS+=" -x objective-c++"
 	elif test "x$os" = xwindows; then
 		# On Windows, just set the paths for Fox toolkit
