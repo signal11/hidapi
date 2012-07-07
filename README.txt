@@ -279,6 +279,50 @@ not. To build using the DDK:
       by the build system which is appropriate for your environment. On
       Windows XP, this directory is objfre_wxp_x86/i386.
 
+Cross Compiling
+================
+
+This section talks about cross compiling HIDAPI for Linux using autotools. 
+This is useful for using HIDAPI on embedded Linux targets.  These
+instructions assume the most raw kind of embedded Linux build, where all
+prerequisites will need to be built first.  This process will of course vary
+based on your embedded Linux build system if you are using one, such as
+OpenEmbedded or Buildroot.
+
+For the purpose of this section, it will be assumed that the following
+environment variables are exported.
+
+	$ export STAGING=$HOME/out
+	$ export HOST=arm-linux
+
+STAGING and HOST can be modified to suit your setup.
+
+Prerequisites
+--------------
+
+Note that the build of libudev is the very basic configuration.
+
+Build Libusb. From the libusb source directory, run:
+	./configure --host=$HOST --prefix=$STAGING
+	make
+	make install
+
+Build libudev. From the libudev source directory, run:
+	./configure --disable-gudev --disable-introspection --disable-hwdb \
+		 --host=arm-linux --prefix=$STAGING
+	make
+	make install
+
+Building HIDAPI
+----------------
+
+Build HIDAPI:
+
+	PKG_CONFIG_DIR= \
+	PKG_CONFIG_LIBDIR=${STAGING}/lib/pkgconfig:${STAGING}/share/pkgconfig \
+	PKG_CONFIG_SYSROOT_DIR=${STAGING} \
+	./configure --host=arm-linux --prefix=${STAGING}
+
 
 Signal 11 Software - 2010-04-11
                      2010-07-28
