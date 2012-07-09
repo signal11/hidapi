@@ -53,6 +53,7 @@ function copydeps {
 				z=0
 			else
 				cp $i $EXEPATH
+				chmod 755 $EXEPATH/$BASE
 			fi
 			
 			
