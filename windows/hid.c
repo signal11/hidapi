@@ -264,11 +264,13 @@ struct hid_device_info HID_API_EXPORT * HID_API_CALL hid_enumerate(unsigned shor
 	SP_DEVICE_INTERFACE_DETAIL_DATA_A *device_interface_detail_data = NULL;
 	HDEVINFO device_info_set = INVALID_HANDLE_VALUE;
 	int device_index = 0;
+	int i;
 
 	if (hid_init() < 0)
 		return NULL;
 
 	// Initialize the Windows objects.
+	memset(&devinfo_data, 0x0, sizeof(devinfo_data));
 	devinfo_data.cbSize = sizeof(SP_DEVINFO_DATA);
 	device_interface_data.cbSize = sizeof(SP_DEVICE_INTERFACE_DATA);
 
@@ -322,6 +324,31 @@ struct hid_device_info HID_API_EXPORT * HID_API_CALL hid_enumerate(unsigned shor
 			//register_error(dev, "Unable to call SetupDiGetDeviceInterfaceDetail");
 			// Continue to the next device.
 			goto cont;
+		}
+
+		// Make sure this device is of Setup Class "HIDClass" and has a
+		// driver bound to it.
+		for (i = 0; ; i++) {
+			char driver_name[256];
+
+			// Populate devinfo_data. This function will return failure
+			// when there are no more interfaces left.
+			res = SetupDiEnumDeviceInfo(device_info_set, i, &devinfo_data);
+			if (!res)
+				goto cont;
+
+			res = SetupDiGetDeviceRegistryPropertyA(device_info_set, &devinfo_data,
+			               SPDRP_CLASS, NULL, (PBYTE)driver_name, sizeof(driver_name), NULL);
+			if (!res)
+				goto cont;
+
+			if (strcmp(driver_name, "HIDClass") == 0) {
+				// See if there's a driver bound.
+				res = SetupDiGetDeviceRegistryPropertyA(device_info_set, &devinfo_data,
+				           SPDRP_DRIVER, NULL, (PBYTE)driver_name, sizeof(driver_name), NULL);
+				if (res)
+					break;
+			}
 		}
 
 		//wprintf(L"HandleName: %s\n", device_interface_detail_data->DevicePath);
