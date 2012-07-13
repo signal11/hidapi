@@ -166,6 +166,8 @@ if test "x$testgui_enabled" != "xno"; then
 		LIBS_TESTGUI+=" -framework Cocoa -L/usr/X11R6/lib"
 		CFLAGS_TESTGUI+=`$foxconfig --cflags`
 		OBJCFLAGS+=" -x objective-c++"
+		mkdir -p testgui/TestGUI.app
+		cp -R ${srcdir}/testgui/TestGUI.app.in/ testgui/TestGUI.app
 	elif test "x$os" = xwindows; then
 		# On Windows, just set the paths for Fox toolkit
 		if test "x$win_implementation" = xmingw; then

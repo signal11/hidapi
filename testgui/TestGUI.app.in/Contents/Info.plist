@@ -7,7 +7,7 @@
 	<key>CFBundleDisplayName</key>
 	<string></string>
 	<key>CFBundleExecutable</key>
-	<string>TestGUI</string>
+	<string>hidapi-testgui</string>
 	<key>CFBundleIconFile</key>
 	<string>Signal11.icns</string>
 	<key>CFBundleIdentifier</key>

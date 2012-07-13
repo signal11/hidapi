@@ -22,7 +22,7 @@ if OS_DARWIN
 hidapi_testgui_SOURCES = test.cpp mac_support_cocoa.m
 # Rules for copying the binary and its dependencies into the app bundle.
 TestGUI.app/Contents/MacOS/hidapi-testgui$(EXEEXT): hidapi-testgui$(EXEEXT)
-	./copy_to_bundle.sh
+	$(srcdir)/copy_to_bundle.sh
 
 all: all-am TestGUI.app/Contents/MacOS/hidapi-testgui$(EXEEXT)
 
