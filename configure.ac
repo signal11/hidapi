@@ -59,9 +59,7 @@ case $host in
 	AC_SUBST(OS_LINUX)
 	backend="linux"
 	os="linux"
-
-	# libs required for both implementations
-	AC_CHECK_LIB([rt], [clock_gettime], [LIBS_LIBUSB_PRIVATE+=" -lrt"], [hidapi_lib_error librt])
+	threads="pthreads"
 
 	# HIDAPI/hidraw libs
 	PKG_CHECK_MODULES([libudev], [libudev], true, [hidapi_lib_error libudev])
@@ -69,10 +67,10 @@ case $host in
 	CFLAGS_HIDRAW+=" $libudev_CFLAGS"
 	
 	# HIDAPI/libusb libs
+	AC_CHECK_LIB([rt], [clock_gettime], [LIBS_LIBUSB_PRIVATE+=" -lrt"], [hidapi_lib_error librt])
 	PKG_CHECK_MODULES([libusb], [libusb-1.0], true, [hidapi_lib_error libusb-1.0])
 	LIBS_LIBUSB_PRIVATE+=" $libusb_LIBS"
 	CFLAGS_LIBUSB+=" $libusb_CFLAGS"
-	AC_CHECK_LIB([pthread], [pthread_create], [LIBS_LIBUSB_PRIVATE+=" -lpthread"], [hidapi_lib_error libpthread])
 	;;
 *-darwin*)
 	AC_MSG_RESULT([ (Mac OS X back-end)])
@@ -80,6 +78,7 @@ case $host in
 	AC_SUBST(OS_DARWIN)
 	backend="mac"
 	os="darwin"
+	threads="pthreads"
 	LIBS="${LIBS} -framework IOKit -framework CoreFoundation"
 	;;
 *-freebsd*)
@@ -88,12 +87,12 @@ case $host in
 	AC_SUBST(OS_FREEBSD)
 	backend="libusb"
 	os="freebsd"
+	threads="pthreads"
 
 	CFLAGS="$CFLAGS -I/usr/local/include"
 	LDFLAGS="$LDFLAGS -L/usr/local/lib"
 	LIBS="${LIBS}"
 	AC_CHECK_LIB([usb], [libusb_init], [LIBS_LIBUSB_PRIVATE="${LIBS_LIBUSB_PRIVATE} -lusb"], [hidapi_lib_error libusb])
-	AC_CHECK_LIB([pthread], [pthread_create], [LIBS_LIBUSB_PRIVATE="${LIBS_LIBUSB_PRIVATE} -lpthread"], [hidapi_lib_error libpthread])
 	AC_CHECK_LIB([iconv], [iconv_open], [LIBS_LIBUSB_PRIVATE="${LIBS_LIBUSB_PRIVATE} -liconv"], [hidapi_lib_error libiconv])
 	echo libs_priv: $LIBS_LIBUSB_PRIVATE
 	;;
@@ -101,12 +100,14 @@ case $host in
 	AC_MSG_RESULT([ (Windows back-end, using MinGW)])
 	backend="windows"
 	os="windows"
+	threads="windows"
 	win_implementation="mingw"
 	;;
 *-cygwin*)
 	AC_MSG_RESULT([ (Windows back-end, using Cygwin)])
 	backend="windows"
 	os="windows"
+	threads="windows"
 	win_implementation="cygwin"
 	;;
 *)
@@ -127,6 +128,24 @@ if test "x$os" = xwindows; then
 	LIBS="${LIBS} -lsetupapi"
 fi
 
+if test "x$threads" = xpthreads; then
+	AX_PTHREAD([found_pthreads=yes], [found_pthreads=no])
+
+	if test "x$found_pthreads" = xyes; then
+		if test "x$os" = xlinux; then
+			# Only use pthreads for libusb implementation on Linux.
+			LIBS_LIBUSB="$PTHREAD_LIBS $LIBS_LIBUSB"
+			CFLAGS_LIBUSB="$CFLAGS_LIBUSB $PTHREAD_CFLAGS"
+			# There's no separate CC on Linux for threading,
+			# so it's ok that both implementations use $PTHREAD_CC
+			CC="$PTHREAD_CC"
+		else
+			LIBS="$PTHREAD_LIBS $LIBS"
+			CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
+			CC="$PTHREAD_CC"
+		fi
+	fi
+fi
 
 # Test GUI
 AC_ARG_ENABLE([testgui],
