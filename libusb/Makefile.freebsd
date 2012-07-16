@@ -30,7 +30,7 @@ hidtest: $(OBJS)
 
 # Shared Libs
 libhidapi.so: $(COBJS)
-	$(CC) $(LDFLAGS) -shared -Wl,-soname,$@.0 $^ -o $@
+	$(CC) $(LDFLAGS) -shared -Wl,-soname,$@.0 $^ -o $@ $(LIBS)
 
 # Objects
 $(COBJS): %.o: %.c
