@@ -59,9 +59,13 @@ extern "C" {
 #define LOG(...) do {} while (0)
 #endif
 
+#ifndef __FreeBSD__
+#define DETACH_KERNEL_DRIVER
+#endif
 
 /* Uncomment to enable the retrieval of Usage and Usage Page in
-hid_enumerate(). Warning, this is very invasive as it requires the detach
+hid_enumerate(). Warning, on platforms different from FreeBSD
+this is very invasive as it requires the detach
 and re-attach of the kernel driver. See comments inside hid_enumerate().
 libusb HIDAPI programs are encouraged to use the interface number
 instead to differentiate between interfaces on a composite HID device. */
@@ -520,9 +524,9 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 							#if 0. For composite devices, use the interface
 							field in the hid_device_info struct to distinguish
 							between interfaces. */
-								int detached = 0;
 								unsigned char data[256];
-							
+#ifdef DETACH_KERNEL_DRIVER
+								int detached = 0;
 								/* Usage Page and Usage */
 								res = libusb_kernel_driver_active(handle, interface_num);
 								if (res == 1) {
@@ -532,6 +536,7 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 									else
 										detached = 1;
 								}
+#endif
 								res = libusb_claim_interface(handle, interface_num);
 								if (res >= 0) {
 									/* Get the HID Report Descriptor. */
@@ -554,14 +559,16 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 								}
 								else
 									LOG("Can't claim interface %d\n", res);
-
+#ifdef DETACH_KERNEL_DRIVER
 								/* Re-attach kernel driver if necessary. */
 								if (detached) {
 									res = libusb_attach_kernel_driver(handle, interface_num);
 									if (res < 0)
 										LOG("Couldn't re-attach kernel driver.\n");
 								}
-#endif /*******************/
+#endif
+
+#endif // INVASIVE_GET_USAGE
 
 								libusb_close(handle);
 							}
@@ -813,7 +820,7 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
  							break;
 						}
 						good_open = 1;
-						
+#ifdef DETACH_KERNEL_DRIVER
 						/* Detach the kernel driver, but only if the
 						   device is managed by the kernel */
 						if (libusb_kernel_driver_active(dev->device_handle, intf_desc->bInterfaceNumber) == 1) {
@@ -826,7 +833,7 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 								break;
 							}
 						}
-						
+#endif
 						res = libusb_claim_interface(dev->device_handle, intf_desc->bInterfaceNumber);
 						if (res < 0) {
 							LOG("can't claim interface %d: %d\n", intf_desc->bInterfaceNumber, res);
