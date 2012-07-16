@@ -6,7 +6,7 @@
 # 2010-07-03
 ###########################################
 
-all: testgui
+all: hidapi-testgui
 
 CC=gcc
 CXX=g++
@@ -15,14 +15,15 @@ CPPOBJS=test.o
 OBJCOBJS=mac_support_cocoa.o
 OBJS=$(COBJS) $(CPPOBJS) $(OBJCOBJS)
 CFLAGS=-I../hidapi -Wall -g -c `fox-config --cflags`
+LDFLAGS=-L/usr/X11R6/lib
 LIBS=`fox-config --libs` -framework IOKit -framework CoreFoundation -framework Cocoa
 
 
-testgui: $(OBJS)
-	g++ -Wall -g $^ $(LIBS) -o testgui
+hidapi-testgui: $(OBJS) TestGUI.app
+	g++ -Wall -g $(OBJS) $(LIBS) $(LDFLAGS) -o hidapi-testgui
 	./copy_to_bundle.sh
-	#cp TestGUI.app/Contents/MacOS/testgui  TestGUI.app/Contents/MacOS/tg 
-	#cp start.sh TestGUI.app/Contents/MacOS/testgui 
+	#cp TestGUI.app/Contents/MacOS/hidapi-testgui  TestGUI.app/Contents/MacOS/tg
+	#cp start.sh TestGUI.app/Contents/MacOS/hidapi-testgui
 
 $(COBJS): %.o: %.c
 	$(CC) $(CFLAGS) $< -o $@
@@ -33,8 +34,13 @@ $(CPPOBJS): %.o: %.cpp
 $(OBJCOBJS): %.o: %.m
 	$(CXX) $(CFLAGS) -x objective-c++ $< -o $@
 
+TestGUI.app: TestGUI.app.in
+	rm -Rf TestGUI.app
+	mkdir -p TestGUI.app
+	cp -R TestGUI.app.in/ TestGUI.app
 
 clean:
-	rm $(OBJS) testgui
+	rm -f $(OBJS) hidapi-testgui
+	rm -Rf TestGUI.app
 
 .PHONY: clean

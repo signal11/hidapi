@@ -10,4 +10,8 @@ Release
 *.dll
 *.pdb
 *.o
-hidtest
+hidapi-hidtest
+.deps
+.libs
+*.la
+*.lo

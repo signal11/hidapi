@@ -3,9 +3,10 @@
 #### Configuration:
 # The name of the executable. It is assumed
 # that it is in the current working directory.
-EXE_NAME=testgui
+EXE_NAME=hidapi-testgui
 # Path to the executable directory inside the bundle.
-EXEPATH=./TestGUI.app/Contents/MacOS
+# This must be an absolute path, so use $PWD.
+EXEPATH=$PWD/TestGUI.app/Contents/MacOS
 # Libraries to explicitly bundle, even though they
 # may not be in /opt/local. One per line. These
 # are used with grep, so only a portion of the name
@@ -52,6 +53,7 @@ function copydeps {
 				z=0
 			else
 				cp $i $EXEPATH
+				chmod 755 $EXEPATH/$BASE
 			fi
 			
 			
@@ -74,7 +76,22 @@ function copydeps {
 	done
 }
 
-rm $EXEPATH/*
-cp $EXE_NAME $EXEPATH
-copydeps $EXEPATH/$EXE_NAME
+rm -f $EXEPATH/*
 
+# Copy the binary into the bundle. Use ../libtool to do this if it's
+# available beacuse if $EXE_NAME was built with autotools, it will be
+# necessary.  If ../libtool not available, just use cp to do the copy, but
+# only if $EXE_NAME is a binary.
+if [ -x ../libtool ]; then
+	../libtool --mode=install cp $EXE_NAME $EXEPATH
+else
+	file -bI $EXE_NAME |grep binary
+	if [ $? -ne 0 ]; then
+		echo "There is no ../libtool and $EXE_NAME is not a binary."
+		echo "I'm not sure what to do."
+		exit 1
+	else
+		cp $EXE_NAME $EXEPATH
+	fi
+fi
+copydeps $EXEPATH/$EXE_NAME
