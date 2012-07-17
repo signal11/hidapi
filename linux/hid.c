@@ -289,7 +289,7 @@ static int get_device_string(hid_device *dev, enum device_string_id key, wchar_t
 						ret = (ret == (size_t)-1)? -1: 0;
 						break;
 					case DEVICE_STRING_SERIAL:
-						mbstowcs(string, serial_number_utf8, maxlen);
+						ret = mbstowcs(string, serial_number_utf8, maxlen);
 						ret = (ret == (size_t)-1)? -1: 0;
 						break;
 					default:
@@ -317,7 +317,8 @@ static int get_device_string(hid_device *dev, enum device_string_id key, wchar_t
 					str = udev_device_get_sysattr_value(parent, key_str);
 					if (str) {
 						/* Convert the string from UTF-8 to wchar_t */
-						ret = (mbstowcs(string, str, maxlen) < 0)? -1: 0;
+						ret = mbstowcs(string, str, maxlen);
+						ret = (ret == (size_t)-1)? -1: 0;
 						goto end;
 					}
 				}
