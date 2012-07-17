@@ -270,62 +270,61 @@ static int get_device_string(hid_device *dev, enum device_string_id key, wchar_t
 			char *product_name_utf8 = NULL;
 			int bus_type;
 
-			ret = parse_uevent_info(udev_device_get_sysattr_value(hid_dev, "uevent"),
-				&bus_type,
-				&dev_vid,
-				&dev_pid,
-				&serial_number_utf8,
-				&product_name_utf8);
+			ret = parse_uevent_info(
+			           udev_device_get_sysattr_value(hid_dev, "uevent"),
+			           &bus_type,
+			           &dev_vid,
+			           &dev_pid,
+			           &serial_number_utf8,
+			           &product_name_utf8);
 
 			if (bus_type == BUS_BLUETOOTH) {
 				switch (key) {
 					case DEVICE_STRING_MANUFACTURER:
-						ret = (wcsncpy(string, L"", maxlen) != string) ? -1 : 0;
+						wcsncpy(string, L"", maxlen);
+						ret = 0;
 						break;
 					case DEVICE_STRING_PRODUCT:
-						ret = (mbstowcs(string, product_name_utf8, maxlen) < 0) ? -1 : 0;
+						ret = mbstowcs(string, product_name_utf8, maxlen);
+						ret = (ret == (size_t)-1)? -1: 0;
 						break;
 					case DEVICE_STRING_SERIAL:
-						ret = (mbstowcs(string, serial_number_utf8, maxlen) < 0) ? -1 : 0;
+						mbstowcs(string, serial_number_utf8, maxlen);
+						ret = (ret == (size_t)-1)? -1: 0;
 						break;
 					default:
 						ret = -1;
 						break;
 				}
 			}
+			else {
+				/* This is a USB device. Find its parent USB Device node. */
+				parent = udev_device_get_parent_with_subsystem_devtype(
+					   udev_dev,
+					   "usb",
+					   "usb_device");
+				if (parent) {
+					const char *str;
+					const char *key_str = NULL;
+
+					if (key >= 0 && key < DEVICE_STRING_COUNT) {
+						key_str = device_string_names[key];
+					} else {
+						ret = -1;
+						goto end;
+					}
+
+					str = udev_device_get_sysattr_value(parent, key_str);
+					if (str) {
+						/* Convert the string from UTF-8 to wchar_t */
+						ret = (mbstowcs(string, str, maxlen) < 0)? -1: 0;
+						goto end;
+					}
+				}
+			}
 
 			free(serial_number_utf8);
 			free(product_name_utf8);
-
-			if (bus_type == BUS_BLUETOOTH) {
-				goto end;
-			} else {
-				/* Fall-through and use the USB code below.. */
-			}
-		}
-
-		/* Find the parent USB Device */
-		parent = udev_device_get_parent_with_subsystem_devtype(
-		       udev_dev,
-		       "usb",
-		       "usb_device");
-		if (parent) {
-			const char *str;
-			const char *key_str = NULL;
-
-			if (key >= 0 && key < DEVICE_STRING_COUNT) {
-				key_str = device_string_names[key];
-			} else {
-				ret = -1;
-				goto end;
-			}
-
-			str = udev_device_get_sysattr_value(parent, key_str);
-			if (str) {
-				/* Convert the string from UTF-8 to wchar_t */
-				ret = (mbstowcs(string, str, maxlen) < 0)? -1: 0;
-				goto end;
-			}
 		}
 	}
 
@@ -403,8 +402,6 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 		sysfs_path = udev_list_entry_get_name(dev_list_entry);
 		raw_dev = udev_device_new_from_syspath(udev, sysfs_path);
 		dev_path = udev_device_get_devnode(raw_dev);
-                printf("sysfs path: %s\n", sysfs_path);
-                printf("dev path: %s\n", dev_path);
 
 		hid_dev = udev_device_get_parent_with_subsystem_devtype(
 			raw_dev,
@@ -452,7 +449,7 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 
 			/* Fill out the record */
 			cur_dev->next = NULL;
-			cur_dev->path = dev_path ? strdup(dev_path) : NULL;
+			cur_dev->path = dev_path? strdup(dev_path): NULL;
 
 			/* VID/PID */
 			cur_dev->vendor_id = dev_vid;
@@ -481,15 +478,20 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 							"usb_device");
 
 					if (!usb_dev) {
+						/* Free this device */
 						free(cur_dev->serial_number);
 						free(cur_dev->path);
 						free(cur_dev);
+
+						/* Take it off the device list. */
 						if (prev_dev) {
 							prev_dev->next = NULL;
 							cur_dev = prev_dev;
-						} else {
+						}
+						else {
 							cur_dev = root = NULL;
 						}
+
 						goto next;
 					}
 
