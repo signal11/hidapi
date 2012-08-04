@@ -686,7 +686,7 @@ int HID_API_EXPORT hid_read_timeout(hid_device *dev, unsigned char *data, size_t
 	}
 
 	bytes_read = read(dev->device_handle, data, length);
-	if (bytes_read < 0 && errno == EAGAIN)
+	if (bytes_read < 0 && (errno == EAGAIN || errno == EINPROGRESS))
 		bytes_read = 0;
 
 	if (bytes_read >= 0 &&
