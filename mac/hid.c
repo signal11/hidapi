@@ -255,6 +255,10 @@ static unsigned short get_product_id(IOHIDDeviceRef device)
 	return get_int_property(device, CFSTR(kIOHIDProductIDKey));
 }
 
+static int32_t get_location_id(IOHIDDeviceRef device)
+{
+	return get_int_property(device, CFSTR(kIOHIDLocationIDKey));
+}
 
 static int32_t get_max_report_length(IOHIDDeviceRef device)
 {
@@ -366,6 +370,7 @@ static int make_path(IOHIDDeviceRef device, char *buf, size_t len)
 	int res;
 	unsigned short vid, pid;
 	char transport[32];
+        int32_t location;
 
 	buf[0] = '\0';
 
@@ -376,11 +381,16 @@ static int make_path(IOHIDDeviceRef device, char *buf, size_t len)
 	if (!res)
 		return -1;
 
+	location = get_location_id(device);
+
+	if (!res)
+		return -1;
+
 	vid = get_vendor_id(device);
 	pid = get_product_id(device);
 
-	res = snprintf(buf, len, "%s_%04hx_%04hx_%p",
-	                   transport, vid, pid, device);
+	res = snprintf(buf, len, "%s_%04hx_%04hx_%x",
+                       transport, vid, pid, location);
 
 
 	buf[len-1] = '\0';
@@ -743,6 +753,7 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 		IOHIDDeviceRef os_dev = device_array[i];
 
 		len = make_path(os_dev, cbuf, sizeof(cbuf));
+
 		if (!strcmp(cbuf, path)) {
 			// Matched Paths. Open this Device.
 			IOReturn ret = IOHIDDeviceOpen(os_dev, kIOHIDOptionsTypeNone);
@@ -1083,12 +1094,8 @@ HID_API_EXPORT const wchar_t * HID_API_CALL  hid_error(hid_device *dev)
 
 
 
-#if 0
-static int32_t get_location_id(IOHIDDeviceRef device)
-{
-	return get_int_property(device, CFSTR(kIOHIDLocationIDKey));
-}
 
+#if 0
 static int32_t get_usage(IOHIDDeviceRef device)
 {
 	int32_t res;
