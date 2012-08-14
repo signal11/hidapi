@@ -242,6 +242,8 @@ static int get_device_string(hid_device *dev, enum device_string_id key, wchar_t
 	struct udev_device *udev_dev, *parent, *hid_dev;
 	struct stat s;
 	int ret = -1;
+        char *serial_number_utf8 = NULL;
+        char *product_name_utf8 = NULL;
 
 	/* Create the udev object */
 	udev = udev_new();
@@ -262,8 +264,6 @@ static int get_device_string(hid_device *dev, enum device_string_id key, wchar_t
 		if (hid_dev) {
 			unsigned short dev_vid;
 			unsigned short dev_pid;
-			char *serial_number_utf8 = NULL;
-			char *product_name_utf8 = NULL;
 			int bus_type;
 			size_t retm;
 
@@ -321,13 +321,13 @@ static int get_device_string(hid_device *dev, enum device_string_id key, wchar_t
 					}
 				}
 			}
-
-			free(serial_number_utf8);
-			free(product_name_utf8);
 		}
 	}
 
 end:
+        free(serial_number_utf8);
+        free(product_name_utf8);
+
 	udev_device_unref(udev_dev);
 	// parent and hid_dev don't need to be (and can't be) unref'd.
 	// I'm not sure why, but they'll throw double-free() errors.
