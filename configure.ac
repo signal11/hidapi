@@ -1,4 +1,4 @@
-AC_PREREQ(2.65)
+AC_PREREQ(2.63)
 
 # Version number. This is currently the only place.
 m4_define([HIDAPI_MAJOR],   0)
