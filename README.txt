@@ -309,7 +309,7 @@ Build Libusb. From the libusb source directory, run:
 
 Build libudev. From the libudev source directory, run:
 	./configure --disable-gudev --disable-introspection --disable-hwdb \
-		 --host=arm-linux --prefix=$STAGING
+		 --host=$HOST --prefix=$STAGING
 	make
 	make install
 
