@@ -390,8 +390,6 @@ static int make_path(IOHIDDeviceRef device, char *buf, size_t len)
 /* Initialize the IOHIDManager. Return 0 for success and -1 for failure. */
 static int init_hid_manager(void)
 {
-	IOReturn res;
-	
 	/* Initialize all the HID Manager Objects */
 	hid_mgr = IOHIDManagerCreate(kCFAllocatorDefault, kIOHIDOptionsTypeNone);
 	if (hid_mgr) {
