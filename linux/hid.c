@@ -90,10 +90,13 @@ hid_device *new_hid_device()
 	return dev;
 }
 
+#if 0
+//TODO: Implement this function
 static void register_error(hid_device *device, const char *op)
 {
 
 }
+#endif
 
 /* The caller must free the returned string with free(). */
 static wchar_t *utf8_to_wchar_t(const char *utf8)
