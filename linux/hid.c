@@ -292,6 +292,7 @@ static int get_device_string(hid_device *dev, enum device_string_id key, wchar_t
 						ret = mbstowcs(string, serial_number_utf8, maxlen);
 						ret = (ret == (size_t)-1)? -1: 0;
 						break;
+					case DEVICE_STRING_COUNT:
 					default:
 						ret = -1;
 						break;
