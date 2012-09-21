@@ -265,6 +265,7 @@ static int get_device_string(hid_device *dev, enum device_string_id key, wchar_t
 			char *serial_number_utf8 = NULL;
 			char *product_name_utf8 = NULL;
 			int bus_type;
+			size_t retm;
 
 			ret = parse_uevent_info(
 			           udev_device_get_sysattr_value(hid_dev, "uevent"),
@@ -281,12 +282,12 @@ static int get_device_string(hid_device *dev, enum device_string_id key, wchar_t
 						ret = 0;
 						break;
 					case DEVICE_STRING_PRODUCT:
-						ret = mbstowcs(string, product_name_utf8, maxlen);
-						ret = (ret == (size_t)-1)? -1: 0;
+						retm = mbstowcs(string, product_name_utf8, maxlen);
+						ret = (retm == (size_t)-1)? -1: 0;
 						break;
 					case DEVICE_STRING_SERIAL:
-						ret = mbstowcs(string, serial_number_utf8, maxlen);
-						ret = (ret == (size_t)-1)? -1: 0;
+						retm = mbstowcs(string, serial_number_utf8, maxlen);
+						ret = (retm == (size_t)-1)? -1: 0;
 						break;
 					case DEVICE_STRING_COUNT:
 					default:
@@ -314,8 +315,8 @@ static int get_device_string(hid_device *dev, enum device_string_id key, wchar_t
 					str = udev_device_get_sysattr_value(parent, key_str);
 					if (str) {
 						/* Convert the string from UTF-8 to wchar_t */
-						ret = mbstowcs(string, str, maxlen);
-						ret = (ret == (size_t)-1)? -1: 0;
+						retm = mbstowcs(string, str, maxlen);
+						ret = (retm == (size_t)-1)? -1: 0;
 						goto end;
 					}
 				}
