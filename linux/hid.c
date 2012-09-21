@@ -80,7 +80,7 @@ struct hid_device_ {
 
 static __u32 kernel_version = 0;
 
-hid_device *new_hid_device()
+static hid_device *new_hid_device(void)
 {
 	hid_device *dev = calloc(1, sizeof(hid_device));
 	dev->device_handle = -1;
