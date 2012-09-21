@@ -102,7 +102,7 @@ static wchar_t *utf8_to_wchar_t(const char *utf8)
 
 	if (utf8) {
 		size_t wlen = mbstowcs(NULL, utf8, 0);
-		if (wlen < 0) {
+		if ((size_t) -1 == wlen) {
 			return wcsdup(L"");
 		}
 		ret = calloc(wlen+1, sizeof(wchar_t));
