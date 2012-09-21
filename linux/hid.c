@@ -186,7 +186,7 @@ static int uses_numbered_reports(__u8 *report_descriptor, __u32 size) {
  * The caller is responsible for free()ing the (newly-allocated) character
  * strings pointed to by serial_number_utf8 and product_name_utf8 after use.
  */
-int
+static int
 parse_uevent_info(const char *uevent, int *bus_type,
 	unsigned short *vendor_id, unsigned short *product_id,
 	char **serial_number_utf8, char **product_name_utf8)
