@@ -119,7 +119,7 @@ static wchar_t *copy_udev_string(struct udev_device *dev, const char *udev_name)
 /* uses_numbered_reports() returns 1 if report_descriptor describes a device
    which contains numbered reports. */
 static int uses_numbered_reports(__u8 *report_descriptor, __u32 size) {
-	int i = 0;
+	unsigned int i = 0;
 	int size_code;
 	int data_len, key_size;
 
