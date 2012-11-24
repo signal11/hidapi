@@ -88,6 +88,12 @@ cdef class device:
       if not r:
           return U(buff)
 
+  def send_feature_report(self, buff):
+      '''Accept a list of integers (0-255) and send them to the device'''
+      buff = ''.join(map(chr, buff)) # convert to bytes
+      cdef unsigned char* cbuff = buff # covert to c string
+      return hid_send_feature_report(self._c_hid, cbuff, len(buff))
+
   def error(self):
       return U(<wchar_t*>hid_error(self._c_hid))
 
