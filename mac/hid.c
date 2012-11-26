@@ -244,10 +244,14 @@ static int get_string_property(IOHIDDeviceRef device, CFStringRef prop, wchar_t 
 			(char)'?',
 			FALSE,
 			(UInt8*)buf,
-			len,
+			len * sizeof(wchar_t),
 			&used_buf_len);
 
-		buf[chars_copied] = 0;
+		if (chars_copied == len)
+			buf[len] = 0; /* len is decremented above */
+		else
+			buf[chars_copied] = 0;
+
 		return 0;
 	}
 	else
@@ -271,7 +275,7 @@ static int get_string_property_utf8(IOHIDDeviceRef device, CFStringRef prop, cha
 		CFIndex str_len = CFStringGetLength(str);
 		CFRange range;
 		range.location = 0;
-		range.length = (str_len > len)? len: str_len;
+		range.length = str_len;
 		CFIndex used_buf_len;
 		CFIndex chars_copied;
 		chars_copied = CFStringGetBytes(str,
@@ -283,7 +287,11 @@ static int get_string_property_utf8(IOHIDDeviceRef device, CFStringRef prop, cha
 			len,
 			&used_buf_len);
 
-		buf[chars_copied] = 0;
+		if (used_buf_len == len)
+			buf[len] = 0; /* len is decremented above */
+		else
+			buf[used_buf_len] = 0;
+
 		return used_buf_len;
 	}
 	else
