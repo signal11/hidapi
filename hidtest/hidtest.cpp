@@ -175,8 +175,6 @@ int main(int argc, char* argv[])
 		#endif
 	}
 
-	hid_exit();
-
 	printf("Data read:\n   ");
 	// Print out the returned buffer.
 	for (i = 0; i < res; i++)
