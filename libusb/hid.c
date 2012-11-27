@@ -23,7 +23,7 @@
         http://github.com/signal11/hidapi .
 ********************************************************/
 
-#define _GNU_SOURCE // needed for wcsdup() before glibc 2.10
+#define _GNU_SOURCE /* needed for wcsdup() before glibc 2.10 */
 
 /* C */
 #include <stdio.h>
@@ -140,7 +140,7 @@ static void free_hid_device(hid_device *dev)
 }
 
 #if 0
-//TODO: Implement this funciton on hidapi/libusb..
+/*TODO: Implement this funciton on hidapi/libusb.. */
 static void register_error(hid_device *device, const char *op)
 {
 
@@ -181,7 +181,7 @@ static uint32_t get_bytes(uint8_t *rpt, size_t len, size_t num_bytes, size_t cur
 static int get_usage(uint8_t *report_descriptor, size_t size,
                      unsigned short *usage_page, unsigned short *usage)
 {
-	int i = 0;
+	unsigned int i = 0;
 	int size_code;
 	int data_len, key_size;
 	int usage_found = 0, usage_page_found = 0;
@@ -247,7 +247,7 @@ static int get_usage(uint8_t *report_descriptor, size_t size,
 	
 	return -1; /* failure */
 }
-#endif // INVASIVE_GET_USAGE
+#endif /* INVASIVE_GET_USAGE */
 
 #ifdef __FreeBSD__
 /* The FreeBSD version of libusb doesn't have this funciton. In mainline
@@ -287,7 +287,7 @@ static uint16_t get_first_language(libusb_device_handle *dev)
 	if (len < 4)
 		return 0x0;
 	
-	return buf[1]; // First two bytes are len and descriptor type.
+	return buf[1]; /* First two bytes are len and descriptor type. */
 }
 
 static int is_language_supported(libusb_device_handle *dev, uint16_t lang)
@@ -439,7 +439,7 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 	ssize_t num_devs;
 	int i = 0;
 	
-	struct hid_device_info *root = NULL; // return object
+	struct hid_device_info *root = NULL; /* return object */
 	struct hid_device_info *cur_dev = NULL;
 	
 	hid_init();
@@ -509,6 +509,7 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 										get_usb_string(handle, desc.iProduct);
 
 #ifdef INVASIVE_GET_USAGE
+{
 							/*
 							This section is removed because it is too
 							invasive on the system. Getting a Usage Page
@@ -567,8 +568,8 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 										LOG("Couldn't re-attach kernel driver.\n");
 								}
 #endif
-
-#endif // INVASIVE_GET_USAGE
+}
+#endif /* INVASIVE_GET_USAGE */
 
 								libusb_close(handle);
 							}
@@ -729,7 +730,7 @@ static void *read_thread(void *param)
 	   from inside read_callback() */
 	libusb_submit_transfer(dev->transfer);
 
-	// Notify the main thread that the read thread is up and running.
+	/* Notify the main thread that the read thread is up and running. */
 	pthread_barrier_wait(&dev->barrier);
 	
 	/* Handle all the events. */
@@ -782,18 +783,17 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 {
 	hid_device *dev = NULL;
 
-	dev = new_hid_device();
-
 	libusb_device **devs;
 	libusb_device *usb_dev;
-	ssize_t num_devs;
 	int res;
 	int d = 0;
 	int good_open = 0;
 	
+	dev = new_hid_device();
+
 	hid_init();
 
-	num_devs = libusb_get_device_list(usb_context, &devs);
+	libusb_get_device_list(usb_context, &devs);
 	while ((usb_dev = devs[d++]) != NULL) {
 		struct libusb_device_descriptor desc;
 		struct libusb_config_descriptor *conf_desc = NULL;
@@ -812,7 +812,7 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 					if (!strcmp(dev_path, path)) {
 						/* Matched Paths. Open this device */
 
-						// OPEN HERE //
+						/* OPEN HERE */
 						res = libusb_open(usb_dev, &dev->device_handle);
 						if (res < 0) {
 							LOG("can't open device\n");
@@ -885,7 +885,7 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 						
 						pthread_create(&dev->thread, NULL, read_thread, dev);
 						
-						// Wait here for the read thread to be initialized.
+						/* Wait here for the read thread to be initialized. */
 						pthread_barrier_wait(&dev->barrier);
 						
 					}
@@ -899,12 +899,12 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 
 	libusb_free_device_list(devs, 1);
 	
-	// If we have a good handle, return it.
+	/* If we have a good handle, return it. */
 	if (good_open) {
 		return dev;
 	}
 	else {
-		// Unable to open any devices.
+		/* Unable to open any devices. */
 		free_hid_device(dev);
 		return NULL;
 	}
@@ -1362,6 +1362,7 @@ uint16_t get_usb_code_for_current_locale(void)
 	char *locale;
 	char search_string[64];
 	char *ptr;
+	struct lang_map_entry *lang;
 	
 	/* Get the current locale. */
 	locale = setlocale(0, NULL);
@@ -1384,7 +1385,7 @@ uint16_t get_usb_code_for_current_locale(void)
 	}
 
 	/* Find the entry which matches the string code of our locale. */
-	struct lang_map_entry *lang = lang_map;
+	lang = lang_map;
 	while (lang->string_code) {
 		if (!strcmp(lang->string_code, search_string)) {
 			return lang->usb_code;
@@ -1404,7 +1405,7 @@ uint16_t get_usb_code_for_current_locale(void)
 		ptr++;
 	}
 	
-#if 0 // TODO: Do we need this?
+#if 0 /* TODO: Do we need this? */
 	/* Find the entry which matches the string code of our language. */
 	lang = lang_map;
 	while (lang->string_code) {
