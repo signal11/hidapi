@@ -60,14 +60,13 @@ private:
 	FXTextField *feature_text;
 	FXTextField *feature_len;
 	FXTextField *get_feature_text;
-	FXTextField *get_feature_len;
 	FXText *input_text;
 	FXFont *title_font;
 	
 	struct hid_device_info *devices;
 	hid_device *connected_device;
 	size_t getDataFromTextField(FXTextField *tf, char *buf, size_t len);
-	size_t getLengthFromTextField(FXTextField *tf, size_t len);
+	int getLengthFromTextField(FXTextField *tf);
 
 
 protected:
@@ -114,7 +113,7 @@ FXDEFMAP(MainWindow) MainWindowMap [] = {
 FXIMPLEMENT(MainWindow, FXMainWindow, MainWindowMap, ARRAYNUMBER(MainWindowMap));
 
 MainWindow::MainWindow(FXApp *app)
-	: FXMainWindow(app, "HIDAPI Test Application", NULL, NULL, DECOR_ALL, 200,100, 425,600)
+	: FXMainWindow(app, "HIDAPI Test Application", NULL, NULL, DECOR_ALL, 200,100, 425,700)
 {
 	devices = NULL;
 	connected_device = NULL;
@@ -134,6 +133,11 @@ MainWindow::MainWindow(FXApp *app)
 		"octal. All other data is treated as decimal.", NULL, JUSTIFY_LEFT);
 	new FXLabel(vf,
 		"Data received from the device appears in the Input section.",
+		NULL, JUSTIFY_LEFT);
+	new FXLabel(vf,
+		"Optionally, a report length may be specified. Extra bytes are\n"
+		"padded with zeros. If no length is specified, the length is \n"
+		"inferred from the data.",
 		NULL, JUSTIFY_LEFT);
 	new FXLabel(vf, "");
 
@@ -155,22 +159,26 @@ MainWindow::MainWindow(FXApp *app)
 	// Output Group Box
 	FXGroupBox *gb = new FXGroupBox(vf, "Output", FRAME_GROOVE|LAYOUT_FILL_X);
 	FXMatrix *matrix = new FXMatrix(gb, 3, MATRIX_BY_COLUMNS|LAYOUT_FILL_X);
+	new FXLabel(matrix, "Data");
+	new FXLabel(matrix, "Length");
+	new FXLabel(matrix, "");
+
 	//hf = new FXHorizontalFrame(gb, LAYOUT_FILL_X);
-	output_text = new FXTextField(matrix, 40, NULL, 0, TEXTFIELD_NORMAL|LAYOUT_FILL_X|LAYOUT_FILL_COLUMN);
+	output_text = new FXTextField(matrix, 30, NULL, 0, TEXTFIELD_NORMAL|LAYOUT_FILL_X|LAYOUT_FILL_COLUMN);
 	output_text->setText("1 0x81 0");
-	output_len = new FXTextField(matrix, 10, NULL, 0, TEXTFIELD_NORMAL|LAYOUT_FILL_X|LAYOUT_FILL_COLUMN);
+	output_len = new FXTextField(matrix, 5, NULL, 0, TEXTFIELD_NORMAL|LAYOUT_FILL_X|LAYOUT_FILL_COLUMN);
 	output_button = new FXButton(matrix, "Send Output Report", NULL, this, ID_SEND_OUTPUT_REPORT, BUTTON_NORMAL|LAYOUT_FILL_X);
 	output_button->disable();
 	//new FXHorizontalFrame(matrix, LAYOUT_FILL_X);
 
 	//hf = new FXHorizontalFrame(gb, LAYOUT_FILL_X);
-	feature_text = new FXTextField(matrix, 40, NULL, 0, TEXTFIELD_NORMAL|LAYOUT_FILL_X|LAYOUT_FILL_COLUMN);
-	feature_len = new FXTextField(matrix, 10, NULL, 0, TEXTFIELD_NORMAL|LAYOUT_FILL_X|LAYOUT_FILL_COLUMN);
+	feature_text = new FXTextField(matrix, 30, NULL, 0, TEXTFIELD_NORMAL|LAYOUT_FILL_X|LAYOUT_FILL_COLUMN);
+	feature_len = new FXTextField(matrix, 5, NULL, 0, TEXTFIELD_NORMAL|LAYOUT_FILL_X|LAYOUT_FILL_COLUMN);
 	feature_button = new FXButton(matrix, "Send Feature Report", NULL, this, ID_SEND_FEATURE_REPORT, BUTTON_NORMAL|LAYOUT_FILL_X);
 	feature_button->disable();
 
-	get_feature_text = new FXTextField(matrix, 40, NULL, 0, TEXTFIELD_NORMAL|LAYOUT_FILL_X|LAYOUT_FILL_COLUMN);
-	get_feature_len = new FXTextField(matrix, 10, NULL, 0, TEXTFIELD_NORMAL|LAYOUT_FILL_X|LAYOUT_FILL_COLUMN);
+	get_feature_text = new FXTextField(matrix, 30, NULL, 0, TEXTFIELD_NORMAL|LAYOUT_FILL_X|LAYOUT_FILL_COLUMN);
+	new FXWindow(matrix);
 	get_feature_button = new FXButton(matrix, "Get Feature Report", NULL, this, ID_GET_FEATURE_REPORT, BUTTON_NORMAL|LAYOUT_FILL_X);
 	get_feature_button->disable();
 
@@ -332,41 +340,57 @@ MainWindow::getDataFromTextField(FXTextField *tf, char *buf, size_t len)
 	return i;
 }
 
-size_t
-MainWindow::getLengthFromTextField(FXTextField *tf, size_t len)
+/* getLengthFromTextField()
+   Returns length:
+	 0: empty text field
+	>0: valid length
+	-1: invalid length */
+int
+MainWindow::getLengthFromTextField(FXTextField *tf)
 {
-	// must be called after getDataFromTextField()...
-	// on Windows the exact expected length is required...
-	FXString data = tf->getText();
-	const FXchar *d = data.text();
-	size_t i = 0;
-	
-	// Copy the string from the GUI.
-	size_t sz = strlen(d);
+	long int len;
+	FXString str = tf->getText();
+	size_t sz = str.length();
+
 	if (sz > 0) {
-		char *str = (char*) malloc(sz+1);
-		strcpy(str, d);
-
 		char *endptr;
-		i = (size_t)strtol(str, &endptr, 0);
+		len = strtol(str.text(), &endptr, 0);
+		if (endptr != str.text() && *endptr == '\0') {
+			if (len <= 0) {
+				FXMessageBox::error(this, MBOX_OK, "Invalid length", "Enter a length greater than zero.");
+				return -1;
+			}
+			return len;
+		}
+		else
+			return -1;
+	}
 
-		free(str);
-		return i;
-	}
-	else {
-		// if length is not passed in use the data length determined by getDataFromTextField
-		return len;
-	}
+	return 0;
 }
 
 long
 MainWindow::onSendOutputReport(FXObject *sender, FXSelector sel, void *ptr)
 {
 	char buf[256];
-	size_t len;
-	len = getDataFromTextField(output_text, buf, sizeof(buf));
-	// for Windows we need to send the exact buffer size.
-	len = getLengthFromTextField(output_len, len);
+	size_t data_len, len;
+	int textfield_len;
+
+	memset(buf, 0x0, sizeof(buf));
+	textfield_len = getLengthFromTextField(output_len);
+	data_len = getDataFromTextField(output_text, buf, sizeof(buf));
+
+	if (textfield_len < 0) {
+		FXMessageBox::error(this, MBOX_OK, "Invalid length", "Length field is invalid. Please enter a number in hex, octal, or decimal.");
+		return 1;
+	}
+
+	if (textfield_len > sizeof(buf)) {
+		FXMessageBox::error(this, MBOX_OK, "Invalid length", "Length field is too long.");
+		return 1;
+	}
+
+	len = (textfield_len)? textfield_len: data_len;
 
 	int res = hid_write(connected_device, (const unsigned char*)buf, len);
 	if (res < 0) {
@@ -380,16 +404,30 @@ long
 MainWindow::onSendFeatureReport(FXObject *sender, FXSelector sel, void *ptr)
 {
 	char buf[256];
-	size_t len;
-	len = getDataFromTextField(feature_text, buf, sizeof(buf));
-	// for Windows we need to send the exact buffer size.
-	len = getLengthFromTextField(feature_len, len);
+	size_t data_len, len;
+	int textfield_len;
+
+	memset(buf, 0x0, sizeof(buf));
+	textfield_len = getLengthFromTextField(feature_len);
+	data_len = getDataFromTextField(feature_text, buf, sizeof(buf));
+
+	if (textfield_len < 0) {
+		FXMessageBox::error(this, MBOX_OK, "Invalid length", "Length field is invalid. Please enter a number in hex, octal, or decimal.");
+		return 1;
+	}
+
+	if (textfield_len > sizeof(buf)) {
+		FXMessageBox::error(this, MBOX_OK, "Invalid length", "Length field is too long.");
+		return 1;
+	}
+
+	len = (textfield_len)? textfield_len: data_len;
 
 	int res = hid_send_feature_report(connected_device, (const unsigned char*)buf, len); 
 	if (res < 0) {
 		FXMessageBox::error(this, MBOX_OK, "Error Writing", "Could not send feature report to device. Error reported was: %ls", hid_error(connected_device));
 	}
-	
+
 	return 1;
 }
 
@@ -398,13 +436,15 @@ MainWindow::onGetFeatureReport(FXObject *sender, FXSelector sel, void *ptr)
 {
 	char buf[256];
 	size_t len;
+
+	memset(buf, 0x0, sizeof(buf));
 	len = getDataFromTextField(get_feature_text, buf, sizeof(buf));
+
 	if (len != 1) {
 		FXMessageBox::error(this, MBOX_OK, "Too many numbers", "Enter only a single report number in the text field");
 	}
-	len = getLengthFromTextField(get_feature_len, len);
 
-	int res = hid_get_feature_report(connected_device, (unsigned char*)buf, len);
+	int res = hid_get_feature_report(connected_device, (unsigned char*)buf, sizeof(buf));
 	if (res < 0) {
 		FXMessageBox::error(this, MBOX_OK, "Error Getting Report", "Could not get feature report from device. Error reported was: %ls", hid_error(connected_device));
 	}
@@ -425,7 +465,6 @@ MainWindow::onGetFeatureReport(FXObject *sender, FXSelector sel, void *ptr)
 		input_text->appendText(s);
 		input_text->setBottomLine(INT_MAX);
 	}
-
 	
 	return 1;
 }
