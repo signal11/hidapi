@@ -457,10 +457,6 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 		unsigned short dev_vid = desc.idVendor;
 		unsigned short dev_pid = desc.idProduct;
 
-		/* HID's are defined at the interface level. */
-		if (desc.bDeviceClass != LIBUSB_CLASS_PER_INTERFACE)
-			continue;
-
 		res = libusb_get_active_config_descriptor(dev, &conf_desc);
 		if (res < 0)
 			libusb_get_config_descriptor(dev, 0, &conf_desc);
