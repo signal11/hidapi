@@ -19,17 +19,17 @@ CXXFLAGS ?= -Wall -g -fpic
 LDFLAGS  ?= -Wall -g
 
 
-COBJS     = hid.o
+COBJS     = ../libusb/hid.o
 CPPOBJS   = ../hidtest/hidtest.o
 OBJS      = $(COBJS) $(CPPOBJS)
 LIBS_UDEV = `pkg-config libudev --libs` -lrt
-LIBS      = $(LIBS_UDEV)
+LIBS      = -ludev -lrt -lpthread $(LIBS_UDEV) `pkg-config libusb-1.0 --libs`
 INCLUDES ?= -I../hidapi `pkg-config libusb-1.0 --cflags`
 
 
 # Console Test Program
 hidtest-hidraw: $(COBJS) $(CPPOBJS)
-	$(CXX) $(LDFLAGS) $^ $(LIBS_UDEV) -o $@
+	$(CXX) $(LDFLAGS) $^ $(LIBS) -o $@
 
 # Shared Libs
 libhidapi-hidraw.so: $(COBJS)
