@@ -669,10 +669,13 @@ int HID_API_EXPORT hid_read_timeout(hid_device *dev, unsigned char *data, size_t
 {
 	int bytes_read;
 
-	if (milliseconds != 0) {
-		/* milliseconds is -1 or > 0. In both cases, we want to
-		   call poll() and wait for data to arrive. -1 means
-		   INFINITE. */
+	if (milliseconds >= 0) {
+		/* Milliseconds is either 0 (non-blocking) or > 0 (contains
+		   a valid timeout). In both cases we want to call poll()
+		   and wait for data to arrive.  Don't rely on non-blocking
+		   operation (O_NONBLOCK) since some kernels don't seem to
+		   properly report device disconnection through read() when
+		   in non-blocking mode.  */
 		int ret;
 		struct pollfd fds;
 
@@ -680,9 +683,16 @@ int HID_API_EXPORT hid_read_timeout(hid_device *dev, unsigned char *data, size_t
 		fds.events = POLLIN;
 		fds.revents = 0;
 		ret = poll(&fds, 1, milliseconds);
-		if (ret == -1 || ret == 0)
+		if (ret == -1 || ret == 0) {
 			/* Error or timeout */
 			return ret;
+		}
+		else {
+			/* Check for errors on the file descriptor. This will
+			   indicate a device disconnection. */
+			if (fds.revents & (POLLERR | POLLHUP | POLLNVAL))
+				return -1;
+		}
 	}
 
 	bytes_read = read(dev->device_handle, data, length);
@@ -707,25 +717,12 @@ int HID_API_EXPORT hid_read(hid_device *dev, unsigned char *data, size_t length)
 
 int HID_API_EXPORT hid_set_nonblocking(hid_device *dev, int nonblock)
 {
-	int flags, res;
+	/* Do all non-blocking in userspace using poll(), since it looks
+	   like there's a bug in the kernel in some versions where
+	   read() will not return -1 on disconnection of the USB device */
 
-	flags = fcntl(dev->device_handle, F_GETFL, 0);
-	if (flags >= 0) {
-		if (nonblock)
-			res = fcntl(dev->device_handle, F_SETFL, flags | O_NONBLOCK);
-		else
-			res = fcntl(dev->device_handle, F_SETFL, flags & ~O_NONBLOCK);
-	}
-	else
-		return -1;
-
-	if (res < 0) {
-		return -1;
-	}
-	else {
-		dev->blocking = !nonblock;
-		return 0; /* Success */
-	}
+	dev->blocking = !nonblock;
+	return 0; /* Success */
 }
 
 
