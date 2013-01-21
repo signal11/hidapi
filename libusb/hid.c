@@ -442,7 +442,8 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 	struct hid_device_info *root = NULL; /* return object */
 	struct hid_device_info *cur_dev = NULL;
 
-	hid_init();
+	if(hid_init())
+		return NULL;
 
 	num_devs = libusb_get_device_list(usb_context, &devs);
 	if (num_devs < 0)
@@ -791,7 +792,8 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 
 	dev = new_hid_device();
 
-	hid_init();
+	if(hid_init())
+		return NULL;
 
 	libusb_get_device_list(usb_context, &devs);
 	while ((usb_dev = devs[d++]) != NULL) {
