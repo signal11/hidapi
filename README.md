@@ -1,8 +1,6 @@
-         HIDAPI library for Windows, Linux, FreeBSD and Mac OS X
-        =========================================================
+# HIDAPI library for Windows, Linux, FreeBSD and Mac OS X
 
-About
-======
+## About
 
 HIDAPI is a multi-platform library which allows an application to interface
 with USB and Bluetooth HID-Class devices on Windows, Linux, FreeBSD, and Mac
@@ -11,11 +9,11 @@ can be embedded directly into a target application by adding a single source
 file (per platform) and a single header.
 
 HIDAPI has four back-ends:
-	* Windows (using hid.dll)
-	* Linux/hidraw (using the Kernel's hidraw driver)
-	* Linux/libusb (using libusb-1.0)
-	* FreeBSD (using libusb-1.0)
-	* Mac (using IOHidManager)
+* Windows (using hid.dll)
+* Linux/hidraw (using the Kernel's hidraw driver)
+* Linux/libusb (using libusb-1.0)
+* FreeBSD (using libusb-1.0)
+* Mac (using IOHidManager)
 
 On Linux, either the hidraw or the libusb back-end can be used. There are
 tradeoffs, and the functionality supported is slightly different.
@@ -38,14 +36,14 @@ Fox Toolkit (http://www.fox-toolkit.org).  It will build on every platform
 which HIDAPI supports.  Since it relies on a 3rd party library, building it
 is optional but recommended because it is so useful when debugging hardware.
 
-What Does the API Look Like?
-=============================
+## What Does the API Look Like?
+
 The API provides the the most commonly used HID functions including sending
 and receiving of input, output, and feature reports.  The sample program,
 which communicates with a heavily hacked up version of the Microchip USB
 Generic HID sample looks like this (with error checking removed for
 simplicity):
-
+```cpp
 #ifdef WIN32
 #include <windows.h>
 #endif
@@ -108,24 +106,24 @@ int main(int argc, char* argv[])
 
 	return 0;
 }
-
+```
 If you have your own simple test programs which communicate with standard
 hardware development boards (such as those from Microchip, TI, Atmel,
 FreeScale and others), please consider sending me something like the above
 for inclusion into the HIDAPI source.  This will help others who have the
 same hardware as you do.
 
-License
-========
+## License
+
 HIDAPI may be used by one of three licenses as outlined in LICENSE.txt.
 
-Download
-=========
-HIDAPI can be downloaded from github
-	git clone git://github.com/signal11/hidapi.git
+## Download
 
-Build Instructions
-===================
+HIDAPI can be downloaded from github
+```
+git clone git://github.com/signal11/hidapi.git
+```
+## Build Instructions
 
 This section is long. Don't be put off by this. It's not long because it's
 complicated to build HIDAPI; it's quite the opposite.  This section is long
@@ -142,11 +140,10 @@ Visual Studio projects are provided.  Even if you're going to embed HIDAPI
 into your project, it is still beneficial to build the example programs.
 
 
-Prerequisites:
----------------
+## Prerequisites:
 
-	Linux:
-	-------
+#### Linux:
+	
 	On Linux, you will need to install development packages for libudev,
 	libusb and optionally Fox-toolkit (for the test GUI). On
 	Debian/Ubuntu systems these can be installed by running:
@@ -156,8 +153,8 @@ Prerequisites:
 	git clone), you'll need Autotools:
 	    sudo apt-get install autotools-dev
 
-	FreeBSD:
-	---------
+#### FreeBSD:
+	
 	On FreeBSD you will need to install GNU make, libiconv, and
 	optionally Fox-Toolkit (for the test GUI). This is done by running
 	the following:
@@ -167,8 +164,8 @@ Prerequisites:
 	git clone), you'll need Autotools:
 	    pkg_add -r autotools
 
-	Mac:
-	-----
+#### Mac:
+	
 	On Mac, you will need to install Fox-Toolkit if you wish to build
 	the Test GUI. There are two ways to do this, and each has a slight
 	complication. Which method you use depends on your use case.
@@ -189,8 +186,8 @@ Prerequisites:
 	within the extracted source:
 		./configure && make && make install
 
-	Windows:
-	---------
+#### Windows:
+	
 	On Windows, if you want to build the test GUI, you will need to get
 	the hidapi-externals.zip package from the download site.  This
 	contains pre-built binaries for Fox-toolkit.  Extract
@@ -206,19 +203,18 @@ Prerequisites:
 	test GUI.
 
 
-Building HIDAPI into a shared library on Unix Platforms:
----------------------------------------------------------
+### Building HIDAPI into a shared library on Unix Platforms:
 
 On Unix-like systems such as Linux, FreeBSD, Mac, and even Windows, using
 Mingw or Cygwin, the easiest way to build a standard system-installed shared
 library is to use the GNU Autotools build system.  If you checked out the
 source from the git repository, run the following:
-
-	./bootstrap
-	./configure
-	make
-	make install     <----- as root, or using sudo
-
+```
+./bootstrap
+./configure
+make
+make install     <----- as root, or using sudo
+```
 If you downloaded a source package (ie: if you did not run git clone), you
 can skip the ./bootstrap step.
 
@@ -235,8 +231,7 @@ likely to be used are:
 		/usr/include and the binaries in /usr/lib. The default is to
 		install into /usr/local which is fine on most systems.
 
-Building the manual way on Unix platforms:
--------------------------------------------
+### Building the manual way on Unix platforms:
 
 Manual Makefiles are provided mostly to give the user and idea what it takes
 to build a program which embeds HIDAPI directly inside of it. These should
@@ -252,8 +247,7 @@ library, use the Autotools method described above.
 		cd testgui/
 		make -f Makefile-manual
 
-Building on Windows:
----------------------
+### Building on Windows:
 
 To build the HIDAPI DLL on Windows using Visual Studio, build the .sln file
 in the windows/ directory.
@@ -287,8 +281,7 @@ not. To build using the DDK:
       by the build system which is appropriate for your environment. On
       Windows XP, this directory is objfre_wxp_x86/i386.
 
-Cross Compiling
-================
+## Cross Compiling
 
 This section talks about cross compiling HIDAPI for Linux using autotools.
 This is useful for using HIDAPI on embedded Linux targets.  These
@@ -299,38 +292,38 @@ OpenEmbedded or Buildroot.
 
 For the purpose of this section, it will be assumed that the following
 environment variables are exported.
-
-	$ export STAGING=$HOME/out
-	$ export HOST=arm-linux
-
+```
+$ export STAGING=$HOME/out
+$ export HOST=arm-linux
+```
 STAGING and HOST can be modified to suit your setup.
 
-Prerequisites
---------------
+### Prerequisites
 
 Note that the build of libudev is the very basic configuration.
 
 Build Libusb. From the libusb source directory, run:
-	./configure --host=$HOST --prefix=$STAGING
-	make
-	make install
-
+```
+./configure --host=$HOST --prefix=$STAGING
+make
+make install
+```
 Build libudev. From the libudev source directory, run:
-	./configure --disable-gudev --disable-introspection --disable-hwdb \
-		 --host=$HOST --prefix=$STAGING
-	make
-	make install
-
-Building HIDAPI
-----------------
+```
+./configure --disable-gudev --disable-introspection --disable-hwdb \
+	 --host=$HOST --prefix=$STAGING
+make
+make install
+```
+### Building HIDAPI
 
 Build HIDAPI:
-
+```
 	PKG_CONFIG_DIR= \
 	PKG_CONFIG_LIBDIR=$STAGING/lib/pkgconfig:$STAGING/share/pkgconfig \
 	PKG_CONFIG_SYSROOT_DIR=$STAGING \
 	./configure --host=$HOST --prefix=$STAGING
-
+```
 
 Signal 11 Software - 2010-04-11
                      2010-07-28
