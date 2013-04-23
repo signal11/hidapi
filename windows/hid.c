@@ -151,6 +151,14 @@ static hid_device *new_hid_device()
 	return dev;
 }
 
+static void free_hid_device(hid_device *dev)
+{
+	CloseHandle(dev->ol.hEvent);
+	CloseHandle(dev->device_handle);
+	LocalFree(dev->last_error_str);
+	free(dev->read_buf);
+	free(dev);
+}
 
 static void register_error(hid_device *device, const char *op)
 {
@@ -581,8 +589,7 @@ HID_API_EXPORT hid_device * HID_API_CALL hid_open_path(const char *path)
 err_pp_data:
 		HidD_FreePreparsedData(pp_data);
 err:	
-		CloseHandle(dev->device_handle);
-		free(dev);
+		free_hid_device(dev);
 		return NULL;
 }
 
@@ -783,11 +790,7 @@ void HID_API_EXPORT HID_API_CALL hid_close(hid_device *dev)
 	if (!dev)
 		return;
 	CancelIo(dev->device_handle);
-	CloseHandle(dev->ol.hEvent);
-	CloseHandle(dev->device_handle);
-	LocalFree(dev->last_error_str);
-	free(dev->read_buf);
-	free(dev);
+	free_hid_device(dev);
 }
 
 int HID_API_EXPORT_CALL HID_API_CALL hid_get_manufacturer_string(hid_device *dev, wchar_t *string, size_t maxlen)
