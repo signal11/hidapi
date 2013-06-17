@@ -75,10 +75,15 @@ struct hid_device_ {
 	int device_handle;
 	int blocking;
 	int uses_numbered_reports;
+	wchar_t *last_error_str;
 };
 
 
 static __u32 kernel_version = 0;
+
+/* Global error message that is not specific to a device, e.g. for
+   hid_open(). It is thread-local like errno. */
+__thread wchar_t *last_global_error_str = NULL;
 
 static hid_device *new_hid_device(void)
 {
@@ -86,6 +91,7 @@ static hid_device *new_hid_device(void)
 	dev->device_handle = -1;
 	dev->blocking = 1;
 	dev->uses_numbered_reports = 0;
+	dev->last_error_str = NULL;
 
 	return dev;
 }
@@ -108,6 +114,35 @@ static wchar_t *utf8_to_wchar_t(const char *utf8)
 
 	return ret;
 }
+
+
+/* Set the last global error to be reported by hid_error(NULL).
+ * The given error message will be copied (and decoded according to the
+ * currently locale, so do not pass in string constants).
+ * The last stored global error message is freed.
+ * Use register_global_error(NULL) to indicate "no error". */
+static void register_global_error(const char *msg)
+{
+	if (last_global_error_str)
+		free(last_global_error_str);
+
+	last_global_error_str = msg? utf8_to_wchar_t(msg): NULL;
+}
+
+
+/* Set the last error for a device to be reported by hid_error(device).
+ * The given error message will be copied (and decoded according to the
+ * currently locale, so do not pass in string constants).
+ * The last stored global error message is freed.
+ * Use register_device_error(device, NULL) to indicate "no error". */
+static void register_device_error(hid_device *dev, const char *msg)
+{
+	if (dev->last_error_str)
+		free(dev->last_error_str);
+
+	dev->last_error_str = msg? utf8_to_wchar_t(msg): NULL;
+}
+
 
 /* Get an attribute value from a udev_device and return it as a whar_t
    string. The returned string must be freed with free() when done.*/
@@ -350,7 +385,9 @@ int HID_API_EXPORT hid_init(void)
 
 int HID_API_EXPORT hid_exit(void)
 {
-	/* Nothing to do for this in the Linux/hidraw implementation. */
+	/* Free global error message */
+	register_global_error(NULL);
+
 	return 0;
 }
 
@@ -557,8 +594,16 @@ void  HID_API_EXPORT hid_free_enumeration(struct hid_device_info *devs)
 	}
 }
 
+
+/* If no device with the given vendor_id / product_id / serial_number
+ * combination is, returns NULL, and hid_error() will return NULL.
+ * If a device was found but could not be opened, hid_error() will return a
+ * non-null error message instead. */
 hid_device * hid_open(unsigned short vendor_id, unsigned short product_id, const wchar_t *serial_number)
 {
+	/* Set global error to none */
+	register_global_error(NULL);
+
 	struct hid_device_info *devs, *cur_dev;
 	const char *path_to_open = NULL;
 	hid_device *handle = NULL;
@@ -594,6 +639,9 @@ hid_device * hid_open(unsigned short vendor_id, unsigned short product_id, const
 
 hid_device * HID_API_EXPORT hid_open_path(const char *path)
 {
+	/* Set global error to none */
+	register_global_error(NULL);
+
 	hid_device *dev = NULL;
 
 	hid_init();
@@ -620,6 +668,8 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 
 	/* If we have a good handle, return it. */
 	if (dev->device_handle > 0) {
+		/* Set device error to none */
+		register_device_error(dev, NULL);
 
 		/* Get the report descriptor */
 		int res, desc_size = 0;
@@ -629,15 +679,17 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 
 		/* Get Report Descriptor Size */
 		res = ioctl(dev->device_handle, HIDIOCGRDESCSIZE, &desc_size);
-		if (res < 0)
+		if (res < 0) {
 			perror("HIDIOCGRDESCSIZE");
-
+			register_device_error(dev, strerror(errno));
+		}
 
 		/* Get Report Descriptor */
 		rpt_desc.size = desc_size;
 		res = ioctl(dev->device_handle, HIDIOCGRDESC, &rpt_desc);
 		if (res < 0) {
 			perror("HIDIOCGRDESC");
+			register_device_error(dev, strerror(errno));
 		} else {
 			/* Determine if this device uses numbered reports. */
 			dev->uses_numbered_reports =
@@ -650,6 +702,7 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 	else {
 		/* Unable to open any devices. */
 		free(dev);
+		register_global_error(strerror(errno));
 		return NULL;
 	}
 }
@@ -661,12 +714,17 @@ int HID_API_EXPORT hid_write(hid_device *dev, const unsigned char *data, size_t 
 
 	bytes_written = write(dev->device_handle, data, length);
 
+	register_device_error(dev, (bytes_written == -1)? strerror(errno): NULL);
+
 	return bytes_written;
 }
 
 
 int HID_API_EXPORT hid_read_timeout(hid_device *dev, unsigned char *data, size_t length, int milliseconds)
 {
+	/* Set device error to none */
+	register_device_error(dev, NULL);
+
 	int bytes_read;
 
 	if (milliseconds >= 0) {
@@ -683,21 +741,31 @@ int HID_API_EXPORT hid_read_timeout(hid_device *dev, unsigned char *data, size_t
 		fds.events = POLLIN;
 		fds.revents = 0;
 		ret = poll(&fds, 1, milliseconds);
-		if (ret == -1 || ret == 0) {
-			/* Error or timeout */
+		if (ret == 0) {
+			/* Timeout */
+			return ret;
+		}
+		if (ret == -1) {
+			/* Error */
+			register_device_error(dev, strerror(errno));
 			return ret;
 		}
 		else {
 			/* Check for errors on the file descriptor. This will
 			   indicate a device disconnection. */
 			if (fds.revents & (POLLERR | POLLHUP | POLLNVAL))
+				// We cannot use strerror() here as no -1 was returned from poll().
 				return -1;
 		}
 	}
 
 	bytes_read = read(dev->device_handle, data, length);
-	if (bytes_read < 0 && (errno == EAGAIN || errno == EINPROGRESS))
-		bytes_read = 0;
+	if (bytes_read < 0) {
+		if (errno == EAGAIN || errno == EINPROGRESS)
+			bytes_read = 0;
+		else
+			register_device_error(dev, strerror(errno));
+	}
 
 	if (bytes_read >= 0 &&
 	    kernel_version < KERNEL_VERSION(2,6,34) &&
@@ -731,8 +799,10 @@ int HID_API_EXPORT hid_send_feature_report(hid_device *dev, const unsigned char 
 	int res;
 
 	res = ioctl(dev->device_handle, HIDIOCSFEATURE(length), data);
-	if (res < 0)
+	if (res < 0) {
 		perror("ioctl (SFEATURE)");
+		register_device_error(dev, strerror(errno));
+	}
 
 	return res;
 }
@@ -742,9 +812,10 @@ int HID_API_EXPORT hid_get_feature_report(hid_device *dev, unsigned char *data, 
 	int res;
 
 	res = ioctl(dev->device_handle, HIDIOCGFEATURE(length), data);
-	if (res < 0)
+	if (res < 0) {
 		perror("ioctl (GFEATURE)");
-
+		register_device_error(dev, strerror(errno));
+	}
 
 	return res;
 }
@@ -754,7 +825,14 @@ void HID_API_EXPORT hid_close(hid_device *dev)
 {
 	if (!dev)
 		return;
-	close(dev->device_handle);
+
+	int ret = close(dev->device_handle);
+
+	register_global_error((ret == -1)? strerror(errno): NULL);
+
+	/* Free the device error message */
+	register_device_error(dev, NULL);
+
 	free(dev);
 }
 
@@ -780,7 +858,11 @@ int HID_API_EXPORT_CALL hid_get_indexed_string(hid_device *dev, int string_index
 }
 
 
+/* Passing in NULL means asking for the last global error message. */
 HID_API_EXPORT const wchar_t * HID_API_CALL  hid_error(hid_device *dev)
 {
-	return NULL;
+	if (dev)
+		return dev->last_error_str;
+
+	return last_global_error_str;
 }
