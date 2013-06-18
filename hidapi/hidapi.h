@@ -147,6 +147,8 @@ extern "C" {
 			If @p serial_number is NULL, the first device with the
 			specified VID and PID is opened.
 
+			This function sets the return value of hid_error().
+
 			@ingroup API
 			@param vendor_id The Vendor ID (VID) of the device to open.
 			@param product_id The Product ID (PID) of the device to open.
@@ -164,6 +166,8 @@ extern "C" {
 			The path name be determined by calling hid_enumerate(), or a
 			platform-specific path name can be used (eg: /dev/hidraw0 on
 			Linux).
+
+			This function sets the return value of hid_error().
 
 			@ingroup API
 		    @param path The path name of the device to open
@@ -190,6 +194,8 @@ extern "C" {
 			one exists. If it does not, it will send the data through
 			the Control Endpoint (Endpoint 0).
 
+			This function sets the return value of hid_error().
+
 			@ingroup API
 			@param device A device handle returned from hid_open().
 			@param data The data to send, including the report number as
@@ -207,6 +213,8 @@ extern "C" {
 			Input reports are returned
 			to the host through the INTERRUPT IN endpoint. The first byte will
 			contain the Report number if the device uses numbered reports.
+
+			This function sets the return value of hid_error().
 
 			@ingroup API
 			@param device A device handle returned from hid_open().
@@ -227,6 +235,8 @@ extern "C" {
 			Input reports are returned
 		    to the host through the INTERRUPT IN endpoint. The first byte will
 			contain the Report number if the device uses numbered reports.
+
+			This function sets the return value of hid_error().
 
 			@ingroup API
 			@param device A device handle returned from hid_open().
@@ -276,6 +286,8 @@ extern "C" {
 			report data (16 bytes). In this example, the length passed
 			in would be 17.
 
+			This function sets the return value of hid_error().
+
 			@ingroup API
 			@param device A device handle returned from hid_open().
 			@param data The data to send, including the report number as
@@ -295,6 +307,8 @@ extern "C" {
 			ID of the report to be read.  Make sure to allow space for
 			this extra byte in @p data[].
 
+			This function sets the return value of hid_error().
+
 			@ingroup API
 			@param device A device handle returned from hid_open().
 			@param data A buffer to put the read data into, including
@@ -311,6 +325,8 @@ extern "C" {
 		int HID_API_EXPORT HID_API_CALL hid_get_feature_report(hid_device *device, unsigned char *data, size_t length);
 
 		/** @brief Close a HID device.
+
+			This function sets the return value of hid_error().
 
 			@ingroup API
 			@param device A device handle returned from hid_open().
@@ -368,8 +384,18 @@ extern "C" {
 
 		/** @brief Get a string describing the last error which occurred.
 
+			Whether a function sets the last error is noted in its
+			documentation. These functions will reset the last error
+			to NULL before their execution.
+
+			Strings returned from hid_error() must not be freed by the user!
+
+			This function is thread-safe, and error messages are thread-local.
+
 			@ingroup API
-			@param device A device handle returned from hid_open().
+			@param device A device handle returned from hid_open(),
+			  or NULL to get the last non-device-specific error
+			  (e.g. for errors in hid_open() itself).
 
 			@returns
 				This function returns a string containing the last error
