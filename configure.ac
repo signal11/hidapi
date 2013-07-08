@@ -68,7 +68,7 @@ case $host in
 
 	# HIDAPI/libusb libs
 	AC_CHECK_LIB([rt], [clock_gettime], [LIBS_LIBUSB_PRIVATE+=" -lrt"], [hidapi_lib_error librt])
-	PKG_CHECK_MODULES([libusb], [libusb-1.0], true, [hidapi_lib_error libusb-1.0])
+	PKG_CHECK_MODULES([libusb], [libusb-1.0 >= 1.0.9], true, [hidapi_lib_error libusb-1.0])
 	LIBS_LIBUSB_PRIVATE+=" $libusb_LIBS"
 	CFLAGS_LIBUSB+=" $libusb_CFLAGS"
 	;;
