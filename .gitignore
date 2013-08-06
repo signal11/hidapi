@@ -3,9 +3,7 @@
 Makefile.in
 aclocal.m4
 autom4te.cache/
-config.guess
-config.h.in
-config.sub
+config.*
 configure
 depcomp
 install-sh
@@ -18,8 +16,5 @@ testgui/Makefile.in
 windows/Makefile.in
 
 Makefile
-config.h
-config.log
-config.status
 stamp-h1
 libtool
