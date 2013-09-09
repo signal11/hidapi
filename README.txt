@@ -154,7 +154,7 @@ Prerequisites:
 
 	If you downloaded the source directly from the git repository (using
 	git clone), you'll need Autotools:
-	    sudo apt-get install autotools-dev
+	    sudo apt-get install autotools-dev autoconf automake libtool
 
 	FreeBSD:
 	---------
