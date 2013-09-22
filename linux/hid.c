@@ -274,7 +274,9 @@ static int get_device_string(hid_device *dev, enum device_string_id key, wchar_t
 	}
 
 	/* Get the dev_t (major/minor numbers) from the file handle. */
-	fstat(dev->device_handle, &s);
+	ret = fstat(dev->device_handle, &s);
+	if (-1 == ret)
+		return ret;
 	/* Open a udev device from the dev_t. 'c' means character device. */
 	udev_dev = udev_device_new_from_devnum(udev, 'c', s.st_rdev);
 	if (udev_dev) {
