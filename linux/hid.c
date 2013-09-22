@@ -102,8 +102,11 @@ static wchar_t *utf8_to_wchar_t(const char *utf8)
 			return wcsdup(L"");
 		}
 		ret = calloc(wlen+1, sizeof(wchar_t));
-		mbstowcs(ret, utf8, wlen+1);
-		ret[wlen] = 0x0000;
+		if (ret)
+		{
+			mbstowcs(ret, utf8, wlen+1);
+			ret[wlen] = 0x0000;
+		}
 	}
 
 	return ret;
