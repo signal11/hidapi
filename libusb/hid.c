@@ -790,10 +790,10 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 	int d = 0;
 	int good_open = 0;
 
-	dev = new_hid_device();
-
 	if(hid_init() < 0)
 		return NULL;
+
+	dev = new_hid_device();
 
 	libusb_get_device_list(usb_context, &devs);
 	while ((usb_dev = devs[d++]) != NULL) {
