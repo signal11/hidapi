@@ -19,7 +19,7 @@ hidapi_testgui_LDADD = $(top_builddir)/$(backend)/libhidapi.la $(LIBS_TESTGUI)
 endif
 
 if OS_DARWIN
-hidapi_testgui_SOURCES = test.cpp mac_support_cocoa.m
+hidapi_testgui_SOURCES = test.cpp mac_support_cocoa.m mac_support.h
 # Rules for copying the binary and its dependencies into the app bundle.
 TestGUI.app/Contents/MacOS/hidapi-testgui$(EXEEXT): hidapi-testgui$(EXEEXT)
 	$(srcdir)/copy_to_bundle.sh
