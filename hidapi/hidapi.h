@@ -218,7 +218,8 @@ extern "C" {
 
 			@returns
 				This function returns the actual number of bytes read and
-				-1 on error.
+				-1 on error. If no packet was available to be read within
+				the timeout period, this function returns 0.
 		*/
 		int HID_API_EXPORT HID_API_CALL hid_read_timeout(hid_device *dev, unsigned char *data, size_t length, int milliseconds);
 
@@ -237,7 +238,8 @@ extern "C" {
 
 			@returns
 				This function returns the actual number of bytes read and
-				-1 on error.
+				-1 on error. If no packet was available to be read and
+				the handle is in non-blocking mode, this function returns 0.
 		*/
 		int  HID_API_EXPORT HID_API_CALL hid_read(hid_device *device, unsigned char *data, size_t length);
 
