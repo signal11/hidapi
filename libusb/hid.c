@@ -250,13 +250,10 @@ static int get_usage(uint8_t *report_descriptor, size_t size,
 }
 #endif /* INVASIVE_GET_USAGE */
 
-#ifdef __FreeBSD__
-#if __FreeBSD__ < 10
-/* The FreeBSD version of libusb doesn't have this funciton. In mainline
-   libusb, it's inlined in libusb.h. This function will bear a striking
+#if defined(__FreeBSD__) && __FreeBSD__ < 10
+/* The libusb version included in FreeBSD < 10 doesn't have this function. In
+   mainline libusb, it's inlined in libusb.h. This function will bear a striking
    resemblence to that one, because there's about one way to code it.
-
-   Since FreeBSD 10, libusb has this function.
 
    Note that the data parameter is Unicode in UTF-16LE encoding.
    Return value is the number of bytes in data, or LIBUSB_ERROR_*.
@@ -272,7 +269,6 @@ static inline int libusb_get_string_descriptor(libusb_device_handle *dev,
 		lang_id, data, (uint16_t) length, 1000);
 }
 
-#endif
 #endif
 
 
