@@ -652,6 +652,7 @@ end_of_function:
 int HID_API_EXPORT HID_API_CALL hid_read_timeout(hid_device *dev, unsigned char *data, size_t length, int milliseconds)
 {
 	DWORD bytes_read = 0;
+	size_t copy_len = 0;
 	BOOL res;
 
 	/* Copy the handle for convenience. */
@@ -699,14 +700,13 @@ int HID_API_EXPORT HID_API_CALL hid_read_timeout(hid_device *dev, unsigned char 
 			   number (0x0) on the beginning of the report anyway. To make this
 			   work like the other platforms, and to make it work more like the
 			   HID spec, we'll skip over this byte. */
-			size_t copy_len;
 			bytes_read--;
 			copy_len = length > bytes_read ? bytes_read : length;
 			memcpy(data, dev->read_buf+1, copy_len);
 		}
 		else {
 			/* Copy the whole buffer, report number and all. */
-			size_t copy_len = length > bytes_read ? bytes_read : length;
+			copy_len = length > bytes_read ? bytes_read : length;
 			memcpy(data, dev->read_buf, copy_len);
 		}
 	}
@@ -717,7 +717,7 @@ end_of_function:
 		return -1;
 	}
 	
-	return bytes_read;
+	return copy_len;
 }
 
 int HID_API_EXPORT HID_API_CALL hid_read(hid_device *dev, unsigned char *data, size_t length)
