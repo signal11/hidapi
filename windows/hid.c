@@ -106,6 +106,7 @@ extern "C" {
 	typedef BOOLEAN (__stdcall *HidD_GetPreparsedData_)(HANDLE handle, PHIDP_PREPARSED_DATA *preparsed_data);
 	typedef BOOLEAN (__stdcall *HidD_FreePreparsedData_)(PHIDP_PREPARSED_DATA preparsed_data);
 	typedef NTSTATUS (__stdcall *HidP_GetCaps_)(PHIDP_PREPARSED_DATA preparsed_data, HIDP_CAPS *caps);
+	typedef BOOLEAN (__stdcall *HidD_SetNumInputBuffers_)(HANDLE handle, ULONG number_buffers);
 
 	static HidD_GetAttributes_ HidD_GetAttributes;
 	static HidD_GetSerialNumberString_ HidD_GetSerialNumberString;
@@ -117,6 +118,7 @@ extern "C" {
 	static HidD_GetPreparsedData_ HidD_GetPreparsedData;
 	static HidD_FreePreparsedData_ HidD_FreePreparsedData;
 	static HidP_GetCaps_ HidP_GetCaps;
+	static HidD_SetNumInputBuffers_ HidD_SetNumInputBuffers;
 
 	static HMODULE lib_handle = NULL;
 	static BOOLEAN initialized = FALSE;
@@ -206,6 +208,7 @@ static int lookup_functions()
 		RESOLVE(HidD_GetPreparsedData);
 		RESOLVE(HidD_FreePreparsedData);
 		RESOLVE(HidP_GetCaps);
+		RESOLVE(HidD_SetNumInputBuffers);
 #undef RESOLVE
 	}
 	else
@@ -564,6 +567,13 @@ HID_API_EXPORT hid_device * HID_API_CALL hid_open_path(const char *path)
 	if (dev->device_handle == INVALID_HANDLE_VALUE) {
 		/* Unable to open the device. */
 		register_error(dev, "CreateFile");
+		goto err;
+	}
+
+	/* Set the Input Report buffer size to 64 reports. */
+	res = HidD_SetNumInputBuffers(dev->device_handle, 64);
+	if (!res) {
+		register_error(dev, "HidD_SetNumInputBuffers");
 		goto err;
 	}
 
