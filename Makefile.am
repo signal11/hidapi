@@ -27,6 +27,10 @@ if OS_FREEBSD
 SUBDIRS += libusb
 endif
 
+if OS_KFREEBSD
+SUBDIRS += libusb
+endif
+
 if OS_WINDOWS
 SUBDIRS += windows
 endif

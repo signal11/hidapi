@@ -96,6 +96,17 @@ case $host in
 	AC_CHECK_LIB([iconv], [iconv_open], [LIBS_LIBUSB_PRIVATE="${LIBS_LIBUSB_PRIVATE} -liconv"], [hidapi_lib_error libiconv])
 	echo libs_priv: $LIBS_LIBUSB_PRIVATE
 	;;
+*-kfreebsd*)
+	AC_MSG_RESULT([ (kFreeBSD back-end)])
+	AC_DEFINE(OS_KFREEBSD, 1, [kFreeBSD implementation])
+	AC_SUBST(OS_KFREEBSD)
+	backend="libusb"
+	os="kfreebsd"
+	threads="pthreads"
+
+	AC_CHECK_LIB([usb], [libusb_init], [LIBS_LIBUSB_PRIVATE="${LIBS_LIBUSB_PRIVATE} -lusb"], [hidapi_lib_error libusb])
+	echo libs_priv: $LIBS_LIBUSB_PRIVATE
+	;;
 *-mingw*)
 	AC_MSG_RESULT([ (Windows back-end, using MinGW)])
 	backend="windows"
@@ -201,6 +212,7 @@ AC_SUBST([backend])
 AM_CONDITIONAL(OS_LINUX, test "x$os" = xlinux)
 AM_CONDITIONAL(OS_DARWIN, test "x$os" = xdarwin)
 AM_CONDITIONAL(OS_FREEBSD, test "x$os" = xfreebsd)
+AM_CONDITIONAL(OS_KFREEBSD, test "x$os" = xkfreebsd)
 AM_CONDITIONAL(OS_WINDOWS, test "x$os" = xwindows)
 
 AC_CONFIG_HEADERS([config.h])
