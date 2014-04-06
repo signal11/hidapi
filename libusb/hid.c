@@ -44,10 +44,73 @@
 #include <wchar.h>
 
 /* GNU / LibUSB */
-#include "libusb.h"
-#include "iconv.h"
+#include <libusb.h>
+#ifndef __ANDROID__
+#include <iconv.h>
+#endif
 
 #include "hidapi.h"
+
+#ifdef __ANDROID__
+
+/* Barrier implementation because Android/Bionic don't have pthread_barrier.
+   This implementation came from Brent Priddy and was posted on
+   StackOverflow. It is used with his permission. */
+typedef int pthread_barrierattr_t;
+typedef struct pthread_barrier {
+    pthread_mutex_t mutex;
+    pthread_cond_t cond;
+    int count;
+    int trip_count;
+} pthread_barrier_t;
+
+static int pthread_barrier_init(pthread_barrier_t *barrier, const pthread_barrierattr_t *attr, unsigned int count)
+{
+	if(count == 0) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	if(pthread_mutex_init(&barrier->mutex, 0) < 0) {
+		return -1;
+	}
+	if(pthread_cond_init(&barrier->cond, 0) < 0) {
+		pthread_mutex_destroy(&barrier->mutex);
+		return -1;
+	}
+	barrier->trip_count = count;
+	barrier->count = 0;
+
+	return 0;
+}
+
+static int pthread_barrier_destroy(pthread_barrier_t *barrier)
+{
+	pthread_cond_destroy(&barrier->cond);
+	pthread_mutex_destroy(&barrier->mutex);
+	return 0;
+}
+
+static int pthread_barrier_wait(pthread_barrier_t *barrier)
+{
+	pthread_mutex_lock(&barrier->mutex);
+	++(barrier->count);
+	if(barrier->count >= barrier->trip_count)
+	{
+		barrier->count = 0;
+		pthread_cond_broadcast(&barrier->cond);
+		pthread_mutex_unlock(&barrier->mutex);
+		return 1;
+	}
+	else
+	{
+		pthread_cond_wait(&barrier->cond, &(barrier->mutex));
+		pthread_mutex_unlock(&barrier->mutex);
+		return 0;
+	}
+}
+
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -326,8 +389,9 @@ static wchar_t *get_usb_string(libusb_device_handle *dev, uint8_t idx)
 	char buf[512];
 	int len;
 	wchar_t *str = NULL;
-	wchar_t wbuf[256];
 
+#ifndef __ANDROID__ /* we don't use iconv on Android */
+	wchar_t wbuf[256];
 	/* iconv variables */
 	iconv_t ic;
 	size_t inbytes;
@@ -339,6 +403,7 @@ static wchar_t *get_usb_string(libusb_device_handle *dev, uint8_t idx)
 	char *inptr;
 #endif
 	char *outptr;
+#endif
 
 	/* Determine which language to use. */
 	uint16_t lang;
@@ -354,6 +419,25 @@ static wchar_t *get_usb_string(libusb_device_handle *dev, uint8_t idx)
 			sizeof(buf));
 	if (len < 0)
 		return NULL;
+
+#ifdef __ANDROID__
+
+	/* Bionic does not have iconv support nor wcsdup() function, so it
+	   has to be done manually.  The following code will only work for
+	   code points that can be represented as a single UTF-16 character,
+	   and will incorrectly convert any code points which require more
+	   than one UTF-16 character.
+
+	   Skip over the first character (2-bytes).  */
+	len -= 2;
+	str = malloc((len / 2 + 1) * sizeof(wchar_t));
+	int i;
+	for (i = 0; i < len / 2; i++) {
+		str[i] = buf[i * 2 + 2] | (buf[i * 2 + 3] << 8);
+	}
+	str[len / 2] = 0x00000000;
+
+#else
 
 	/* buf does not need to be explicitly NULL-terminated because
 	   it is only passed into iconv() which does not need it. */
@@ -387,6 +471,8 @@ static wchar_t *get_usb_string(libusb_device_handle *dev, uint8_t idx)
 
 err:
 	iconv_close(ic);
+
+#endif
 
 	return str;
 }
