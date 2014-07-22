@@ -196,7 +196,7 @@ if test "x$testgui_enabled" != "xno"; then
 		fi
 	else
 		# On Linux and FreeBSD platforms, use pkg-config to find fox.
-		PKG_CHECK_MODULES([fox], [fox])
+		PKG_CHECK_MODULES([fox], [fox17], [], [PKG_CHECK_MODULES([fox], [fox])])
 		LIBS_TESTGUI="${LIBS_TESTGUI} $fox_LIBS"
 		if test "x$os" = xfreebsd; then
 			LIBS_TESTGUI="${LIBS_TESTGUI} -L/usr/local/lib"
