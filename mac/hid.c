@@ -28,8 +28,10 @@
 #include <wchar.h>
 #include <locale.h>
 #include <pthread.h>
+#include <mach/thread_policy.h>
 #include <sys/time.h>
 #include <unistd.h>
+#include <AvailabilityMacros.h>
 
 #include "hidapi.h"
 
@@ -621,6 +623,20 @@ static void *read_thread(void *param)
 {
 	hid_device *dev = param;
 	SInt32 code;
+
+#ifndef MAC_OS_X_VERSION_10_6
+	/*
+	 * On old versions of OSX - pre-10.6, if we don't read fast enough
+	 * we lose packets. We shouldn't, but who knows. We set the read_thread
+	 * to be realtime prio.
+	 */
+	struct sched_param sp;
+	memset(&sp, 0, sizeof(struct sched_param));
+	sp.sched_priority = 99;
+	if (pthread_setschedparam(pthread_self(), SCHED_RR, &sp) == -1) {
+		fprintf(stderr, "Failed to change read_thread priority\n");
+	}
+#endif
 
 	/* Move the device's run loop to this thread. */
 	IOHIDDeviceScheduleWithRunLoop(dev->device_handle, CFRunLoopGetCurrent(), dev->run_loop_mode);
