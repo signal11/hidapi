@@ -126,8 +126,8 @@ extern "C" {
 #define DETACH_KERNEL_DRIVER
 #endif
 
-/* Submit 30 libusb transfers to increase throughput */
-#define NO_TRANSFERS_TO_SUBMIT 30
+/* Submit 3 libusb transfers to increase throughput */
+#define NO_TRANSFERS_TO_SUBMIT 3
 
 /* Uncomment to enable the retrieval of Usage and Usage Page in
 hid_enumerate(). Warning, on platforms different from FreeBSD
