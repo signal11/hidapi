@@ -63,14 +63,14 @@ case $host in
 
 	# HIDAPI/hidraw libs
 	PKG_CHECK_MODULES([libudev], [libudev], true, [hidapi_lib_error libudev])
-	LIBS_HIDRAW_PR+=" $libudev_LIBS"
-	CFLAGS_HIDRAW+=" $libudev_CFLAGS"
+	LIBS_HIDRAW_PR="${LIBS_HIDRAW_PR} $libudev_LIBS"
+	CFLAGS_HIDRAW="${CFLAGS_HIDRAW} $libudev_CFLAGS"
 
 	# HIDAPI/libusb libs
-	AC_CHECK_LIB([rt], [clock_gettime], [LIBS_LIBUSB_PRIVATE+=" -lrt"], [hidapi_lib_error librt])
+	AC_CHECK_LIB([rt], [clock_gettime], [LIBS_LIBUSB_PRIVATE="${LIBS_LIBUSB_PRIVATE} -lrt"], [hidapi_lib_error librt])
 	PKG_CHECK_MODULES([libusb], [libusb-1.0 >= 1.0.9], true, [hidapi_lib_error libusb-1.0])
-	LIBS_LIBUSB_PRIVATE+=" $libusb_LIBS"
-	CFLAGS_LIBUSB+=" $libusb_CFLAGS"
+	LIBS_LIBUSB_PRIVATE="${LIBS_LIBUSB_PRIVATE} $libusb_LIBS"
+	CFLAGS_LIBUSB="${CFLAGS_LIBUSB} $libusb_CFLAGS"
 	;;
 *-darwin*)
 	AC_MSG_RESULT([ (Mac OS X back-end)])
@@ -180,10 +180,10 @@ if test "x$testgui_enabled" != "xno"; then
 		if test "x$foxconfig" = "xfalse"; then
 			hidapi_prog_error fox-config "FOX Toolkit"
 		fi
-		LIBS_TESTGUI+=`$foxconfig --libs`
-		LIBS_TESTGUI+=" -framework Cocoa -L/usr/X11R6/lib"
-		CFLAGS_TESTGUI+=`$foxconfig --cflags`
-		OBJCFLAGS+=" -x objective-c++"
+		LIBS_TESTGUI="${LIBS_TESTGUI} `$foxconfig --libs`"
+		LIBS_TESTGUI="${LIBS_TESTGUI} -framework Cocoa -L/usr/X11R6/lib"
+		CFLAGS_TESTGUI="${CFLAGS_TESTGUI} `$foxconfig --cflags`"
+		OBJCFLAGS="${OBJCFLAGS} -x objective-c++"
 	elif test "x$os" = xwindows; then
 		# On Windows, just set the paths for Fox toolkit
 		if test "x$win_implementation" = xmingw; then
