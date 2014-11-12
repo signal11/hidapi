@@ -607,9 +607,8 @@ int HID_API_EXPORT HID_API_CALL hid_write(hid_device *dev, const unsigned char *
 {
 	DWORD bytes_written;
 	BOOL res;
-
-	OVERLAPPED ol;
 	unsigned char *buf;
+	OVERLAPPED ol;
 	memset(&ol, 0, sizeof(ol));
 
 	/* Make sure the right number of bytes are passed to WriteFile. Windows
@@ -630,7 +629,7 @@ int HID_API_EXPORT HID_API_CALL hid_write(hid_device *dev, const unsigned char *
 		length = dev->output_report_length;
 	}
 
-	res = WriteFile(dev->device_handle, buf, length, NULL, &ol);
+	res = WriteFile(dev->device_handle, buf, length, &bytes_written, &ol);
 	
 	if (!res) {
 		if (GetLastError() != ERROR_IO_PENDING) {
@@ -640,20 +639,23 @@ int HID_API_EXPORT HID_API_CALL hid_write(hid_device *dev, const unsigned char *
 			goto end_of_function;
 		}
 	}
-
-	/* Wait here until the write is done. This makes
-	   hid_write() synchronous. */
-	res = GetOverlappedResult(dev->device_handle, &ol, &bytes_written, TRUE/*wait*/);
-	if (!res) {
-		/* The Write operation failed. */
-		register_error(dev, "WriteFile");
-		bytes_written = -1;
+	else
+	{
 		goto end_of_function;
 	}
 
-end_of_function:
-	if (buf != data)
-		free(buf);
+	res = GetOverlappedResult(dev->device_handle, &ol, &bytes_written, TRUE/*wait*/);
+
+	if (!res)
+	{
+		/* WriteFile() failed. Return error. */
+		register_error(dev, "WriteFile");
+		bytes_written = -1;
+	}
+
+	end_of_function:
+		if (buf != data)
+			free(buf);
 
 	return bytes_written;
 }
