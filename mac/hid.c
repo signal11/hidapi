@@ -799,6 +799,12 @@ int HID_API_EXPORT hid_write(hid_device *dev, const unsigned char *data, size_t 
 	return set_report(dev, kIOHIDReportTypeOutput, data, length);
 }
 
+int HID_API_EXPORT hid_write_timeout(hid_device *dev const unsigned char *data, size_t length, int milliseconds)
+{
+	/* Not yet implemented on the Mac */
+	return hid_write(dev, data, length);
+}
+
 /* Helper function, so that this isn't duplicated in hid_read(). */
 static int return_data(hid_device *dev, unsigned char *data, size_t length)
 {
