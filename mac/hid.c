@@ -799,11 +799,83 @@ int HID_API_EXPORT hid_write(hid_device *dev, const unsigned char *data, size_t 
 	return set_report(dev, kIOHIDReportTypeOutput, data, length);
 }
 
+typedef struct _SET_REPORT_ARGS {
+	hid_device *dev;
+	const unsigned char *data;
+	size_t length;
+	pthread_cond_t condition;
+	int res;
+} set_report_args;
+
+void *call_set_report_with(void *args)
+{
+	set_report_args *report_args = args;
+	report_args->res = set_report(
+			report_args->dev,
+			kIOHIDReportTypeOutput,
+			report_args->data,
+			report_args->length);
+	pthread_cond_signal(&report_args->condition);
+}
+
+void set_timespec_from_milliseconds(struct timespec *ts, int milliseconds)
+{
+		struct timeval tv;
+		gettimeofday(&tv, NULL);
+		TIMEVAL_TO_TIMESPEC(&tv, &ts);
+		ts->tv_sec += milliseconds / 1000;
+		ts->tv_nsec += (milliseconds % 1000) * 1000000;
+		if (ts->tv_nsec >= 1000000000L) {
+			ts->tv_sec++;
+			ts->tv_nsec -= 1000000000L;
+		}
+}
+
 int HID_API_EXPORT hid_write_timeout(hid_device *dev const unsigned char *data, size_t length, int milliseconds)
 {
-	/* Not yet implemented on the Mac */
-	return hid_write(dev, data, length);
+	int res = -1; // Unexpected error
+	pthread_t thread;
+	pthread_cond_t cond;
+	pthread_mutex_t mutex;
+
+	pthread_cond_init(&cond);
+	pthread_mutex_init(&mutex);
+
+	if (milliseconds < 0) // blocking
+	{
+		// Call the blocking set_report
+		res = set_report(dev, kIOHIDReportTypeOutput, data, length);
+	}
+	else
+	{
+		set_report_args report_args = (set_report_args) {
+			.dev = dev,
+			.data = data,
+			.length = length,
+			.condition = cond
+		};
+
+		if (pthread_create(&thread, NULL, call_set_report_with, &report_args) == 0)
+		{
+			struct timespec ts;
+			set_timespec_from_milliseconds(&ts, milliseconds);
+			res = pthread_cond_timedwait(&cond, &mutex, &ts);
+			if (res == 0) // set_report exited successfully
+			{
+				res = report_args.res;
+			}
+			else if (res == ETIMEDOUT)
+			{
+				res = 0;
+			}
+		}
+	}
+
+	pthread_mutex_destroy(&mutex);
+	pthread_cond_destroy(&cond);
+	return res;
 }
+
 
 /* Helper function, so that this isn't duplicated in hid_read(). */
 static int return_data(hid_device *dev, unsigned char *data, size_t length)
@@ -905,15 +977,7 @@ int HID_API_EXPORT hid_read_timeout(hid_device *dev, unsigned char *data, size_t
 		/* Non-blocking, but called with timeout. */
 		int res;
 		struct timespec ts;
-		struct timeval tv;
-		gettimeofday(&tv, NULL);
-		TIMEVAL_TO_TIMESPEC(&tv, &ts);
-		ts.tv_sec += milliseconds / 1000;
-		ts.tv_nsec += (milliseconds % 1000) * 1000000;
-		if (ts.tv_nsec >= 1000000000L) {
-			ts.tv_sec++;
-			ts.tv_nsec -= 1000000000L;
-		}
+		set_timespec_from_milliseconds(&ts, milliseconds);
 
 		res = cond_timedwait(dev, &dev->condition, &dev->mutex, &ts);
 		if (res == 0)
