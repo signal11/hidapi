@@ -1051,7 +1051,7 @@ int HID_API_EXPORT hid_write_timeout(hid_device *dev, const unsigned char *data,
 
 int HID_API_EXPORT hid_write(hid_device *dev, const unsigned char *data, size_t length)
 {
-	return hid_write_timeout(dev, data, length, 1000); /* default to 1 second timeout */
+	return hid_write_timeout(dev, data, length, -1); /* -1 for infinite wait */
 }
 
 /* Helper function, to simplify hid_read().
