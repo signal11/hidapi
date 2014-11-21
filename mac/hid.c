@@ -867,6 +867,7 @@ int HID_API_EXPORT hid_write_timeout(hid_device *dev const unsigned char *data, 
 			else if (res == ETIMEDOUT)
 			{
 				res = 0;
+				pthread_cancel(thread);
 			}
 		}
 	}
