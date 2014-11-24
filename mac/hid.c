@@ -266,46 +266,6 @@ static int get_string_property(IOHIDDeviceRef device, CFStringRef prop, wchar_t 
 
 }
 
-static int get_string_property_utf8(IOHIDDeviceRef device, CFStringRef prop, char *buf, size_t len)
-{
-	CFStringRef str;
-	if (!len)
-		return 0;
-
-	str = IOHIDDeviceGetProperty(device, prop);
-
-	buf[0] = 0;
-
-	if (str) {
-		len--;
-
-		CFIndex str_len = CFStringGetLength(str);
-		CFRange range;
-		range.location = 0;
-		range.length = str_len;
-		CFIndex used_buf_len;
-		CFIndex chars_copied;
-		chars_copied = CFStringGetBytes(str,
-			range,
-			kCFStringEncodingUTF8,
-			(char)'?',
-			FALSE,
-			(UInt8*)buf,
-			len,
-			&used_buf_len);
-
-		if (used_buf_len == len)
-			buf[len] = 0; /* len is decremented above */
-		else
-			buf[used_buf_len] = 0;
-
-		return used_buf_len;
-	}
-	else
-		return 0;
-}
-
-
 static int get_serial_number(IOHIDDeviceRef device, wchar_t *buf, size_t len)
 {
 	return get_string_property(device, CFSTR(kIOHIDSerialNumberKey), buf, len);
