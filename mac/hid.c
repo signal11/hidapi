@@ -214,11 +214,6 @@ static unsigned short get_product_id(IOHIDDeviceRef device)
 	return get_int_property(device, CFSTR(kIOHIDProductIDKey));
 }
 
-static int32_t get_location_id(IOHIDDeviceRef device)
-{
-	return get_int_property(device, CFSTR(kIOHIDLocationIDKey));
-}
-
 static int32_t get_max_report_length(IOHIDDeviceRef device)
 {
 	return get_int_property(device, CFSTR(kIOHIDMaxInputReportSizeKey));
@@ -1047,6 +1042,11 @@ HID_API_EXPORT const wchar_t * HID_API_CALL  hid_error(hid_device *dev)
 
 
 #if 0
+static int32_t get_location_id(IOHIDDeviceRef device)
+{
+	return get_int_property(device, CFSTR(kIOHIDLocationIDKey));
+}
+
 static int32_t get_usage(IOHIDDeviceRef device)
 {
 	int32_t res;
