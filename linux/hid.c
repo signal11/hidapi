@@ -566,6 +566,12 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 	return root;
 }
 
+struct hid_device_info HID_API_EXPORT * HID_API_CALL hid_enumerate_device(const char *path)
+{
+	/* TODO: Implement this function for platforms other than Windows. */
+	return NULL;
+}
+
 void  HID_API_EXPORT hid_free_enumeration(struct hid_device_info *devs)
 {
 	struct hid_device_info *d = devs;
