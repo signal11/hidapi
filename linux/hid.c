@@ -77,6 +77,7 @@ struct hid_device_ {
 	int uses_numbered_reports;
 };
 
+int hid_get_raw_descriptor(hid_device *dev, char *descriptor_buffer, int* buffer_size);
 
 static __u32 kernel_version = 0;
 
@@ -459,7 +460,7 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 			struct hid_device_info *tmp;
 
 			/* VID/PID match. Create the record. */
-			tmp = malloc(sizeof(struct hid_device_info));
+			tmp = calloc(1, sizeof(struct hid_device_info));
 			if (cur_dev) {
 				cur_dev->next = tmp;
 			}
@@ -533,7 +534,15 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 					if (intf_dev) {
 						str = udev_device_get_sysattr_value(intf_dev, "bInterfaceNumber");
 						cur_dev->interface_number = (str)? strtol(str, NULL, 16): -1;
+					    /* Open the device */
+					    hid_device *handle = hid_open_path(dev_path);
+					    if (handle != NULL) {
+					        // Get a copy of the raw descriptor
+     					    cur_dev->raw_descriptor = calloc(2048, 1);
+						    int result = hid_get_raw_descriptor(handle, cur_dev->raw_descriptor, &cur_dev->descriptor_size);
+						    hid_close(handle);
 					}
+				}
 
 					break;
 
@@ -575,6 +584,7 @@ void  HID_API_EXPORT hid_free_enumeration(struct hid_device_info *devs)
 		free(d->serial_number);
 		free(d->manufacturer_string);
 		free(d->product_string);
+		free(d->raw_descriptor);
 		free(d);
 		d = next;
 	}
@@ -662,6 +672,36 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 	}
 }
 
+int HID_API_EXPORT hid_get_raw_descriptor(hid_device *dev,
+		char *descriptor_buffer, int* buffer_size) {
+	/* Get the report descriptor */
+	int res, desc_size = 0;
+	struct hidraw_report_descriptor rpt_desc;
+
+	memset(&rpt_desc, 0x0, sizeof(rpt_desc));
+
+	/* Get Report Descriptor Size */
+	res = ioctl(dev->device_handle, HIDIOCGRDESCSIZE, &desc_size);
+	if (res < 0)
+		perror("HIDIOCGRDESCSIZE");
+
+	/* Get Report Descriptor */
+	rpt_desc.size = desc_size;
+	res = ioctl(dev->device_handle, HIDIOCGRDESC, &rpt_desc);
+	if (res < 0) {
+		*buffer_size = -1;
+	} else {
+		/* Determine if this device uses numbered reports. */
+		int i = 0;
+		memset(descriptor_buffer, 0, *buffer_size);
+
+		for (i = 0; i < rpt_desc.size; i++)
+			sprintf(descriptor_buffer + strlen(descriptor_buffer), " 0x%02X",
+					rpt_desc.value[i]);
+		*buffer_size = rpt_desc.size;
+	}
+	return res;
+}
 
 int HID_API_EXPORT hid_write(hid_device *dev, const unsigned char *data, size_t length)
 {

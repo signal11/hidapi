@@ -235,12 +235,12 @@ MainWindow::onConnect(FXObject *sender, FXSelector sel, void *ptr)
 		return -1;
 	
 	connected_device =  hid_open_path(device_info->path);
-	
+
 	if (!connected_device) {
 		FXMessageBox::error(this, MBOX_OK, "Device Error", "Unable To Connect to Device");
 		return -1;
 	}
-	
+
 	hid_set_nonblocking(connected_device, 1);
 
 	getApp()->addTimeout(this, ID_TIMER,
@@ -297,6 +297,7 @@ MainWindow::onRescan(FXObject *sender, FXSelector sel, void *ptr)
 		s.format("%04hx:%04hx -", cur_dev->vendor_id, cur_dev->product_id);
 		s += FXString(" ") + cur_dev->manufacturer_string;
 		s += FXString(" ") + cur_dev->product_string;
+		s += FXString(" ") + cur_dev->raw_descriptor;
 		usage_str.format(" (usage: %04hx:%04hx) ", cur_dev->usage_page, cur_dev->usage);
 		s += usage_str;
 		FXListItem *li = new FXListItem(s, NULL, cur_dev);

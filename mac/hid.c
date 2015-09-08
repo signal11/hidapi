@@ -451,7 +451,7 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 			size_t len;
 
 			/* VID/PID match. Create the record. */
-			tmp = malloc(sizeof(struct hid_device_info));
+			tmp = calloc(1, sizeof(struct hid_device_info));
 			if (cur_dev) {
 				cur_dev->next = tmp;
 			}
