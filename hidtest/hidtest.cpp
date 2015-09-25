@@ -42,7 +42,28 @@ int main(int argc, char* argv[])
 #endif
 
 	struct hid_device_info *devs, *cur_dev;
-	
+	unsigned short vendor_id = 0x4d8;
+	unsigned short product_id = 0x3f;
+	wchar_t *serial_number = NULL;
+
+	if (argc < 3 || argc > 4) {
+		printf("Arguments: VID PID <SERIAL>\n");
+		return -1;
+	} else {
+		res = sscanf(argv[1], "%hx", &vendor_id);
+		if (res != 1) {
+			printf("%s is not a valid vendor id, please use 0xXXX format\n", argv[1]);
+			return -1;
+		}
+		res = sscanf(argv[2], "%hx", &product_id);
+		if (res != 1) {
+			printf("%s is not a valid product id, please use 0xXXX format\n", argv[2]);
+			return -1;
+		}
+		if (argc == 4)
+			serial_number = (wchar_t *) argv[3];
+	}
+
 	if (hid_init())
 		return -1;
 
@@ -68,8 +89,7 @@ int main(int argc, char* argv[])
 
 	// Open the device using the VID, PID,
 	// and optionally the Serial number.
-	////handle = hid_open(0x4d8, 0x3f, L"12345");
-	handle = hid_open(0x4d8, 0x3f, NULL);
+	handle = hid_open(vendor_id, product_id, serial_number);
 	if (!handle) {
 		printf("unable to open device\n");
  		return 1;
