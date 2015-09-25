@@ -36,20 +36,12 @@ int main(int argc, char* argv[])
 	hid_device *handle;
 	int i;
 
-#ifdef WIN32
-	UNREFERENCED_PARAMETER(argc);
-	UNREFERENCED_PARAMETER(argv);
-#endif
-
 	struct hid_device_info *devs, *cur_dev;
 	unsigned short vendor_id = 0x4d8;
 	unsigned short product_id = 0x3f;
 	wchar_t *serial_number = NULL;
 
-	if (argc < 3 || argc > 4) {
-		printf("Arguments: VID PID <SERIAL>\n");
-		return -1;
-	} else {
+	if (argc > 2 && argc <= 4) {
 		res = sscanf(argv[1], "%hx", &vendor_id);
 		if (res != 1) {
 			printf("%s is not a valid vendor id, please use 0xXXX format\n", argv[1]);
@@ -62,6 +54,11 @@ int main(int argc, char* argv[])
 		}
 		if (argc == 4)
 			serial_number = (wchar_t *) argv[3];
+
+		printf("Using custom VENDOR/PRODUCT values--some tests may not work\n");
+	} else if (argc == 2 || argc > 4) {
+		printf("Invalid argument. Pass no arguments to use defaults or [VENDOR PRODUCT [SERIAL]]\n");
+		return -1;
 	}
 
 	if (hid_init())
