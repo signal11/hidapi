@@ -54,6 +54,8 @@ int main(int argc, char* argv[])
 		printf("  Manufacturer: %ls\n", cur_dev->manufacturer_string);
 		printf("  Product:      %ls\n", cur_dev->product_string);
 		printf("  Release:      %hx\n", cur_dev->release_number);
+		printf("  Raw descriptor:      %s\n", cur_dev->raw_descriptor);
+		printf("  Sysfs path:      %s\n", cur_dev->device_path);
 		printf("  Interface:    %d\n",  cur_dev->interface_number);
 		printf("\n");
 		cur_dev = cur_dev->next;

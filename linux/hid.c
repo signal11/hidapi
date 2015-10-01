@@ -534,6 +534,10 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 					if (intf_dev) {
 						str = udev_device_get_sysattr_value(intf_dev, "bInterfaceNumber");
 						cur_dev->interface_number = (str)? strtol(str, NULL, 16): -1;
+						int plen=strlen(sysfs_path);
+						cur_dev->device_path=calloc(1, plen);
+						memcpy(cur_dev->device_path, sysfs_path, plen);
+						cur_dev->device_path_size=plen;
 					    /* Open the device */
 					    hid_device *handle = hid_open_path(dev_path);
 					    if (handle != NULL) {
@@ -585,6 +589,7 @@ void  HID_API_EXPORT hid_free_enumeration(struct hid_device_info *devs)
 		free(d->manufacturer_string);
 		free(d->product_string);
 		free(d->raw_descriptor);
+		free(d->device_path);
 		free(d);
 		d = next;
 	}

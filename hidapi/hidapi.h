@@ -80,6 +80,8 @@ extern "C" {
 			/** Only on Linux udev. */
 			int descriptor_size;
 			char* raw_descriptor;
+			int device_path_size;
+			char* device_path;
 		};
 
 
