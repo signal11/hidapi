@@ -29,7 +29,7 @@ hidraw nodes associated with them.  Keyboards, mice, and some other devices
 which are blacklisted from having hidraw nodes will not work. Fortunately,
 for nearly all the uses of hidraw, this is not a problem.
 
-Linux/FreeBSD/libusb (libusb/hid-libusb.c):
+Linux/FreeBSD/libusb (libusb/hid.c):
 This back-end uses libusb-1.0 to communicate directly to a USB device. This
 back-end will of course not work with Bluetooth devices.
 
