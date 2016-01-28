@@ -601,7 +601,7 @@ static void hid_report_callback(void *context, IOReturn result, void *sender,
 
 }
 
-/* This gets called when the read_thred's run loop gets signaled by
+/* This gets called when the read_thread's run loop gets signaled by
    hid_close(), and serves to stop the read_thread's run loop. */
 static void perform_signal_callback(void *context)
 {
@@ -659,7 +659,7 @@ static void *read_thread(void *param)
 	/* Now that the read thread is stopping, Wake any threads which are
 	   waiting on data (in hid_read_timeout()). Do this under a mutex to
 	   make sure that a thread which is about to go to sleep waiting on
-	   the condition acutally will go to sleep before the condition is
+	   the condition actually will go to sleep before the condition is
 	   signaled. */
 	pthread_mutex_lock(&dev->mutex);
 	pthread_cond_broadcast(&dev->condition);

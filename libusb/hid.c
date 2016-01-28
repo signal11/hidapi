@@ -316,7 +316,7 @@ static int get_usage(uint8_t *report_descriptor, size_t size,
 #if defined(__FreeBSD__) && __FreeBSD__ < 10
 /* The libusb version included in FreeBSD < 10 doesn't have this function. In
    mainline libusb, it's inlined in libusb.h. This function will bear a striking
-   resemblence to that one, because there's about one way to code it.
+   resemblance to that one, because there's about one way to code it.
 
    Note that the data parameter is Unicode in UTF-16LE encoding.
    Return value is the number of bytes in data, or LIBUSB_ERROR_*.
@@ -849,7 +849,7 @@ static void *read_thread(void *param)
 	/* Now that the read thread is stopping, Wake any threads which are
 	   waiting on data (in hid_read_timeout()). Do this under a mutex to
 	   make sure that a thread which is about to go to sleep waiting on
-	   the condition acutally will go to sleep before the condition is
+	   the condition actually will go to sleep before the condition is
 	   signaled. */
 	pthread_mutex_lock(&dev->mutex);
 	pthread_cond_broadcast(&dev->condition);
@@ -958,7 +958,7 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 								(ep->bEndpointAddress & LIBUSB_ENDPOINT_DIR_MASK)
 							      == LIBUSB_ENDPOINT_IN;
 
-							/* Decide whether to use it for intput or output. */
+							/* Decide whether to use it for input or output. */
 							if (dev->input_endpoint == 0 &&
 							    is_interrupt && is_input) {
 								/* Use this endpoint for INPUT */
@@ -1014,7 +1014,7 @@ int HID_API_EXPORT hid_write(hid_device *dev, const unsigned char *data, size_t 
 
 
 	if (dev->output_endpoint <= 0) {
-		/* No interrput out endpoint. Use the Control Endpoint */
+		/* No interrupt out endpoint. Use the Control Endpoint */
 		res = libusb_control_transfer(dev->device_handle,
 			LIBUSB_REQUEST_TYPE_CLASS|LIBUSB_RECIPIENT_INTERFACE|LIBUSB_ENDPOINT_OUT,
 			0x09/*HID Set_Report*/,

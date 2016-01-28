@@ -16,7 +16,7 @@ application and build using the build parameters in the Makefile.
 Libusb Implementation notes
 ----------------------------
 For the libusb implementation, libusb-1.0 must be installed. Libusb 1.0 is
-different than the legacy libusb 0.1 which is installed on many systems.  To
+different than the legacy libusb 0.1 which is installed on many systems. To
 install libusb-1.0 on Ubuntu and other Debian-based systems, run:
 	sudo apt-get install libusb-1.0-0-dev
 
