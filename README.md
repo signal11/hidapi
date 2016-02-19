@@ -88,10 +88,14 @@ int main(int argc, char* argv[])
 If you have your own simple test programs which communicate with standard hardware development boards (such as those from Microchip, TI, Atmel, FreeScale and others), please consider sending me something like the above for inclusion into the HIDAPI source.  This will help others who have the same hardware as you do.
 
 ## License
-HIDAPI may be used by one of three licenses as outlined in LICENSE.txt.
+HIDAPI may be used by one of three licenses as outlined in [LICENSE.txt](LICENSE.txt).
 
 ## Download
-HIDAPI can be downloaded from github     git clone git://github.com/signal11/hidapi.git
+HIDAPI can be downloaded from github
+
+```
+git clone git://github.com/signal11/hidapi.git
+```
 
 ## Build Instructions
 This section is long. Don't be put off by this. It's not long because it's complicated to build HIDAPI; it's quite the opposite.  This section is long because of the flexibility of HIDAPI and the large number of ways in which it can be built and used.  You will likely pick a single build method.
