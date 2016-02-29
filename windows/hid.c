@@ -864,6 +864,9 @@ int HID_API_EXPORT_CALL HID_API_CALL hid_get_indexed_string(hid_device *dev, int
 
 HID_API_EXPORT const wchar_t * HID_API_CALL  hid_error(hid_device *dev)
 {
+	if (!dev) {
+		return NULL;
+	}
 	return (wchar_t*)dev->last_error_str;
 }
 
