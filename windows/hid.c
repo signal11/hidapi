@@ -172,7 +172,12 @@ static void register_error(hid_device *device, const char *op)
 		NULL,
 		GetLastError(),
 		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+#ifdef _MSC_VER
+		(LPWSTR)&msg, 0/*sz*/,
+#else
+		/* mingw gcc -pedantic warning fix? */
 		(LPVOID)&msg, 0/*sz*/,
+#endif
 		NULL);
 	
 	/* Get rid of the CR and LF that FormatMessage() sticks at the
