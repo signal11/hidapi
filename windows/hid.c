@@ -234,6 +234,19 @@ static HANDLE open_device(const char *path, BOOL enumerate)
 		FILE_FLAG_OVERLAPPED,/*FILE_ATTRIBUTE_NORMAL,*/
 		0);
 
+	if (!(enumerate) && handle == INVALID_HANDLE_VALUE) {
+		/* Couldn't open the device. Some devices must be opened
+		   with write sharing enabled (even though they are only
+		   opened once), so try it here. */
+		handle = CreateFileA(path,
+			desired_access,
+			share_mode|FILE_SHARE_WRITE,
+			NULL,
+			OPEN_EXISTING,
+			FILE_FLAG_OVERLAPPED,/*FILE_ATTRIBUTE_NORMAL,*/
+			0);
+	}
+
 	return handle;
 }
 
