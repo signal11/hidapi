@@ -77,7 +77,7 @@ struct hid_device_ {
 	int uses_numbered_reports;
 };
 
-int hid_get_raw_descriptor(hid_device *dev, char *descriptor_buffer, int* buffer_size);
+int hid_get_raw_descriptor(hid_device *dev, u_int8_t *descriptor_buffer, int* buffer_size);
 
 static __u32 kernel_version = 0;
 
@@ -542,7 +542,8 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 					    hid_device *handle = hid_open_path(dev_path);
 					    if (handle != NULL) {
 					        // Get a copy of the raw descriptor
-     					    cur_dev->raw_descriptor = calloc(2048, 1);
+						    cur_dev->raw_descriptor = calloc(2048, 1);
+						    cur_dev->descriptor_size=2048;
 						    int result = hid_get_raw_descriptor(handle, cur_dev->raw_descriptor, &cur_dev->descriptor_size);
                             
 						    hid_close(handle);
@@ -679,7 +680,7 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 }
 
 int HID_API_EXPORT hid_get_raw_descriptor(hid_device *dev,
-		char *descriptor_buffer, int* buffer_size) {
+		u_int8_t *descriptor_buffer, int* buffer_size) {
 	/* Get the report descriptor */
 	int res, desc_size = 0;
 	struct hidraw_report_descriptor rpt_desc;
@@ -703,11 +704,7 @@ int HID_API_EXPORT hid_get_raw_descriptor(hid_device *dev,
 		/* Determine if this device uses numbered reports. */
 		int i = 0;
 		memset(descriptor_buffer, 0, *buffer_size);
-
-		for (i = 0; i < rpt_desc.size; i++)
-        {
-            descriptor_bufffer[i]=rpt_desc.value[i];
-        }
+		memcpy(descriptor_buffer, rpt_desc.value, rpt_desc.size);
 		*buffer_size = rpt_desc.size;
 	}
 	return res;
@@ -761,9 +758,18 @@ int HID_API_EXPORT hid_read_timeout(hid_device *dev, unsigned char *data, size_t
 	    kernel_version != 0 &&
 	    kernel_version < KERNEL_VERSION(2,6,34) &&
 	    dev->uses_numbered_reports) {
-		/* Work around a kernel bug. Chop off the first byte. */
-		memmove(data, data+1, bytes_read);
-		bytes_read--;
+		    /* Work around a kernel bug. Chop off the first byte. */
+		    memmove(data, data+1, bytes_read);
+		    bytes_read--;
+	}
+
+	if (bytes_read > 0 &&
+		!dev->uses_numbered_reports &&
+		length > bytes_read+1) {
+		    /* Be consistent, return report number always, even when it's zero. */
+		    memmove(data+1, data, bytes_read);
+		    data[0]=0;
+		    bytes_read++;
 	}
 
 	return bytes_read;
