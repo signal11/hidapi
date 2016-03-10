@@ -544,6 +544,7 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 					        // Get a copy of the raw descriptor
      					    cur_dev->raw_descriptor = calloc(2048, 1);
 						    int result = hid_get_raw_descriptor(handle, cur_dev->raw_descriptor, &cur_dev->descriptor_size);
+                            
 						    hid_close(handle);
 					}
 				}
@@ -696,13 +697,17 @@ int HID_API_EXPORT hid_get_raw_descriptor(hid_device *dev,
 	if (res < 0) {
 		*buffer_size = -1;
 	} else {
+        if(rpt_desc.size > *buffer_size)
+            perror("ENOBUFS");
+
 		/* Determine if this device uses numbered reports. */
 		int i = 0;
 		memset(descriptor_buffer, 0, *buffer_size);
 
 		for (i = 0; i < rpt_desc.size; i++)
-			sprintf(descriptor_buffer + strlen(descriptor_buffer), " 0x%02X",
-					rpt_desc.value[i]);
+        {
+            descriptor_bufffer[i]=rpt_desc.value[i];
+        }
 		*buffer_size = rpt_desc.size;
 	}
 	return res;
