@@ -362,15 +362,22 @@ static int make_path(IOHIDDeviceRef device, char *buf, size_t len)
 /* Initialize the IOHIDManager. Return 0 for success and -1 for failure. */
 static int init_hid_manager(void)
 {
+  IOReturn res;
+
 	/* Initialize all the HID Manager Objects */
 	hid_mgr = IOHIDManagerCreate(kCFAllocatorDefault, kIOHIDOptionsTypeNone);
-	if (hid_mgr) {
-		IOHIDManagerSetDeviceMatching(hid_mgr, NULL);
-		IOHIDManagerScheduleWithRunLoop(hid_mgr, CFRunLoopGetCurrent(), kCFRunLoopDefaultMode);
-		return 0;
-	}
+  if (!hid_mgr) {
+    return -1;
+  }
 
-	return -1;
+  IOHIDManagerSetDeviceMatching(hid_mgr, NULL);
+  IOHIDManagerScheduleWithRunLoop(hid_mgr, CFRunLoopGetCurrent(), kCFRunLoopDefaultMode);
+  res = IOHIDManagerOpen(hid_mgr, kIOHIDOptionsTypeNone);
+  if (res != kIOReturnSuccess) {
+    return -1;
+  }
+
+  return 0;
 }
 
 /* Initialize the IOHIDManager if necessary. This is the public function, and
