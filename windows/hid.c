@@ -809,11 +809,14 @@ void HID_API_EXPORT HID_API_CALL hid_close(hid_device *dev)
 	free_hid_device(dev);
 }
 
+// Issue #278 identified 0xFFF as the maximum buffer size accepted by the HidD functions.
+#define MAX_WCHARS 0xFFF 
+
 int HID_API_EXPORT_CALL HID_API_CALL hid_get_manufacturer_string(hid_device *dev, wchar_t *string, size_t maxlen)
 {
 	BOOL res;
 
-	res = HidD_GetManufacturerString(dev->device_handle, string, sizeof(wchar_t) * maxlen);
+	res = HidD_GetManufacturerString(dev->device_handle, string, sizeof(wchar_t) * min(maxlen, MAX_WCHARS));
 	if (!res) {
 		register_error(dev, "HidD_GetManufacturerString");
 		return -1;
@@ -826,7 +829,7 @@ int HID_API_EXPORT_CALL HID_API_CALL hid_get_product_string(hid_device *dev, wch
 {
 	BOOL res;
 
-	res = HidD_GetProductString(dev->device_handle, string, sizeof(wchar_t) * maxlen);
+	res = HidD_GetProductString(dev->device_handle, string, sizeof(wchar_t) * min(maxlen, MAX_WCHARS));
 	if (!res) {
 		register_error(dev, "HidD_GetProductString");
 		return -1;
@@ -839,7 +842,7 @@ int HID_API_EXPORT_CALL HID_API_CALL hid_get_serial_number_string(hid_device *de
 {
 	BOOL res;
 
-	res = HidD_GetSerialNumberString(dev->device_handle, string, sizeof(wchar_t) * maxlen);
+	res = HidD_GetSerialNumberString(dev->device_handle, string, sizeof(wchar_t) * min(maxlen, MAX_WCHARS));
 	if (!res) {
 		register_error(dev, "HidD_GetSerialNumberString");
 		return -1;
@@ -852,7 +855,7 @@ int HID_API_EXPORT_CALL HID_API_CALL hid_get_indexed_string(hid_device *dev, int
 {
 	BOOL res;
 
-	res = HidD_GetIndexedString(dev->device_handle, string_index, string, sizeof(wchar_t) * maxlen);
+	res = HidD_GetIndexedString(dev->device_handle, string_index, string, sizeof(wchar_t) * min(maxlen, MAX_WCHARS));
 	if (!res) {
 		register_error(dev, "HidD_GetIndexedString");
 		return -1;
