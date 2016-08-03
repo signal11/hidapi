@@ -313,9 +313,13 @@ the testgui/ directory.
 
 To build HIDAPI using MinGW or Cygwin using Autotools, use the instructions
 in the section titled "Building HIDAPI into a shared library on Unix
-Platforms" above.  Note that building the Test GUI with MinGW or Cygwin will
-require the Windows procedure in the Prerequisites section above (i.e.
-``hidapi-externals.zip``).
+Platforms" above.
+
+.. note::
+
+    Building the Test GUI with MinGW or Cygwin will
+    require the Windows procedure in the Prerequisites section above (i.e.
+    ``hidapi-externals.zip``).
 
 To build HIDAPI using MinGW using the Manual Makefiles, see the section
 "Building the manual way on Unix platforms" above.
@@ -362,7 +366,9 @@ STAGING and HOST can be modified to suit your setup.
 Prerequisites
 -------------
 
-Note that the build of libudev is the very basic configuration.
+.. note::
+
+    The build of libudev is the very basic configuration.
 
 Build Libusb. From the libusb source directory, run:
 
@@ -393,8 +399,9 @@ Build HIDAPI:
 	./configure --host=$HOST --prefix=$STAGING
 
 
-Signal 11 Software - 2010-04-11
-                     2010-07-28
-                     2011-09-10
-                     2012-05-01
-                     2012-07-03
+| Signal 11 Software - 2010-04-11
+|                      2010-07-28
+|                      2011-09-10
+|                      2012-05-01
+|                      2012-07-03
+
