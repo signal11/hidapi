@@ -608,14 +608,21 @@ err:
 		return NULL;
 }
 
-int HID_API_EXPORT HID_API_CALL hid_write(hid_device *dev, const unsigned char *data, size_t length)
+int HID_API_EXPORT HID_API_CALL hid_write_timeout(hid_device *dev, const unsigned char *data, size_t length, int milliseconds)
 {
 	DWORD bytes_written;
 	BOOL res;
-
-	OVERLAPPED ol;
 	unsigned char *buf;
+	OVERLAPPED ol;
 	memset(&ol, 0, sizeof(ol));
+	ol.hEvent = CreateEvent(NULL, FALSE, FALSE /*inital state f=nonsignaled*/, NULL);
+
+	if (ol.hEvent == NULL)
+	{
+		register_error(dev, "CreateEvent");
+		bytes_written = -3;
+		goto end_of_function;
+	}
 
 	/* Make sure the right number of bytes are passed to WriteFile. Windows
 	   expects the number of bytes which are in the _longest_ report (plus
@@ -635,7 +642,7 @@ int HID_API_EXPORT HID_API_CALL hid_write(hid_device *dev, const unsigned char *
 		length = dev->output_report_length;
 	}
 
-	res = WriteFile(dev->device_handle, buf, length, NULL, &ol);
+	res = WriteFile(dev->device_handle, buf, length, &bytes_written, &ol);
 	
 	if (!res) {
 		if (GetLastError() != ERROR_IO_PENDING) {
@@ -645,20 +652,35 @@ int HID_API_EXPORT HID_API_CALL hid_write(hid_device *dev, const unsigned char *
 			goto end_of_function;
 		}
 	}
-
-	/* Wait here until the write is done. This makes
-	   hid_write() synchronous. */
-	res = GetOverlappedResult(dev->device_handle, &ol, &bytes_written, TRUE/*wait*/);
-	if (!res) {
-		/* The Write operation failed. */
-		register_error(dev, "WriteFile");
-		bytes_written = -1;
+	else
+	{
 		goto end_of_function;
 	}
 
-end_of_function:
-	if (buf != data)
-		free(buf);
+	if (milliseconds >= 0) {
+		/* See if data sent yet. */
+		res = WaitForSingleObject(ol.hEvent, milliseconds);
+		if (res != WAIT_OBJECT_0) {
+			/* Data was not sent in the allotted time, timeout fail */
+			register_error(dev, "WaitForSingleObject");
+			bytes_written = -2;
+			goto end_of_function;
+		}
+	}
+
+	res = GetOverlappedResult(dev->device_handle, &ol, &bytes_written, TRUE/*wait*/);
+
+	if (!res)
+	{
+		/* WriteFile() failed. Return error. */
+		register_error(dev, "WriteFile");
+		bytes_written = -1;
+	}
+
+	end_of_function:
+		if (buf != data)
+			free(buf);
+		CloseHandle(ol.hEvent);
 
 	return bytes_written;
 }
@@ -738,6 +760,11 @@ end_of_function:
 int HID_API_EXPORT HID_API_CALL hid_read(hid_device *dev, unsigned char *data, size_t length)
 {
 	return hid_read_timeout(dev, data, length, (dev->blocking)? -1: 0);
+}
+
+int  HID_API_EXPORT HID_API_CALL hid_write(hid_device *dev, const unsigned char *data, size_t length)
+{
+	return hid_write_timeout(dev, data, length, (dev->blocking) ? -1 : 0);
 }
 
 int HID_API_EXPORT HID_API_CALL hid_set_nonblocking(hid_device *dev, int nonblock)

@@ -999,8 +999,7 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 	}
 }
 
-
-int HID_API_EXPORT hid_write(hid_device *dev, const unsigned char *data, size_t length)
+int HID_API_EXPORT hid_write_timeout(hid_device *dev, const unsigned char *data, size_t length, int milliseconds)
 {
 	int res;
 	int report_number = data[0];
@@ -1021,7 +1020,7 @@ int HID_API_EXPORT hid_write(hid_device *dev, const unsigned char *data, size_t 
 			(2/*HID output*/ << 8) | report_number,
 			dev->interface,
 			(unsigned char *)data, length,
-			1000/*timeout millis*/);
+			milliseconds);
 
 		if (res < 0)
 			return -1;
@@ -1038,7 +1037,7 @@ int HID_API_EXPORT hid_write(hid_device *dev, const unsigned char *data, size_t 
 			dev->output_endpoint,
 			(unsigned char*)data,
 			length,
-			&actual_length, 1000);
+			&actual_length, milliseconds);
 
 		if (res < 0)
 			return -1;
@@ -1048,6 +1047,11 @@ int HID_API_EXPORT hid_write(hid_device *dev, const unsigned char *data, size_t 
 
 		return actual_length;
 	}
+}
+
+int HID_API_EXPORT hid_write(hid_device *dev, const unsigned char *data, size_t length)
+{
+	return hid_write_timeout(dev, data, length, -1); /* -1 for infinite wait */
 }
 
 /* Helper function, to simplify hid_read().

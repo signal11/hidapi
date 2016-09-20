@@ -18,3 +18,9 @@ windows/Makefile.in
 Makefile
 stamp-h1
 libtool
+
+windows/hidtest.vcxproj*
+windows/hidapi.vcxproj*
+windows/UpgradeLog.htm
+windows/Backup
+windows/hidapi.sdf

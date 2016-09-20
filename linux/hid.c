@@ -664,14 +664,40 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 	}
 }
 
+int HID_API_EXPORT hid_write_timeout(hid_device *dev, const unsigned char *data, size_t length, int milliseconds)
+{
+	if (milliseconds >= 0) {
+		/* Milliseconds is either 0 (non-blocking) or > 0 (contains
+		   a valid timeout). In both cases we want to call poll()
+		   and wait for data to arrive.  Don't rely on non-blocking
+		   operation (O_NONBLOCK) since some kernels don't seem to
+		   properly report device disconnection through read() when
+		   in non-blocking mode.  */
+		int ret;
+		struct pollfd fds;
+
+		fds.fd = dev->device_handle;
+		fds.events = POLLIN;
+		fds.revents = 0;
+		ret = poll(&fds, 1, milliseconds);
+		if (ret == -1 || ret == 0) {
+			/* Error or timeout */
+			return ret;
+		}
+		else {
+			/* Check for errors on the file descriptor. This will
+			   indicate a device disconnection. */
+			if (fds.revents & (POLLERR | POLLHUP | POLLNVAL))
+				return -1;
+		}
+	}
+
+	return hid_write(dev, data, length);
+}
 
 int HID_API_EXPORT hid_write(hid_device *dev, const unsigned char *data, size_t length)
 {
-	int bytes_written;
-
-	bytes_written = write(dev->device_handle, data, length);
-
-	return bytes_written;
+	return write(dev->device_handle, data, length); // Return the number of bytes written
 }
 
 
