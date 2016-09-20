@@ -107,7 +107,7 @@ case $host in
 	AC_CHECK_LIB([usb], [libusb_init], [LIBS_LIBUSB_PRIVATE="${LIBS_LIBUSB_PRIVATE} -lusb"], [hidapi_lib_error libusb])
 	echo libs_priv: $LIBS_LIBUSB_PRIVATE
 	;;
-*-mingw*)
+*-mingw* | *msys*)
 	AC_MSG_RESULT([ (Windows back-end, using MinGW)])
 	backend="windows"
 	os="windows"
