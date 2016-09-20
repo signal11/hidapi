@@ -126,6 +126,9 @@ extern "C" {
 #define DETACH_KERNEL_DRIVER
 #endif
 
+/* Submit 3 libusb transfers to increase throughput */
+#define NO_TRANSFERS_TO_SUBMIT 3
+
 /* Uncomment to enable the retrieval of Usage and Usage Page in
 hid_enumerate(). Warning, on platforms different from FreeBSD
 this is very invasive as it requires the detach
@@ -169,7 +172,7 @@ struct hid_device_ {
 	pthread_barrier_t barrier; /* Ensures correct startup sequence */
 	int shutdown_thread;
 	int cancelled;
-	struct libusb_transfer *transfer;
+	struct libusb_transfer * transfer[NO_TRANSFERS_TO_SUBMIT];
 
 	/* List of received input reports. */
 	struct input_report *input_reports;
@@ -801,22 +804,27 @@ static void *read_thread(void *param)
 	hid_device *dev = param;
 	unsigned char *buf;
 	const size_t length = dev->input_ep_max_packet_size;
+	int i;
 
-	/* Set up the transfer object. */
-	buf = malloc(length);
-	dev->transfer = libusb_alloc_transfer(0);
-	libusb_fill_interrupt_transfer(dev->transfer,
-		dev->device_handle,
-		dev->input_endpoint,
-		buf,
-		length,
-		read_callback,
-		dev,
-		5000/*timeout*/);
+	for(i = 0; i < NO_TRANSFERS_TO_SUBMIT; ++i) {
+		/* Set up the transfer object. */
+		buf = malloc(length);
+		dev->transfer[i] = libusb_alloc_transfer(0);
+		libusb_fill_interrupt_transfer(dev->transfer[i],
+			dev->device_handle,
+			dev->input_endpoint,
+			buf,
+			length,
+			read_callback,
+			dev,
+			0);
 
-	/* Make the first submission. Further submissions are made
-	   from inside read_callback() */
-	libusb_submit_transfer(dev->transfer);
+		/* Make the first submission. Further submissions are made
+		   from inside read_callback().
+		   Submit multiple transfers so the next transfer is completed
+		   immediately after read_callback() returns */
+		libusb_submit_transfer(dev->transfer[i]);
+	}
 
 	/* Notify the main thread that the read thread is up and running. */
 	pthread_barrier_wait(&dev->barrier);
@@ -839,9 +847,11 @@ static void *read_thread(void *param)
 		}
 	}
 
-	/* Cancel any transfer that may be pending. This call will fail
-	   if no transfers are pending, but that's OK. */
-	libusb_cancel_transfer(dev->transfer);
+	for(i = 0; i < NO_TRANSFERS_TO_SUBMIT; ++i) {
+		/* Cancel any transfer that may be pending. This call will fail
+		   if no transfers are pending, but that's OK. */
+		libusb_cancel_transfer(dev->transfer[i]);
+	}
 
 	while (!dev->cancelled)
 		libusb_handle_events_completed(usb_context, &dev->cancelled);
@@ -1234,19 +1244,25 @@ int HID_API_EXPORT hid_get_feature_report(hid_device *dev, unsigned char *data, 
 
 void HID_API_EXPORT hid_close(hid_device *dev)
 {
+	int i;
+
 	if (!dev)
 		return;
 
 	/* Cause read_thread() to stop. */
 	dev->shutdown_thread = 1;
-	libusb_cancel_transfer(dev->transfer);
+	for(i = 0; i < NO_TRANSFERS_TO_SUBMIT; ++i) {
+		libusb_cancel_transfer(dev->transfer[i]);
+	}
 
 	/* Wait for read_thread() to end. */
 	pthread_join(dev->thread, NULL);
 
 	/* Clean up the Transfer objects allocated in read_thread(). */
-	free(dev->transfer->buffer);
-	libusb_free_transfer(dev->transfer);
+	for(i = 0; i < NO_TRANSFERS_TO_SUBMIT; ++i) {
+		free(dev->transfer[i]->buffer);
+		libusb_free_transfer(dev->transfer[i]);
+	}
 
 	/* release the interface */
 	libusb_release_interface(dev->device_handle, dev->interface);
