@@ -427,6 +427,12 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 		raw_dev = udev_device_new_from_syspath(udev, sysfs_path);
 		dev_path = udev_device_get_devnode(raw_dev);
 
+		if (udev_device_get_is_initialized(raw_dev) != 1) {
+			/* udev has not initialized the device yet (which includes
+			   setting permissions on the device node) */
+			goto next;
+		}
+
 		hid_dev = udev_device_get_parent_with_subsystem_devtype(
 			raw_dev,
 			"hid",
