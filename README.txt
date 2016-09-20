@@ -287,6 +287,26 @@ not. To build using the DDK:
       by the build system which is appropriate for your environment. On
       Windows XP, this directory is objfre_wxp_x86/i386.
 
+Building the hid Python extension module:
+-----------------------------------------
+
+A hid Python extension module can be generated from this package to 
+provide the hidapi functionality to Python programs. It is built using the 
+Cython package so make sure you have Cython installed in your Python 
+distribution before performing the steps outlined below.
+
+To build and install the hid Python extension module follow the instructions
+below, selecting the appropriate setup file for your platform.
+
+Prerequisites: Cython
+
+    $ cd python
+    $ python setup[-mac|-windows].py build
+    $ [sudo] python setup[-mac|-windows].py install
+
+For more detailed instructions see the python/Readme.rst file.
+
+
 Cross Compiling
 ================
 
