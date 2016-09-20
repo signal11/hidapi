@@ -1267,16 +1267,25 @@ void HID_API_EXPORT hid_close(hid_device *dev)
 
 int HID_API_EXPORT_CALL hid_get_manufacturer_string(hid_device *dev, wchar_t *string, size_t maxlen)
 {
+	if (dev->manufacturer_index == 0) {
+		return -1;
+	}
 	return hid_get_indexed_string(dev, dev->manufacturer_index, string, maxlen);
 }
 
 int HID_API_EXPORT_CALL hid_get_product_string(hid_device *dev, wchar_t *string, size_t maxlen)
 {
+	if (dev->product_index == 0) {
+		return -1;
+	}
 	return hid_get_indexed_string(dev, dev->product_index, string, maxlen);
 }
 
 int HID_API_EXPORT_CALL hid_get_serial_number_string(hid_device *dev, wchar_t *string, size_t maxlen)
 {
+	if (dev->serial_index == 0) {
+		return -1;
+	}
 	return hid_get_indexed_string(dev, dev->serial_index, string, maxlen);
 }
 
