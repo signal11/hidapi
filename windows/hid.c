@@ -353,6 +353,12 @@ struct hid_device_info HID_API_EXPORT * HID_API_CALL hid_enumerate(unsigned shor
 				goto cont;
 			}
 
+			/* See if there's a driver bound. */
+			res = SetupDiGetDeviceRegistryPropertyA(device_info_set, &devinfo_data,
+			               SPDRP_DRIVER, NULL, (PBYTE)driver_name, sizeof(driver_name), NULL);
+			if (!res)
+				goto cont;
+
 		//wprintf(L"HandleName: %s\n", device_interface_detail_data->DevicePath);
 
 		/* Open a handle to the device */
