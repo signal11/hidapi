@@ -934,6 +934,25 @@ int HID_API_EXPORT hid_set_nonblocking(hid_device *dev, int nonblock)
 	return 0;
 }
 
+int HID_API_EXPORT hid_get_input_report(hid_device *dev, unsigned char *data, size_t length)
+{
+	CFIndex len = length;
+	IOReturn res;
+
+	/* Return if the device has been unplugged. */
+	if (dev->disconnected)
+		return -1;
+
+	res = IOHIDDeviceGetReport(dev->device_handle,
+	                           kIOHIDReportTypeInput,
+	                           data[0], /* Report ID */
+	                           data+1, &len);
+	if (res == kIOReturnSuccess)
+		return len;
+	else
+		return -1;
+}
+
 int HID_API_EXPORT hid_send_feature_report(hid_device *dev, const unsigned char *data, size_t length)
 {
 	return set_report(dev, kIOHIDReportTypeFeature, data, length);

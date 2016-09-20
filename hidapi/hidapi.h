@@ -263,6 +263,29 @@ extern "C" {
 		*/
 		int  HID_API_EXPORT HID_API_CALL hid_set_nonblocking(hid_device *device, int nonblock);
 
+		/** @brief Get an Input report from a HID device.
+
+			Input reports are returned
+			to the host through the CONTROL IN endpoint.
+			Make sure to set the first byte of @p data[] to the Report
+			ID of the report to be read.  Make sure to allow space for
+			this extra byte in @p data[].
+
+			@ingroup API
+			@param device A device handle returned from hid_open().
+			@param data A buffer to put the read data into, including
+				the Report ID. Set the first byte of @p data[] to the
+				Report ID of the report to be read.
+			@param length The number of bytes to read, including an
+				extra byte for the report ID. The buffer can be longer
+				than the actual report.
+
+			@returns
+				This function returns the number of bytes read and
+				-1 on error.
+		*/
+		int HID_API_EXPORT HID_API_CALL hid_get_input_report(hid_device *dev, unsigned char *data, size_t length);
+
 		/** @brief Send a Feature report to the device.
 
 			Feature reports are sent over the Control endpoint as a
