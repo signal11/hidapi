@@ -131,6 +131,8 @@ extern "C" {
 	static BOOLEAN initialized = FALSE;
 #endif /* HIDAPI_USE_DDK */
 
+	static HMODULE kernel_lib_handle = NULL;
+
 struct hid_device_ {
 		HANDLE device_handle;
 		BOOL blocking;
@@ -262,6 +264,11 @@ int HID_API_EXPORT hid_exit(void)
 	if (lib_handle)
 		FreeLibrary(lib_handle);
 	lib_handle = NULL;
+
+	if (kernel_lib_handle)
+		FreeLibrary(kernel_lib_handle);
+	kernel_lib_handle = NULL;
+
 	initialized = FALSE;
 #endif
 	return 0;
@@ -806,11 +813,31 @@ int HID_API_EXPORT HID_API_CALL hid_get_feature_report(hid_device *dev, unsigned
 #endif
 }
 
+typedef BOOL (WINAPI *CancolIoEx_)(HANDLE, LPOVERLAPPED);
+
 void HID_API_EXPORT HID_API_CALL hid_close(hid_device *dev)
 {
+	static CancolIoEx_ CancelIoEx = NULL;
+	static BOOL didTryToLoadKernelLib = FALSE;
+
 	if (!dev)
 		return;
-	CancelIo(dev->device_handle);
+
+	if (!kernel_lib_handle && !didTryToLoadKernelLib) {
+		kernel_lib_handle = LoadLibraryA("kernel32.dll");
+		didTryToLoadKernelLib = TRUE;
+		if (kernel_lib_handle) {
+			CancelIoEx = GetProcAddress(kernel_lib_handle, "CancelIoEx");
+		}
+	}
+
+	if (CancelIoEx) {
+		CancelIoEx(dev->device_handle, &dev->ol);
+	}
+	else {
+		CancelIo(dev->device_handle);
+	}
+	
 	free_hid_device(dev);
 }
 
