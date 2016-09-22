@@ -669,9 +669,15 @@ int HID_API_EXPORT hid_write(hid_device *dev, const unsigned char *data, size_t 
 {
 	int bytes_written;
 
-	bytes_written = write(dev->device_handle, data, length);
+	while (1) {
+		bytes_written = write(dev->device_handle, data, length);
+		if (bytes_written < 0 &&
+			(errno == ETIMEDOUT || errno == EINTR)) {
+			continue;
+		}
 
-	return bytes_written;
+		return bytes_written;
+	}
 }
 
 
