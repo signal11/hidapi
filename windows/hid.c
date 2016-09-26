@@ -143,6 +143,8 @@ struct hid_device_ {
 		OVERLAPPED ol;
 };
 
+static void *last_error_str = NULL; // for global errors
+
 static hid_device *new_hid_device()
 {
 	hid_device *dev = (hid_device*) calloc(1, sizeof(hid_device));
@@ -195,8 +197,14 @@ static void register_error(hid_device *device, const char *op)
 
 	/* Store the message off in the Device entry so that
 	   the hid_error() function can pick it up. */
-	LocalFree(device->last_error_str);
-	device->last_error_str = msg;
+    if (device) {
+	    LocalFree(device->last_error_str);
+	    device->last_error_str = msg;
+    }
+    else {
+        if (last_error_str) LocalFree(last_error_str);
+        last_error_str = msg;
+    }
 }
 
 #ifndef HIDAPI_USE_DDK
@@ -238,6 +246,18 @@ static HANDLE open_device(const char *path, BOOL enumerate)
 		OPEN_EXISTING,
 		FILE_FLAG_OVERLAPPED,/*FILE_ATTRIBUTE_NORMAL,*/
 		0);
+
+    // Windows "speciality" ? In some cases, opening read-only will fail while 
+    // read-write will succeed...
+    if (handle == INVALID_HANDLE_VALUE && share_mode == FILE_SHARE_READ) {
+        handle = CreateFileA(path,
+            desired_access,
+            FILE_SHARE_READ | FILE_SHARE_WRITE,
+            NULL,
+            OPEN_EXISTING,
+            FILE_FLAG_OVERLAPPED,/*FILE_ATTRIBUTE_NORMAL,*/
+            0);
+    }
 
 	return handle;
 }
@@ -571,26 +591,26 @@ HID_API_EXPORT hid_device * HID_API_CALL hid_open_path(const char *path)
 	/* Check validity of write_handle. */
 	if (dev->device_handle == INVALID_HANDLE_VALUE) {
 		/* Unable to open the device. */
-		register_error(dev, "CreateFile");
+		register_error(NULL, "CreateFile");
 		goto err;
 	}
 
 	/* Set the Input Report buffer size to 64 reports. */
 	res = HidD_SetNumInputBuffers(dev->device_handle, 64);
 	if (!res) {
-		register_error(dev, "HidD_SetNumInputBuffers");
+        register_error(NULL, "HidD_SetNumInputBuffers");
 		goto err;
 	}
 
 	/* Get the Input Report length for the device. */
 	res = HidD_GetPreparsedData(dev->device_handle, &pp_data);
 	if (!res) {
-		register_error(dev, "HidD_GetPreparsedData");
+        register_error(NULL, "HidD_GetPreparsedData");
 		goto err;
 	}
 	nt_res = HidP_GetCaps(pp_data, &caps);
 	if (nt_res != HIDP_STATUS_SUCCESS) {
-		register_error(dev, "HidP_GetCaps");	
+		register_error(NULL, "HidP_GetCaps");	
 		goto err_pp_data;
 	}
 	dev->output_report_length = caps.OutputReportByteLength;
@@ -602,10 +622,10 @@ HID_API_EXPORT hid_device * HID_API_CALL hid_open_path(const char *path)
 	return dev;
 
 err_pp_data:
-		HidD_FreePreparsedData(pp_data);
+	HidD_FreePreparsedData(pp_data);
 err:	
-		free_hid_device(dev);
-		return NULL;
+	free_hid_device(dev);
+	return NULL;
 }
 
 int HID_API_EXPORT HID_API_CALL hid_write(hid_device *dev, const unsigned char *data, size_t length)
@@ -869,7 +889,7 @@ int HID_API_EXPORT_CALL HID_API_CALL hid_get_indexed_string(hid_device *dev, int
 
 HID_API_EXPORT const wchar_t * HID_API_CALL  hid_error(hid_device *dev)
 {
-	return (wchar_t*)dev->last_error_str;
+	return dev ? (wchar_t*)dev->last_error_str : last_error_str;
 }
 
 
