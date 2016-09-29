@@ -131,6 +131,21 @@ extern "C" {
 		*/
 		struct hid_device_info HID_API_EXPORT * HID_API_CALL hid_enumerate(unsigned short vendor_id, unsigned short product_id);
 
+		/** @brief Enumerate a HID Device.
+
+			This function returns the device information of a single device.
+
+			@ingroup API
+		    @param path The path name of the device to open
+
+		    @returns
+		    	This function returns a pointer to a linked list of type
+		    	struct #hid_device, containing information about the HID device
+		    	attached to the system, or NULL in the case of failure. Free
+		    	this linked list by calling hid_free_enumeration().
+		*/
+		struct hid_device_info HID_API_EXPORT * HID_API_CALL hid_enumerate_device(const char *path);
+
 		/** @brief Free an enumeration Linked List
 
 		    This function frees a linked list created by hid_enumerate().
