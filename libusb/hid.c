@@ -812,7 +812,7 @@ static void *read_thread(void *param)
 		length,
 		read_callback,
 		dev,
-		5000/*timeout*/);
+		0 /*timeout*/);
 
 	/* Make the first submission. Further submissions are made
 	   from inside read_callback() */
