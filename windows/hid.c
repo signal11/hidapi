@@ -632,8 +632,8 @@ int HID_API_EXPORT HID_API_CALL hid_write(hid_device *dev, const unsigned char *
 		buf = (unsigned char *) malloc(dev->output_report_length);
 		memcpy(buf, data, length);
 		memset(buf + length, 0, dev->output_report_length - length);
-		length = dev->output_report_length;
 	}
+	length = dev->output_report_length;
 
 	res = WriteFile(dev->device_handle, buf, length, NULL, &ol);
 	
