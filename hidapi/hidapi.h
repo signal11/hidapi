@@ -31,7 +31,7 @@
 
 #ifdef _WIN32
       #define HID_API_EXPORT __declspec(dllexport)
-      #define HID_API_CALL
+      #define HID_API_CALL __cdecl
 #else
       #define HID_API_EXPORT /**< API export macro */
       #define HID_API_CALL /**< API call macro */
