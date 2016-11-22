@@ -76,6 +76,12 @@ extern "C" {
 
 			/** Pointer to the next device */
 			struct hid_device_info *next;
+
+			/** Only on Linux udev. */
+			int descriptor_size;
+			char* raw_descriptor;
+			int device_path_size;
+			char* device_path;
 		};
 
 
