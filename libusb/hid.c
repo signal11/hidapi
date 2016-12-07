@@ -876,13 +876,16 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 	int res;
 	int d = 0;
 	int good_open = 0;
+	ssize_t num_devs;
 
 	if(hid_init() < 0)
 		return NULL;
 
 	dev = new_hid_device();
 
-	libusb_get_device_list(usb_context, &devs);
+	num_devs = libusb_get_device_list(usb_context, &devs);
+	if (num_devs < 0)
+		return NULL;
 	while ((usb_dev = devs[d++]) != NULL) {
 		struct libusb_device_descriptor desc;
 		struct libusb_config_descriptor *conf_desc = NULL;
