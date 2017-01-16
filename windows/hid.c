@@ -612,6 +612,7 @@ int HID_API_EXPORT HID_API_CALL hid_write(hid_device *dev, const unsigned char *
 {
 	DWORD bytes_written;
 	BOOL res;
+	BOOL overlapped = TRUE;
 
 	OVERLAPPED ol;
 	unsigned char *buf;
@@ -645,9 +646,14 @@ int HID_API_EXPORT HID_API_CALL hid_write(hid_device *dev, const unsigned char *
 			goto end_of_function;
 		}
 	}
+	else {
+		/* synchronous i/o (see MSDN kb 156932) */
+		overlapped = FALSE;
+	}
 
 	/* Wait here until the write is done. This makes
 	   hid_write() synchronous. */
+	if( overlapped )
 	res = GetOverlappedResult(dev->device_handle, &ol, &bytes_written, TRUE/*wait*/);
 	if (!res) {
 		/* The Write operation failed. */
@@ -669,6 +675,7 @@ int HID_API_EXPORT HID_API_CALL hid_read_timeout(hid_device *dev, unsigned char 
 	DWORD bytes_read = 0;
 	size_t copy_len = 0;
 	BOOL res;
+	BOOL overlapped = TRUE;
 
 	/* Copy the handle for convenience. */
 	HANDLE ev = dev->ol.hEvent;
@@ -689,6 +696,10 @@ int HID_API_EXPORT HID_API_CALL hid_read_timeout(hid_device *dev, unsigned char 
 				goto end_of_function;
 			}
 		}
+		else {
+			/* synchronous i/o (see MSDN kb 156932) */
+			overlapped = FALSE;
+		}
 	}
 
 	if (milliseconds >= 0) {
@@ -704,6 +715,7 @@ int HID_API_EXPORT HID_API_CALL hid_read_timeout(hid_device *dev, unsigned char 
 	/* Either WaitForSingleObject() told us that ReadFile has completed, or
 	   we are in non-blocking mode. Get the number of bytes read. The actual
 	   data has been copied to the data[] array which was passed to ReadFile(). */
+	if( overlapped )
 	res = GetOverlappedResult(dev->device_handle, &dev->ol, &bytes_read, TRUE/*wait*/);
 	
 	/* Set pending back to false, even if GetOverlappedResult() returned error. */
