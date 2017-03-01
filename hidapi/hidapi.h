@@ -291,6 +291,31 @@ extern "C" {
 		*/
 		int HID_API_EXPORT HID_API_CALL hid_send_feature_report(hid_device *device, const unsigned char *data, size_t length);
 
+		/** @brief Get a input report from a HID device.
+
+		Set the first byte of @p data[] to the Report ID of the
+		input report to be read.  Make sure to allow space for this
+		extra byte in @p data[]. Upon return, the first byte will
+		still contain the Report ID, and the report data will
+		start in data[1].
+
+		@ingroup API
+		@param device A device handle returned from hid_open().
+		@param data A buffer to put the read data into, including
+		the Report ID. Set the first byte of @p data[] to the
+		Report ID of the report to be read, or set it to zero
+		if your device does not use numbered reports.
+		@param length The number of bytes to read, including an
+		extra byte for the report ID. The buffer can be longer
+		than the actual report.
+
+		@returns
+		This function returns the number of bytes read plus
+		one for the report ID (which is still in the first
+		byte), or -1 on error.
+		*/
+		int HID_API_EXPORT HID_API_CALL hid_get_report(hid_device *dev, const unsigned char *data, size_t length);
+
 		/** @brief Get a feature report from a HID device.
 
 			Set the first byte of @p data[] to the Report ID of the
