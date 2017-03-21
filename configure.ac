@@ -33,6 +33,13 @@ PKG_PROG_PKG_CONFIG
 
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
+# Enable debug
+AC_ARG_ENABLE([libusb],
+    [AS_HELP_STRING([--enable-libusb],
+                    [compile libusb version (affects linux only, default is no)])],
+    [enable_libusb=$enableval],
+    [enable_libusb=no])
+		
 hidapi_lib_error() {
 	echo ""
 	echo "  Library $1 was not found on this system."
@@ -67,10 +74,12 @@ case $host in
 	CFLAGS_HIDRAW+=" $libudev_CFLAGS"
 
 	# HIDAPI/libusb libs
-	AC_CHECK_LIB([rt], [clock_gettime], [LIBS_LIBUSB_PRIVATE+=" -lrt"], [hidapi_lib_error librt])
-	PKG_CHECK_MODULES([libusb], [libusb-1.0 >= 1.0.9], true, [hidapi_lib_error libusb-1.0])
-	LIBS_LIBUSB_PRIVATE+=" $libusb_LIBS"
-	CFLAGS_LIBUSB+=" $libusb_CFLAGS"
+	if test "x$enable_libusb" = xyes; then
+		AC_CHECK_LIB([rt], [clock_gettime], [LIBS_LIBUSB_PRIVATE+=" -lrt"], [hidapi_lib_error librt])
+		PKG_CHECK_MODULES([libusb], [libusb-1.0 >= 1.0.9], true, [hidapi_lib_error libusb-1.0])
+		LIBS_LIBUSB_PRIVATE+=" $libusb_LIBS"
+		CFLAGS_LIBUSB+=" $libusb_CFLAGS"
+	fi
 	;;
 *-darwin*)
 	AC_MSG_RESULT([ (Mac OS X back-end)])
@@ -126,10 +135,12 @@ case $host in
 esac
 
 LIBS_HIDRAW="${LIBS} ${LIBS_HIDRAW_PR}"
-LIBS_LIBUSB="${LIBS} ${LIBS_LIBUSB_PRIVATE}"
+if test "x$enable_libusb" = xyes; then
+	LIBS_LIBUSB="${LIBS} ${LIBS_LIBUSB_PRIVATE}"
+	AC_SUBST([LIBS_LIBUSB])
+	AC_SUBST([CFLAGS_LIBUSB])
+fi
 AC_SUBST([LIBS_HIDRAW])
-AC_SUBST([LIBS_LIBUSB])
-AC_SUBST([CFLAGS_LIBUSB])
 AC_SUBST([CFLAGS_HIDRAW])
 
 if test "x$os" = xwindows; then
@@ -210,6 +221,7 @@ AC_SUBST([backend])
 
 # OS info for Automake
 AM_CONDITIONAL(OS_LINUX, test "x$os" = xlinux)
+AM_CONDITIONAL(OS_LINUX_LIBUSB, test "x$enable_libusb" = xyes)
 AM_CONDITIONAL(OS_DARWIN, test "x$os" = xdarwin)
 AM_CONDITIONAL(OS_FREEBSD, test "x$os" = xfreebsd)
 AM_CONDITIONAL(OS_KFREEBSD, test "x$os" = xkfreebsd)
@@ -219,7 +231,9 @@ AC_CONFIG_HEADERS([config.h])
 
 if test "x$os" = "xlinux"; then
 	AC_CONFIG_FILES([pc/hidapi-hidraw.pc])
-	AC_CONFIG_FILES([pc/hidapi-libusb.pc])
+	if test "x$enable_libusb" = xyes; then
+		AC_CONFIG_FILES([pc/hidapi-libusb.pc])
+	fi
 else
 	AC_CONFIG_FILES([pc/hidapi.pc])
 fi
