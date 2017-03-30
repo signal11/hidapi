@@ -38,7 +38,7 @@ AC_ARG_ENABLE([libusb],
     [AS_HELP_STRING([--enable-libusb],
                     [compile libusb version (affects linux only, default is no)])],
     [enable_libusb=$enableval],
-    [enable_libusb=no])
+    [enable_libusb=yes])
 		
 hidapi_lib_error() {
 	echo ""
