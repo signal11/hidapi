@@ -8,7 +8,10 @@ pkgconfigdir=$(libdir)/pkgconfig
 endif
 
 if OS_LINUX
-pkgconfig_DATA=pc/hidapi-hidraw.pc pc/hidapi-libusb.pc
+pkgconfig_DATA=pc/hidapi-hidraw.pc
+if OS_LINUX_LIBUSB
+  pkgconfig_DATA += pc/hidapi-libusb.pc
+endif
 else
 pkgconfig_DATA=pc/hidapi.pc
 endif
@@ -16,7 +19,10 @@ endif
 SUBDIRS=
 
 if OS_LINUX
-SUBDIRS += linux libusb
+SUBDIRS += linux
+if OS_LINUX_LIBUSB
+  SUBDIRS += libusb
+endif
 endif
 
 if OS_DARWIN
