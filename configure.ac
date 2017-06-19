@@ -93,7 +93,7 @@ case $host in
 	LDFLAGS="$LDFLAGS -L/usr/local/lib"
 	LIBS="${LIBS}"
 	AC_CHECK_LIB([usb], [libusb_init], [LIBS_LIBUSB_PRIVATE="${LIBS_LIBUSB_PRIVATE} -lusb"], [hidapi_lib_error libusb])
-	AC_CHECK_LIB([iconv], [iconv_open], [LIBS_LIBUSB_PRIVATE="${LIBS_LIBUSB_PRIVATE} -liconv"], [hidapi_lib_error libiconv])
+	AC_SEARCH_LIBS([iconv_open], [iconv], [LIBS_LIBUSB_PRIVATE="${LIBS_LIBUSB_PRIVATE} ${ac_lib:+-l$ac_lib}"], [hidapi_lib_error libiconv])
 	echo libs_priv: $LIBS_LIBUSB_PRIVATE
 	;;
 *-kfreebsd*)
