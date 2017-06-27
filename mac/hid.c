@@ -644,6 +644,11 @@ static void *read_thread(void *param)
 	hid_device *dev = param;
 	SInt32 code;
 
+    if (!dev) {
+        errno = EINVAL;
+        return NULL;
+    }
+
 	/* Move the device's run loop to this thread. */
 	IOHIDDeviceScheduleWithRunLoop(dev->device_handle, CFRunLoopGetCurrent(), dev->run_loop_mode);
 
@@ -784,6 +789,11 @@ static int set_report(hid_device *dev, IOHIDReportType type, const unsigned char
 	size_t length_to_send;
 	IOReturn res;
 
+    if (!dev) {
+        errno = EINVAL;
+        return -1;
+    }
+
 	/* Return if the device has been disconnected. */
 	if (dev->disconnected)
 		return -1;
@@ -825,6 +835,11 @@ int HID_API_EXPORT hid_write(hid_device *dev, const unsigned char *data, size_t 
 /* Helper function, so that this isn't duplicated in hid_read(). */
 static int return_data(hid_device *dev, unsigned char *data, size_t length)
 {
+    if (!dev) {
+        errno = EINVAL;
+        return 0;
+    }
+
 	/* Copy the data out of the linked list item (rpt) into the
 	   return buffer (data), and delete the liked list item. */
 	struct input_report *rpt = dev->input_reports;
@@ -838,6 +853,11 @@ static int return_data(hid_device *dev, unsigned char *data, size_t length)
 
 static int cond_wait(const hid_device *dev, pthread_cond_t *cond, pthread_mutex_t *mutex)
 {
+    if (!dev) {
+        errno = EINVAL;
+        return -1;
+    }
+
 	while (!dev->input_reports) {
 		int res = pthread_cond_wait(cond, mutex);
 		if (res != 0)
@@ -858,6 +878,11 @@ static int cond_wait(const hid_device *dev, pthread_cond_t *cond, pthread_mutex_
 
 static int cond_timedwait(const hid_device *dev, pthread_cond_t *cond, pthread_mutex_t *mutex, const struct timespec *abstime)
 {
+    if (!dev) {
+        errno = EINVAL;
+        return -1;
+    }
+
 	while (!dev->input_reports) {
 		int res = pthread_cond_timedwait(cond, mutex, abstime);
 		if (res != 0)
@@ -879,6 +904,11 @@ static int cond_timedwait(const hid_device *dev, pthread_cond_t *cond, pthread_m
 
 int HID_API_EXPORT hid_read_timeout(hid_device *dev, unsigned char *data, size_t length, int milliseconds)
 {
+    if (!dev) {
+        errno = EINVAL;
+        return -1;
+    }
+
 	int bytes_read = -1;
 
 	/* Lock the access to the report list. */
@@ -974,6 +1004,11 @@ int HID_API_EXPORT hid_get_feature_report(hid_device *dev, unsigned char *data, 
 	CFIndex len = length;
 	IOReturn res;
 
+    if (!dev) {
+        errno = EINVAL;
+        return -1;
+    }
+
 	/* Return if the device has been unplugged. */
 	if (dev->disconnected)
 		return -1;
@@ -1037,16 +1072,30 @@ void HID_API_EXPORT hid_close(hid_device *dev)
 
 int HID_API_EXPORT_CALL hid_get_manufacturer_string(hid_device *dev, wchar_t *string, size_t maxlen)
 {
+    if (!dev) {
+        errno = EINVAL;
+        return -1;
+    }
 	return get_manufacturer_string(dev->device_handle, string, maxlen);
 }
 
 int HID_API_EXPORT_CALL hid_get_product_string(hid_device *dev, wchar_t *string, size_t maxlen)
 {
+    if (!dev) {
+        errno = EINVAL;
+        return -1;
+    }
+
 	return get_product_string(dev->device_handle, string, maxlen);
 }
 
 int HID_API_EXPORT_CALL hid_get_serial_number_string(hid_device *dev, wchar_t *string, size_t maxlen)
 {
+    if (!dev) {
+        errno = EINVAL;
+        return -1;
+    }
+
 	return get_serial_number(dev->device_handle, string, maxlen);
 }
 
