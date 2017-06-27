@@ -264,7 +264,7 @@ static int get_string_property(IOHIDDeviceRef device, CFStringRef prop, wchar_t 
 			len * sizeof(wchar_t),
 			&used_buf_len);
 
-		if (chars_copied == len)
+		if (chars_copied == (CFIndex)len)
 			buf[len] = 0; /* len is decremented above */
 		else
 			buf[chars_copied] = 0;
