@@ -558,6 +558,11 @@ hid_device * HID_API_EXPORT hid_open(unsigned short vendor_id, unsigned short pr
 static void hid_device_removal_callback(void *context, IOReturn __unused result,
                                         void * __unused sender)
 {
+	if (!context) {
+		errno = EINVAL;
+		return;
+	}
+
 	/* Stop the Run Loop for this device. */
 	hid_device *d = context;
 
@@ -574,6 +579,11 @@ static void hid_report_callback(void *context, IOReturn __unused result, void * 
 {
 	struct input_report *rpt;
 	hid_device *dev = context;
+
+    if (!context) {
+        errno = EINVAL;
+        return;
+    }
 
 	/* Make a new Input Report object */
 	rpt = calloc(1, sizeof(struct input_report));
@@ -620,6 +630,11 @@ static void hid_report_callback(void *context, IOReturn __unused result, void * 
    hid_close(), and serves to stop the read_thread's run loop. */
 static void perform_signal_callback(void *context)
 {
+    if (!context) {
+        errno = EINVAL;
+        return;
+    }
+
 	hid_device *dev = context;
 	CFRunLoopStop(dev->run_loop); /*TODO: CFRunLoopGetCurrent()*/
 }
