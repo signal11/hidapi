@@ -1026,8 +1026,10 @@ int HID_API_EXPORT hid_get_feature_report(hid_device *dev, unsigned char *data, 
 
 void HID_API_EXPORT hid_close(hid_device *dev)
 {
-	if (!dev)
-		return;
+    if (!dev) {
+        errno = EINVAL;
+        return;
+    }
 
 	/* Disconnect the report callback before close. */
 	if (!dev->disconnected) {
