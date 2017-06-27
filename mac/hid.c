@@ -745,6 +745,11 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 
 		/* Create the buffers for receiving data */
 		dev->max_input_report_len = (CFIndex) get_max_report_length(dev->device_handle);
+		if (dev->max_input_report_len <= 0) {
+			/* Error getting kIOHIDMaxInputReportSizeKey */
+			goto return_error;
+		}
+		
 		dev->input_report_buf = calloc(dev->max_input_report_len, sizeof(uint8_t));
 
 		/* Create the Run Loop Mode for this device.
