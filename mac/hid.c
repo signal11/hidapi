@@ -47,7 +47,7 @@ typedef struct pthread_barrier {
     int trip_count;
 } pthread_barrier_t;
 
-static int pthread_barrier_init(pthread_barrier_t *barrier, const pthread_barrierattr_t *attr, unsigned int count)
+static int pthread_barrier_init(pthread_barrier_t *barrier, const pthread_barrierattr_t * __unused attr, unsigned int count)
 {
 	if(count == 0) {
 		errno = EINVAL;
@@ -540,8 +540,8 @@ hid_device * HID_API_EXPORT hid_open(unsigned short vendor_id, unsigned short pr
 	return handle;
 }
 
-static void hid_device_removal_callback(void *context, IOReturn result,
-                                        void *sender)
+static void hid_device_removal_callback(void *context, IOReturn __unused result,
+                                        void * __unused sender)
 {
 	/* Stop the Run Loop for this device. */
 	hid_device *d = context;
@@ -553,8 +553,8 @@ static void hid_device_removal_callback(void *context, IOReturn result,
 /* The Run Loop calls this function for each input report received.
    This function puts the data into a linked list to be picked up by
    hid_read(). */
-static void hid_report_callback(void *context, IOReturn result, void *sender,
-                         IOHIDReportType report_type, uint32_t report_id,
+static void hid_report_callback(void *context, IOReturn __unused result, void * __unused sender,
+                         IOHIDReportType __unused report_type, uint32_t __unused report_id,
                          uint8_t *report, CFIndex report_length)
 {
 	struct input_report *rpt;
@@ -1020,7 +1020,7 @@ int HID_API_EXPORT_CALL hid_get_serial_number_string(hid_device *dev, wchar_t *s
 	return get_serial_number(dev->device_handle, string, maxlen);
 }
 
-int HID_API_EXPORT_CALL hid_get_indexed_string(hid_device *dev, int string_index, wchar_t *string, size_t maxlen)
+int HID_API_EXPORT_CALL hid_get_indexed_string(hid_device * __unused dev, int __unused string_index, wchar_t * __unused string, size_t __unused maxlen)
 {
 	/* TODO: */
 
@@ -1028,7 +1028,7 @@ int HID_API_EXPORT_CALL hid_get_indexed_string(hid_device *dev, int string_index
 }
 
 
-HID_API_EXPORT const wchar_t * HID_API_CALL  hid_error(hid_device *dev)
+HID_API_EXPORT const wchar_t * HID_API_CALL  hid_error(hid_device * __unused dev)
 {
 	/* TODO: */
 
