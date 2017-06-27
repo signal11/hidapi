@@ -732,7 +732,7 @@ end_of_function:
 		return -1;
 	}
 	
-	return copy_len;
+	return (int)copy_len;
 }
 
 int HID_API_EXPORT HID_API_CALL hid_read(hid_device *dev, unsigned char *data, size_t length)
@@ -754,7 +754,7 @@ int HID_API_EXPORT HID_API_CALL hid_send_feature_report(hid_device *dev, const u
 		return -1;
 	}
 
-	return length;
+	return (int)length;
 }
 
 
