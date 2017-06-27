@@ -848,6 +848,11 @@ static int return_data(hid_device *dev, unsigned char *data, size_t length)
 	/* Copy the data out of the linked list item (rpt) into the
 	   return buffer (data), and delete the liked list item. */
 	struct input_report *rpt = dev->input_reports;
+	if(rpt == NULL) {
+		errno = EINVAL;
+        return 0;
+	}
+	
 	size_t len = (length < rpt->len)? length: rpt->len;
 	memcpy(data, rpt->data, len);
 	dev->input_reports = rpt->next;
