@@ -47,8 +47,13 @@ typedef struct pthread_barrier {
     int trip_count;
 } pthread_barrier_t;
 
-static int pthread_barrier_init(pthread_barrier_t *barrier, const pthread_barrierattr_t *attr, unsigned int count)
+static int pthread_barrier_init(pthread_barrier_t *barrier, const pthread_barrierattr_t * __unused attr, unsigned int count)
 {
+	if (!barrier) {
+        errno = EINVAL;
+        return -1;
+    }
+    
 	if(count == 0) {
 		errno = EINVAL;
 		return -1;
@@ -69,6 +74,11 @@ static int pthread_barrier_init(pthread_barrier_t *barrier, const pthread_barrie
 
 static int pthread_barrier_destroy(pthread_barrier_t *barrier)
 {
+    if (!barrier) {
+        errno = EINVAL;
+        return -1;
+    }
+
 	pthread_cond_destroy(&barrier->cond);
 	pthread_mutex_destroy(&barrier->mutex);
 	return 0;
@@ -76,6 +86,11 @@ static int pthread_barrier_destroy(pthread_barrier_t *barrier)
 
 static int pthread_barrier_wait(pthread_barrier_t *barrier)
 {
+    if (!barrier) {
+        errno = EINVAL;
+        return -1;
+    }
+
 	pthread_mutex_lock(&barrier->mutex);
 	++(barrier->count);
 	if(barrier->count >= barrier->trip_count)
@@ -249,7 +264,7 @@ static int get_string_property(IOHIDDeviceRef device, CFStringRef prop, wchar_t 
 			len * sizeof(wchar_t),
 			&used_buf_len);
 
-		if (chars_copied == len)
+		if (chars_copied == (CFIndex)len)
 			buf[len] = 0; /* len is decremented above */
 		else
 			buf[chars_copied] = 0;
@@ -540,9 +555,14 @@ hid_device * HID_API_EXPORT hid_open(unsigned short vendor_id, unsigned short pr
 	return handle;
 }
 
-static void hid_device_removal_callback(void *context, IOReturn result,
-                                        void *sender)
+static void hid_device_removal_callback(void *context, IOReturn __unused result,
+                                        void * __unused sender)
 {
+	if (!context) {
+		errno = EINVAL;
+		return;
+	}
+
 	/* Stop the Run Loop for this device. */
 	hid_device *d = context;
 
@@ -553,12 +573,17 @@ static void hid_device_removal_callback(void *context, IOReturn result,
 /* The Run Loop calls this function for each input report received.
    This function puts the data into a linked list to be picked up by
    hid_read(). */
-static void hid_report_callback(void *context, IOReturn result, void *sender,
-                         IOHIDReportType report_type, uint32_t report_id,
+static void hid_report_callback(void *context, IOReturn __unused result, void * __unused sender,
+                         IOHIDReportType __unused report_type, uint32_t __unused report_id,
                          uint8_t *report, CFIndex report_length)
 {
 	struct input_report *rpt;
 	hid_device *dev = context;
+
+    if (!context) {
+        errno = EINVAL;
+        return;
+    }
 
 	/* Make a new Input Report object */
 	rpt = calloc(1, sizeof(struct input_report));
@@ -605,6 +630,11 @@ static void hid_report_callback(void *context, IOReturn result, void *sender,
    hid_close(), and serves to stop the read_thread's run loop. */
 static void perform_signal_callback(void *context)
 {
+    if (!context) {
+        errno = EINVAL;
+        return;
+    }
+
 	hid_device *dev = context;
 	CFRunLoopStop(dev->run_loop); /*TODO: CFRunLoopGetCurrent()*/
 }
@@ -613,6 +643,11 @@ static void *read_thread(void *param)
 {
 	hid_device *dev = param;
 	SInt32 code;
+
+    if (!dev) {
+        errno = EINVAL;
+        return NULL;
+    }
 
 	/* Move the device's run loop to this thread. */
 	IOHIDDeviceScheduleWithRunLoop(dev->device_handle, CFRunLoopGetCurrent(), dev->run_loop_mode);
@@ -710,6 +745,11 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 
 		/* Create the buffers for receiving data */
 		dev->max_input_report_len = (CFIndex) get_max_report_length(dev->device_handle);
+		if (dev->max_input_report_len <= 0) {
+			/* Error getting kIOHIDMaxInputReportSizeKey */
+			goto return_error;
+		}
+		
 		dev->input_report_buf = calloc(dev->max_input_report_len, sizeof(uint8_t));
 
 		/* Create the Run Loop Mode for this device.
@@ -754,6 +794,11 @@ static int set_report(hid_device *dev, IOHIDReportType type, const unsigned char
 	size_t length_to_send;
 	IOReturn res;
 
+    if (!dev) {
+        errno = EINVAL;
+        return -1;
+    }
+
 	/* Return if the device has been disconnected. */
 	if (dev->disconnected)
 		return -1;
@@ -778,7 +823,7 @@ static int set_report(hid_device *dev, IOHIDReportType type, const unsigned char
 					   data_to_send, length_to_send);
 
 		if (res == kIOReturnSuccess) {
-			return length;
+			return (int)length;
 		}
 		else
 			return -1;
@@ -795,19 +840,34 @@ int HID_API_EXPORT hid_write(hid_device *dev, const unsigned char *data, size_t 
 /* Helper function, so that this isn't duplicated in hid_read(). */
 static int return_data(hid_device *dev, unsigned char *data, size_t length)
 {
+    if (!dev) {
+        errno = EINVAL;
+        return 0;
+    }
+
 	/* Copy the data out of the linked list item (rpt) into the
 	   return buffer (data), and delete the liked list item. */
 	struct input_report *rpt = dev->input_reports;
+	if(rpt == NULL) {
+		errno = EINVAL;
+        return 0;
+	}
+	
 	size_t len = (length < rpt->len)? length: rpt->len;
 	memcpy(data, rpt->data, len);
 	dev->input_reports = rpt->next;
 	free(rpt->data);
 	free(rpt);
-	return len;
+	return (int)len;
 }
 
 static int cond_wait(const hid_device *dev, pthread_cond_t *cond, pthread_mutex_t *mutex)
 {
+    if (!dev) {
+        errno = EINVAL;
+        return -1;
+    }
+
 	while (!dev->input_reports) {
 		int res = pthread_cond_wait(cond, mutex);
 		if (res != 0)
@@ -828,6 +888,11 @@ static int cond_wait(const hid_device *dev, pthread_cond_t *cond, pthread_mutex_
 
 static int cond_timedwait(const hid_device *dev, pthread_cond_t *cond, pthread_mutex_t *mutex, const struct timespec *abstime)
 {
+    if (!dev) {
+        errno = EINVAL;
+        return -1;
+    }
+
 	while (!dev->input_reports) {
 		int res = pthread_cond_timedwait(cond, mutex, abstime);
 		if (res != 0)
@@ -849,6 +914,11 @@ static int cond_timedwait(const hid_device *dev, pthread_cond_t *cond, pthread_m
 
 int HID_API_EXPORT hid_read_timeout(hid_device *dev, unsigned char *data, size_t length, int milliseconds)
 {
+    if (!dev) {
+        errno = EINVAL;
+        return -1;
+    }
+
 	int bytes_read = -1;
 
 	/* Lock the access to the report list. */
@@ -944,6 +1014,11 @@ int HID_API_EXPORT hid_get_feature_report(hid_device *dev, unsigned char *data, 
 	CFIndex len = length;
 	IOReturn res;
 
+    if (!dev) {
+        errno = EINVAL;
+        return -1;
+    }
+
 	/* Return if the device has been unplugged. */
 	if (dev->disconnected)
 		return -1;
@@ -953,7 +1028,7 @@ int HID_API_EXPORT hid_get_feature_report(hid_device *dev, unsigned char *data, 
 	                           data[0], /* Report ID */
 	                           data, &len);
 	if (res == kIOReturnSuccess)
-		return len;
+		return (int)len;
 	else
 		return -1;
 }
@@ -961,8 +1036,10 @@ int HID_API_EXPORT hid_get_feature_report(hid_device *dev, unsigned char *data, 
 
 void HID_API_EXPORT hid_close(hid_device *dev)
 {
-	if (!dev)
-		return;
+    if (!dev) {
+        errno = EINVAL;
+        return;
+    }
 
 	/* Disconnect the report callback before close. */
 	if (!dev->disconnected) {
@@ -1007,20 +1084,34 @@ void HID_API_EXPORT hid_close(hid_device *dev)
 
 int HID_API_EXPORT_CALL hid_get_manufacturer_string(hid_device *dev, wchar_t *string, size_t maxlen)
 {
+    if (!dev) {
+        errno = EINVAL;
+        return -1;
+    }
 	return get_manufacturer_string(dev->device_handle, string, maxlen);
 }
 
 int HID_API_EXPORT_CALL hid_get_product_string(hid_device *dev, wchar_t *string, size_t maxlen)
 {
+    if (!dev) {
+        errno = EINVAL;
+        return -1;
+    }
+
 	return get_product_string(dev->device_handle, string, maxlen);
 }
 
 int HID_API_EXPORT_CALL hid_get_serial_number_string(hid_device *dev, wchar_t *string, size_t maxlen)
 {
+    if (!dev) {
+        errno = EINVAL;
+        return -1;
+    }
+
 	return get_serial_number(dev->device_handle, string, maxlen);
 }
 
-int HID_API_EXPORT_CALL hid_get_indexed_string(hid_device *dev, int string_index, wchar_t *string, size_t maxlen)
+int HID_API_EXPORT_CALL hid_get_indexed_string(hid_device * __unused dev, int __unused string_index, wchar_t * __unused string, size_t __unused maxlen)
 {
 	/* TODO: */
 
@@ -1028,7 +1119,7 @@ int HID_API_EXPORT_CALL hid_get_indexed_string(hid_device *dev, int string_index
 }
 
 
-HID_API_EXPORT const wchar_t * HID_API_CALL  hid_error(hid_device *dev)
+HID_API_EXPORT const wchar_t * HID_API_CALL  hid_error(hid_device * __unused dev)
 {
 	/* TODO: */
 
