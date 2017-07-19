@@ -54,6 +54,12 @@
 #define HIDIOCGFEATURE(len)    _IOC(_IOC_WRITE|_IOC_READ, 'H', 0x07, len)
 #endif
 
+#ifdef DEBUG_PRINTF
+#define DEBUG_PERROR(...) perror(__VA_ARGS__)
+#else
+#define DEBUG_PERROR(...) do {} while(0)
+#endif
+
 
 /* USB HID device property names */
 const char *device_string_names[] = {
@@ -640,14 +646,14 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 		/* Get Report Descriptor Size */
 		res = ioctl(dev->device_handle, HIDIOCGRDESCSIZE, &desc_size);
 		if (res < 0)
-			perror("HIDIOCGRDESCSIZE");
+			DEBUG_PERROR("HIDIOCGRDESCSIZE");
 
 
 		/* Get Report Descriptor */
 		rpt_desc.size = desc_size;
 		res = ioctl(dev->device_handle, HIDIOCGRDESC, &rpt_desc);
 		if (res < 0) {
-			perror("HIDIOCGRDESC");
+			DEBUG_PERROR("HIDIOCGRDESC");
 		} else {
 			/* Determine if this device uses numbered reports. */
 			dev->uses_numbered_reports =
@@ -743,7 +749,7 @@ int HID_API_EXPORT hid_send_feature_report(hid_device *dev, const unsigned char 
 
 	res = ioctl(dev->device_handle, HIDIOCSFEATURE(length), data);
 	if (res < 0)
-		perror("ioctl (SFEATURE)");
+		DEBUG_PERROR("ioctl (SFEATURE)");
 
 	return res;
 }
@@ -754,7 +760,7 @@ int HID_API_EXPORT hid_get_feature_report(hid_device *dev, unsigned char *data, 
 
 	res = ioctl(dev->device_handle, HIDIOCGFEATURE(length), data);
 	if (res < 0)
-		perror("ioctl (GFEATURE)");
+		DEBUG_PERROR("ioctl (GFEATURE)");
 
 
 	return res;
