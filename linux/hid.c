@@ -450,9 +450,11 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 			goto next;
 		}
 
-		if (bus_type != BUS_USB && bus_type != BUS_BLUETOOTH) {
-			/* We only know how to handle USB and BT devices. */
-			goto next;
+		switch (bus_type) {
+			case BUS_BLUETOOTH: break;
+			case BUS_VIRTUAL:   break;
+			case BUS_USB:       break;
+			default:            goto next;
 		}
 
 		/* Check the VID/PID against the arguments */
@@ -540,6 +542,7 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 					break;
 
 				case BUS_BLUETOOTH:
+				case BUS_VIRTUAL:
 					/* Manufacturer and Product strings */
 					cur_dev->manufacturer_string = wcsdup(L"");
 					cur_dev->product_string = utf8_to_wchar_t(product_name_utf8);
