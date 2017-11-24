@@ -346,6 +346,9 @@ static int get_device_string(hid_device *dev, enum device_string_id key, wchar_t
 			}
 		}
 	}
+	else {
+		ret = -1;
+	}
 
 end:
         free(serial_number_utf8);
