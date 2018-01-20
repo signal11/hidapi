@@ -473,7 +473,7 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 			/* Fill in the kernel_entry_id */
 			res = IORegistryEntryGetRegistryEntryID(iokit_dev, &entry_id);
 			if (res == KERN_SUCCESS) {
-				if ((cur_dev->path = calloc(16 + 3 + 1, 1)) != NULL)
+				if ((cur_dev->path = calloc(32 + 3 + 1, 1)) != NULL)
 				{
 					sprintf(cur_dev->path, "id:%llu", entry_id);
 				}
