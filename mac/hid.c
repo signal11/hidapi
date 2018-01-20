@@ -188,16 +188,6 @@ static void register_error(hid_device *device, const char *op)
 }
 #endif
 
-
-static int32_t get_int_property(IOHIDDeviceRef device, CFStringRef key)
-{
-	int32_t value = 0;
-	
-	get_int_property_checked(device, key, &value);
-	
-	return (value);
-}
-
 static bool get_int_property_checked(IOHIDDeviceRef device, CFStringRef key, int32_t *outInt)
 {
 	CFTypeRef ref;
@@ -210,6 +200,15 @@ static bool get_int_property_checked(IOHIDDeviceRef device, CFStringRef key, int
 		}
 	}
 	return (false);
+}
+
+static int32_t get_int_property(IOHIDDeviceRef device, CFStringRef key)
+{
+	int32_t value = 0;
+	
+	get_int_property_checked(device, key, &value);
+	
+	return (value);
 }
 
 static unsigned short get_vendor_id(IOHIDDeviceRef device)
@@ -443,6 +442,7 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 			io_object_t iokit_dev;
 			kern_return_t res;
 			uint64_t entry_id;
+			io_string_t path;
 
 			/* VID/PID match. Create the record. */
 			tmp = malloc(sizeof(struct hid_device_info));
