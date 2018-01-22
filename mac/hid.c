@@ -473,8 +473,7 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 			/* Fill in the kernel_entry_id */
 			res = IORegistryEntryGetRegistryEntryID(iokit_dev, &entry_id);
 			if (res == KERN_SUCCESS) {
-				if ((cur_dev->path = calloc(32 + 3 + 1, 1)) != NULL)
-				{
+				if ((cur_dev->path = calloc(32 + 3 + 1, 1)) != NULL) {
 					sprintf(cur_dev->path, "id:%llu", entry_id);
 				}
 			} else {
@@ -504,8 +503,7 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 				io_registry_entry_t parentEntry = 0;
 				
 				/* Find parent entry in IORegistry */
-				if (IORegistryEntryGetParentEntry(iokit_dev, kIOServicePlane, &parentEntry) == KERN_SUCCESS)
-				{
+				if (IORegistryEntryGetParentEntry(iokit_dev, kIOServicePlane, &parentEntry) == KERN_SUCCESS) {
 					int32_t interface_number = -1;
 				
 					/* Attempt to get the USB interface number from the parent entry */
@@ -729,10 +727,8 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 		return NULL;
 
 	/* Check if the path represents IORegistry path or an IORegistryEntry ID */
-	if (strlen(path) > 3)
-	{
-		if (strcmp("id:", path) == 0)
-		{
+	if (strlen(path) > 3) {
+		if (strncmp("id:", path, 3) == 0) {
 			/* Get the IORegistry entry for the given ID */
 			uint64_t entry_id;
 			
@@ -743,9 +739,7 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 				/* No service found for ID */
 				goto return_error;
 			}
-		}
-		else
-		{
+		} else {
 			/* Get the IORegistry entry for the given path */
 			entry = IORegistryEntryFromPath(kIOMasterPortDefault, path);
 			if (entry == MACH_PORT_NULL) {
@@ -753,9 +747,7 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 				goto return_error;
 			}
 		}
-	}
-	else
-	{
+	} else {
 		goto return_error;
 	}
 
