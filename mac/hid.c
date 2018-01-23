@@ -188,20 +188,27 @@ static void register_error(hid_device *device, const char *op)
 }
 #endif
 
-
-static int32_t get_int_property(IOHIDDeviceRef device, CFStringRef key)
+static bool get_int_property_checked(IOHIDDeviceRef device, CFStringRef key, int32_t *outInt)
 {
 	CFTypeRef ref;
-	int32_t value;
 
 	ref = IOHIDDeviceGetProperty(device, key);
 	if (ref) {
 		if (CFGetTypeID(ref) == CFNumberGetTypeID()) {
-			CFNumberGetValue((CFNumberRef) ref, kCFNumberSInt32Type, &value);
-			return value;
+			CFNumberGetValue((CFNumberRef) ref, kCFNumberSInt32Type, outInt);
+			return (true);
 		}
 	}
-	return 0;
+	return (false);
+}
+
+static int32_t get_int_property(IOHIDDeviceRef device, CFStringRef key)
+{
+	int32_t value = 0;
+	
+	get_int_property_checked(device, key, &value);
+	
+	return (value);
 }
 
 static unsigned short get_vendor_id(IOHIDDeviceRef device)
@@ -434,6 +441,7 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 			struct hid_device_info *tmp;
 			io_object_t iokit_dev;
 			kern_return_t res;
+			uint64_t entry_id;
 			io_string_t path;
 
 			/* VID/PID match. Create the record. */
@@ -455,11 +463,22 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 
 			/* Fill in the path (IOService plane) */
 			iokit_dev = hidapi_IOHIDDeviceGetService(dev);
+			
 			res = IORegistryEntryGetPath(iokit_dev, kIOServicePlane, path);
 			if (res == KERN_SUCCESS)
 				cur_dev->path = strdup(path);
 			else
 				cur_dev->path = strdup("");
+			
+			/* Fill in the kernel_entry_id */
+			res = IORegistryEntryGetRegistryEntryID(iokit_dev, &entry_id);
+			if (res == KERN_SUCCESS) {
+				if ((cur_dev->path = calloc(32 + 3 + 1, 1)) != NULL) {
+					sprintf(cur_dev->path, "id:%llu", entry_id);
+				}
+			} else {
+				cur_dev->path = strdup("");
+			}
 
 			/* Serial Number */
 			get_serial_number(dev, buf, BUF_LEN);
@@ -478,8 +497,26 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 			/* Release Number */
 			cur_dev->release_number = get_int_property(dev, CFSTR(kIOHIDVersionNumberKey));
 
-			/* Interface Number (Unsupported on Mac)*/
-			cur_dev->interface_number = -1;
+			/* Interface Number */
+			cur_dev->interface_number = -1; /* Default in case of error */
+			{
+				io_registry_entry_t parentEntry = 0;
+				
+				/* Find parent entry in IORegistry */
+				if (IORegistryEntryGetParentEntry(iokit_dev, kIOServicePlane, &parentEntry) == KERN_SUCCESS) {
+					int32_t interface_number = -1;
+				
+					/* Attempt to get the USB interface number from the parent entry */
+					if (get_int_property_checked(dev, CFSTR("bInterfaceNumber"), &interface_number))
+					{
+						/* Set the interface number in case of success */
+						cur_dev->interface_number = interface_number;
+					}
+				
+					IOObjectRelease(parentEntry);
+					parentEntry = 0;
+				}
+			}
 		}
 	}
 
@@ -689,10 +726,28 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 	if (hid_init() < 0)
 		return NULL;
 
-	/* Get the IORegistry entry for the given path */
-	entry = IORegistryEntryFromPath(kIOMasterPortDefault, path);
-	if (entry == MACH_PORT_NULL) {
-		/* Path wasn't valid (maybe device was removed?) */
+	/* Check if the path represents IORegistry path or an IORegistryEntry ID */
+	if (strlen(path) > 3) {
+		if (strncmp("id:", path, 3) == 0) {
+			/* Get the IORegistry entry for the given ID */
+			uint64_t entry_id;
+			
+			entry_id = strtoull(path+3, NULL, 10);
+
+			entry = IOServiceGetMatchingService(kIOMasterPortDefault, IORegistryEntryIDMatching(entry_id));
+			if (entry == 0) {
+				/* No service found for ID */
+				goto return_error;
+			}
+		} else {
+			/* Get the IORegistry entry for the given path */
+			entry = IORegistryEntryFromPath(kIOMasterPortDefault, path);
+			if (entry == MACH_PORT_NULL) {
+				/* Path wasn't valid (maybe device was removed?) */
+				goto return_error;
+			}
+		}
+	} else {
 		goto return_error;
 	}
 
