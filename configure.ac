@@ -107,6 +107,21 @@ case $host in
 	AC_CHECK_LIB([usb], [libusb_init], [LIBS_LIBUSB_PRIVATE="${LIBS_LIBUSB_PRIVATE} -lusb"], [hidapi_lib_error libusb])
 	echo libs_priv: $LIBS_LIBUSB_PRIVATE
 	;;
+*-openbsd*)
+	AC_MSG_RESULT([ (FreeBSD back-end)])
+	AC_DEFINE(OS_FREEBSD, 1, [FreeBSD implementation])
+	AC_SUBST(OS_FREEBSD)
+	backend="libusb"
+	os="freebsd"
+	threads="pthreads"
+
+	CFLAGS="$CFLAGS -I/usr/local/include"
+	LDFLAGS="$LDFLAGS -L/usr/local/lib"
+	LIBS="${LIBS}"
+	AC_CHECK_LIB([usb-1.0], [libusb_init], [LIBS_LIBUSB_PRIVATE="${LIBS_LIBUSB_PRIVATE} -lusb-1.0"], [hidapi_lib_error libusb])
+	AC_CHECK_LIB([iconv], [libiconv_open], [LIBS_LIBUSB_PRIVATE="${LIBS_LIBUSB_PRIVATE} -liconv"], [hidapi_lib_error libiconv])
+	echo libs_priv: $LIBS_LIBUSB_PRIVATE
+	;;
 *-mingw*)
 	AC_MSG_RESULT([ (Windows back-end, using MinGW)])
 	backend="windows"

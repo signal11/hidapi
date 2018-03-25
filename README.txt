@@ -5,10 +5,10 @@ About
 ======
 
 HIDAPI is a multi-platform library which allows an application to interface
-with USB and Bluetooth HID-Class devices on Windows, Linux, FreeBSD, and Mac
-OS X.  HIDAPI can be either built as a shared library (.so or .dll) or
-can be embedded directly into a target application by adding a single source
-file (per platform) and a single header.
+with USB and Bluetooth HID-Class devices on Windows, Linux, FreeBSD, 
+OpenBSD, and Mac OS X.  HIDAPI can be either built as a shared library (.so
+or .dll) or can be embedded directly into a target application by adding a
+single source file (per platform) and a single header.
 
 HIDAPI has four back-ends:
 	* Windows (using hid.dll)
@@ -29,7 +29,7 @@ hidraw nodes associated with them.  Keyboards, mice, and some other devices
 which are blacklisted from having hidraw nodes will not work. Fortunately,
 for nearly all the uses of hidraw, this is not a problem.
 
-Linux/FreeBSD/libusb (libusb/hid.c):
+Linux/FreeBSD/OpenBSD/libusb (libusb/hid.c):
 This back-end uses libusb-1.0 to communicate directly to a USB device. This
 back-end will of course not work with Bluetooth devices.
 
@@ -156,16 +156,15 @@ Prerequisites:
 	git clone), you'll need Autotools:
 	    sudo apt-get install autotools-dev autoconf automake libtool
 
-	FreeBSD:
-	---------
-	On FreeBSD you will need to install GNU make, libiconv, and
-	optionally Fox-Toolkit (for the test GUI). This is done by running
-	the following:
-	    pkg_add -r gmake libiconv fox16
+	FreeBSD and OpenBSD:
+	--------------------
+	On FreeBSD and OpenBSD you will need to install GNU make, libiconv,
+	and optionally Fox-Toolkit (for the test GUI). (On OpenBSD, gmake
+	is not needed.)
 
 	If you downloaded the source directly from the git repository (using
-	git clone), you'll need Autotools:
-	    pkg_add -r autotools
+	git clone), you'll need Autotools (on FreeBSD) or autoconf and
+	automake (on OpenBSD).
 
 	Mac:
 	-----
