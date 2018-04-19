@@ -1251,6 +1251,10 @@ void HID_API_EXPORT hid_close(hid_device *dev)
 	/* release the interface */
 	libusb_release_interface(dev->device_handle, dev->interface);
 
+#ifdef DETACH_KERNEL_DRIVER
+	libusb_attach_kernel_driver(dev->device_handle, dev->interface);
+#endif
+
 	/* Close the handle */
 	libusb_close(dev->device_handle);
 
