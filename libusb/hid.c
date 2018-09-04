@@ -480,9 +480,17 @@ err:
 static char *make_path(libusb_device *dev, int interface_number)
 {
 	char str[64];
-	snprintf(str, sizeof(str), "%04x:%04x:%02x",
+	uint8_t port_numbers[8] = { 0,0,0,0,0,0,0,0 };
+	int num_ports;
+	// Note that USB3 port count limit is 7; use 8 here for alignment
+
+	num_ports = libusb_get_port_numbers(dev, port_numbers, 8);
+	snprintf(str, sizeof(str), "%04x:%04x:%04x:%04x:%04x:%02x",
 		libusb_get_bus_number(dev),
-		libusb_get_device_address(dev),
+		*(uint16_t*)(&port_numbers[0]),
+		*(uint16_t*)(&port_numbers[2]),
+		*(uint16_t*)(&port_numbers[4]),
+		*(uint16_t*)(&port_numbers[6]),
 		interface_number);
 	str[sizeof(str)-1] = '\0';
 
