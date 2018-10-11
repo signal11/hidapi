@@ -125,7 +125,7 @@ extern "C" {
 
 		    @returns
 		    	This function returns a pointer to a linked list of type
-		    	struct #hid_device, containing information about the HID devices
+		    	struct #hid_device_info, containing information about the HID devices
 		    	attached to the system, or NULL in the case of failure. Free
 		    	this linked list by calling hid_free_enumeration().
 		*/
