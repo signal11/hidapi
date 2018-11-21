@@ -25,6 +25,7 @@
 #include <IOKit/hid/IOHIDManager.h>
 #include <IOKit/hid/IOHIDKeys.h>
 #include <IOKit/IOKitLib.h>
+#include <IOKit/usb/USBSpec.h>
 #include <CoreFoundation/CoreFoundation.h>
 #include <wchar.h>
 #include <locale.h>
@@ -432,6 +433,7 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 		if ((vendor_id == 0x0 || vendor_id == dev_vid) &&
 		    (product_id == 0x0 || product_id == dev_pid)) {
 			struct hid_device_info *tmp;
+			bool is_usb_hid; /* Is this an actual HID usb device */
 			io_object_t iokit_dev;
 			kern_return_t res;
 			io_string_t path;
@@ -445,6 +447,8 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 				root = tmp;
 			}
 			cur_dev = tmp;
+
+			is_usb_hid = get_int_property(dev, CFSTR(kUSBInterfaceClass)) == kUSBHIDClass;
 
 			/* Get the Usage Page and Usage for this device. */
 			cur_dev->usage_page = get_int_property(dev, CFSTR(kIOHIDPrimaryUsagePageKey));
@@ -479,7 +483,16 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 			cur_dev->release_number = get_int_property(dev, CFSTR(kIOHIDVersionNumberKey));
 
 			/* Interface Number (Unsupported on Mac)*/
-			cur_dev->interface_number = -1;
+
+			/* We can only retrieve the interface number for USB HID devices.
+			 * IOKit always seems to return 0 when querying a standard USB device
+			 * for its interface. */
+			if (is_usb_hid) {
+				/* Get the interface number */
+				cur_dev->interface_number = get_int_property(dev, CFSTR(kUSBInterfaceNumber));
+			} else {
+				cur_dev->interface_number = -1;
+			}
 		}
 	}
 
