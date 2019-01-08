@@ -358,7 +358,9 @@ struct hid_device_info HID_API_EXPORT * HID_API_CALL hid_enumerate(unsigned shor
 			if (!res)
 				goto cont;
 
-			if (strcmp(driver_name, "HIDClass") == 0) {
+			if ((strcmp(driver_name, "HIDClass") == 0) ||
+				(strcmp(driver_name, "Mouse") == 0) ||
+				(strcmp(driver_name, "Keyboard") == 0)) {
 				/* See if there's a driver bound. */
 				res = SetupDiGetDeviceRegistryPropertyA(device_info_set, &devinfo_data,
 				           SPDRP_DRIVER, NULL, (PBYTE)driver_name, sizeof(driver_name), NULL);
