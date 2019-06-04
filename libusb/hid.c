@@ -182,7 +182,7 @@ static int return_data(hid_device *dev, unsigned char *data, size_t length);
 
 static hid_device *new_hid_device(void)
 {
-	hid_device *dev = calloc(1, sizeof(hid_device));
+	hid_device *dev = (hid_device*) calloc(1, sizeof(hid_device));
 	dev->blocking = 1;
 
 	pthread_mutex_init(&dev->mutex, NULL);
@@ -430,7 +430,7 @@ static wchar_t *get_usb_string(libusb_device_handle *dev, uint8_t idx)
 
 	   Skip over the first character (2-bytes).  */
 	len -= 2;
-	str = malloc((len / 2 + 1) * sizeof(wchar_t));
+	str = (wchar_t*) malloc((len / 2 + 1) * sizeof(wchar_t));
 	int i;
 	for (i = 0; i < len / 2; i++) {
 		str[i] = buf[i * 2 + 2] | (buf[i * 2 + 3] << 8);
@@ -563,7 +563,7 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 							struct hid_device_info *tmp;
 
 							/* VID/PID match. Create the record. */
-							tmp = calloc(1, sizeof(struct hid_device_info));
+							tmp = (struct hid_device_info*) calloc(1, sizeof(struct hid_device_info));
 							if (cur_dev) {
 								cur_dev->next = tmp;
 							}
@@ -736,8 +736,8 @@ static void read_callback(struct libusb_transfer *transfer)
 
 	if (transfer->status == LIBUSB_TRANSFER_COMPLETED) {
 
-		struct input_report *rpt = malloc(sizeof(*rpt));
-		rpt->data = malloc(transfer->actual_length);
+		struct input_report *rpt = (struct input_report*) malloc(sizeof(*rpt));
+		rpt->data = (uint8_t *) malloc(transfer->actual_length);
 		memcpy(rpt->data, transfer->buffer, transfer->actual_length);
 		rpt->len = transfer->actual_length;
 		rpt->next = NULL;
@@ -799,11 +799,11 @@ static void read_callback(struct libusb_transfer *transfer)
 static void *read_thread(void *param)
 {
 	hid_device *dev = param;
-	unsigned char *buf;
+	uint8_t *buf;
 	const size_t length = dev->input_ep_max_packet_size;
 
 	/* Set up the transfer object. */
-	buf = malloc(length);
+	buf = (uint8_t*) malloc(length);
 	dev->transfer = libusb_alloc_transfer(0);
 	libusb_fill_interrupt_transfer(dev->transfer,
 		dev->device_handle,
