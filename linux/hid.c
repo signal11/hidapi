@@ -103,7 +103,7 @@ static __u32 detect_kernel_version(void)
 
 static hid_device *new_hid_device(void)
 {
-	hid_device *dev = calloc(1, sizeof(hid_device));
+	hid_device *dev = (hid_device*) calloc(1, sizeof(hid_device));
 	dev->device_handle = -1;
 	dev->blocking = 1;
 	dev->uses_numbered_reports = 0;
@@ -122,7 +122,7 @@ static wchar_t *utf8_to_wchar_t(const char *utf8)
 		if ((size_t) -1 == wlen) {
 			return wcsdup(L"");
 		}
-		ret = calloc(wlen+1, sizeof(wchar_t));
+		ret = (wchar_t*) calloc(wlen+1, sizeof(wchar_t));
 		mbstowcs(ret, utf8, wlen+1);
 		ret[wlen] = 0x0000;
 	}
@@ -461,7 +461,7 @@ struct hid_device_info  HID_API_EXPORT *hid_enumerate(unsigned short vendor_id, 
 			struct hid_device_info *tmp;
 
 			/* VID/PID match. Create the record. */
-			tmp = malloc(sizeof(struct hid_device_info));
+			tmp = (struct hid_device_info*) malloc(sizeof(struct hid_device_info));
 			if (cur_dev) {
 				cur_dev->next = tmp;
 			}
