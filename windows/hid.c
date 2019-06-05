@@ -225,10 +225,10 @@ static int lookup_functions()
 }
 #endif
 
-static HANDLE open_device(const char *path, BOOL enumerate)
+static HANDLE open_device(const char *path, BOOL open_rw)
 {
 	HANDLE handle;
-	DWORD desired_access = (enumerate)? 0: (GENERIC_WRITE | GENERIC_READ);
+	DWORD desired_access = (open_rw)? (GENERIC_WRITE | GENERIC_READ): 0;
 	DWORD share_mode = FILE_SHARE_READ|FILE_SHARE_WRITE;
 
 	handle = CreateFileA(path,
@@ -370,7 +370,7 @@ struct hid_device_info HID_API_EXPORT * HID_API_CALL hid_enumerate(unsigned shor
 		//wprintf(L"HandleName: %s\n", device_interface_detail_data->DevicePath);
 
 		/* Open a handle to the device */
-		write_handle = open_device(device_interface_detail_data->DevicePath, TRUE);
+		write_handle = open_device(device_interface_detail_data->DevicePath, FALSE);
 
 		/* Check validity of write_handle. */
 		if (write_handle == INVALID_HANDLE_VALUE) {
@@ -566,13 +566,23 @@ HID_API_EXPORT hid_device * HID_API_CALL hid_open_path(const char *path)
 	dev = new_hid_device();
 
 	/* Open a handle to the device */
-	dev->device_handle = open_device(path, FALSE);
+	dev->device_handle = open_device(path, TRUE);
 
 	/* Check validity of write_handle. */
 	if (dev->device_handle == INVALID_HANDLE_VALUE) {
-		/* Unable to open the device. */
-		register_error(dev, "CreateFile");
-		goto err;
+		/* System devices, such as keyboards and mice, cannot be opened in
+		   read-write mode, because the system takes exclusive control over
+		   them.  This is to prevent keyloggers.  However, feature reports
+		   can still be sent and received.  Retry opening the device, but
+		   without read/write access. */
+		dev->device_handle = open_device(path, FALSE);
+
+		/* Check the validity of the limited device_handle. */
+		if (dev->device_handle == INVALID_HANDLE_VALUE) {
+			/* Unable to open the device, even without read-write mode. */
+			register_error(dev, "CreateFile");
+			goto err;
+		}
 	}
 
 	/* Set the Input Report buffer size to 64 reports. */
