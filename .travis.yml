@@ -1,0 +1,10 @@
+language: c
+
+os: osx
+osx_image: xcode10.2
+
+script:
+  - ./bootstrap
+  - ./configure
+  - make
+  - make DESTDIR=$PWD/root install
