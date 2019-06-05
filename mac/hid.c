@@ -227,7 +227,7 @@ static int get_string_property(IOHIDDeviceRef device, CFStringRef prop, wchar_t 
 	if (!len)
 		return 0;
 
-	str = IOHIDDeviceGetProperty(device, prop);
+	str = (CFStringRef)IOHIDDeviceGetProperty(device, prop);
 
 	buf[0] = 0;
 
@@ -297,7 +297,8 @@ static wchar_t *dup_wcs(const wchar_t *s)
 static io_service_t hidapi_IOHIDDeviceGetService(IOHIDDeviceRef device)
 {
 	static void *iokit_framework = NULL;
-	static io_service_t (*dynamic_IOHIDDeviceGetService)(IOHIDDeviceRef device) = NULL;
+	typedef io_service_t (*dynamic_IOHIDDeviceGetService_t)(IOHIDDeviceRef device);
+	static dynamic_IOHIDDeviceGetService_t dynamic_IOHIDDeviceGetService;
 
 	/* Use dlopen()/dlsym() to get a pointer to IOHIDDeviceGetService() if it exists.
 	 * If any of these steps fail, dynamic_IOHIDDeviceGetService will be left NULL
@@ -307,7 +308,7 @@ static io_service_t hidapi_IOHIDDeviceGetService(IOHIDDeviceRef device)
 		iokit_framework = dlopen("/System/Library/IOKit.framework/IOKit", RTLD_LAZY);
 
 		if (iokit_framework != NULL)
-			dynamic_IOHIDDeviceGetService = dlsym(iokit_framework, "IOHIDDeviceGetService");
+			dynamic_IOHIDDeviceGetService = (dynamic_IOHIDDeviceGetService_t)dlsym(iokit_framework, "IOHIDDeviceGetService");
 	}
 
 	if (dynamic_IOHIDDeviceGetService != NULL) {
@@ -555,7 +556,7 @@ static void hid_device_removal_callback(void *context, IOReturn result,
                                         void *sender)
 {
 	/* Stop the Run Loop for this device. */
-	hid_device *d = context;
+	hid_device *d = (hid_device*)context;
 
 	d->disconnected = 1;
 	CFRunLoopStop(d->run_loop);
@@ -569,7 +570,7 @@ static void hid_report_callback(void *context, IOReturn result, void *sender,
                          uint8_t *report, CFIndex report_length)
 {
 	struct input_report *rpt;
-	hid_device *dev = context;
+	hid_device *dev = (hid_device*)context;
 
 	/* Make a new Input Report object */
 	rpt = (input_report*) calloc(1, sizeof(struct input_report));
@@ -616,13 +617,13 @@ static void hid_report_callback(void *context, IOReturn result, void *sender,
    hid_close(), and serves to stop the read_thread's run loop. */
 static void perform_signal_callback(void *context)
 {
-	hid_device *dev = context;
+	hid_device *dev = (hid_device*)context;
 	CFRunLoopStop(dev->run_loop); /*TODO: CFRunLoopGetCurrent()*/
 }
 
 static void *read_thread(void *param)
 {
-	hid_device *dev = param;
+	hid_device *dev = (hid_device*)param;
 	SInt32 code;
 
 	/* Move the device's run loop to this thread. */
@@ -693,6 +694,7 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 {
 	hid_device *dev = NULL;
 	io_registry_entry_t entry = MACH_PORT_NULL;
+	IOReturn ret;
 
 	dev = new_hid_device();
 
@@ -715,7 +717,7 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 	}
 
 	/* Open the IOHIDDevice */
-	IOReturn ret = IOHIDDeviceOpen(dev->device_handle, kIOHIDOptionsTypeSeizeDevice);
+	ret = IOHIDDeviceOpen(dev->device_handle, kIOHIDOptionsTypeSeizeDevice);
 	if (ret == kIOReturnSuccess) {
 		char str[32];
 
