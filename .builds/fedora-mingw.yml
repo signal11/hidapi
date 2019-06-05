@@ -1,0 +1,18 @@
+image: fedora/latest
+packages:
+- autoconf
+- automake
+- libtool
+- mingw64-gcc
+- mingw64-gcc-c++
+sources:
+- https://github.com/libusb/hidapi
+tasks:
+- setup: |
+    cd hidapi
+    ./bootstrap
+    mingw64-configure
+- build: |
+    cd hidapi
+    make
+    make DESTDIR=$PWD/root install
