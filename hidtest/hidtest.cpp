@@ -71,7 +71,7 @@ int main(int argc, char* argv[])
 	////handle = hid_open(0x4d8, 0x3f, L"12345");
 	handle = hid_open(0x4d8, 0x3f, NULL);
 	if (!handle) {
-		printf("unable to open device\n");
+		printf("unable to open device %04x:%04x\n", 0x4d8, 0x3f);
  		return 1;
 	}
 
