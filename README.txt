@@ -10,7 +10,7 @@ OS X.  HIDAPI can be either built as a shared library (.so or .dll) or
 can be embedded directly into a target application by adding a single source
 file (per platform) and a single header.
 
-HIDAPI has four back-ends:
+HIDAPI has five back-ends:
 	* Windows (using hid.dll)
 	* Linux/hidraw (using the Kernel's hidraw driver)
 	* Linux/libusb (using libusb-1.0)
