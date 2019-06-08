@@ -298,7 +298,7 @@ static io_service_t hidapi_IOHIDDeviceGetService(IOHIDDeviceRef device)
 {
 	static void *iokit_framework = NULL;
 	typedef io_service_t (*dynamic_IOHIDDeviceGetService_t)(IOHIDDeviceRef device);
-	static dynamic_IOHIDDeviceGetService_t dynamic_IOHIDDeviceGetService;
+	static dynamic_IOHIDDeviceGetService_t dynamic_IOHIDDeviceGetService = NULL;
 
 	/* Use dlopen()/dlsym() to get a pointer to IOHIDDeviceGetService() if it exists.
 	 * If any of these steps fail, dynamic_IOHIDDeviceGetService will be left NULL
