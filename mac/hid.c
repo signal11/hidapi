@@ -694,7 +694,7 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 {
 	hid_device *dev = NULL;
 	io_registry_entry_t entry = MACH_PORT_NULL;
-	IOReturn ret;
+	IOReturn ret = kIOReturnInvalid;
 
 	dev = new_hid_device();
 
