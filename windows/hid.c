@@ -169,7 +169,7 @@ static void free_hid_device(hid_device *dev)
 	free(dev);
 }
 
-static void register_error(hid_device *device, const char *op)
+static void register_error(hid_device *dev, const char *op)
 {
 	WCHAR *ptr, *msg;
 

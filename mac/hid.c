@@ -183,7 +183,7 @@ static	IOHIDManagerRef hid_mgr = 0x0;
 
 
 #if 0
-static void register_error(hid_device *device, const char *op)
+static void register_error(hid_device *dev, const char *op)
 {
 
 }
