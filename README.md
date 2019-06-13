@@ -1,19 +1,38 @@
-# HIDAPI library for Windows, Linux, FreeBSD and Mac OS X
-
-HIDAPI library was originally developed by Alan Ott ([signal11](https://github.com/signal11)).
-
-HIDAPI was moved to [libusb/hidapi](https://github.com/libusb/hidapi) on June 4th, 2019, in order to merge important bugfixes and continue development of the library.
-
-## About
+## HIDAPI library for Windows, Linux, FreeBSD and macOS
 
 HIDAPI is a multi-platform library which allows an application to interface
-with USB and Bluetooth HID-Class devices on Windows, Linux, FreeBSD, and Mac
-OS X.  HIDAPI can be either built as a shared library (`.so` or `.dll`) or
+with USB and Bluetooth HID-Class devices on Windows, Linux, FreeBSD, and macOS.
+HIDAPI can be either built as a shared library (`.so`, `.dll` or `.dylib`) or
 can be embedded directly into a target application by adding a single source
 file (per platform) and a single header.
 
+HIDAPI library was originally developed by Alan Ott ([signal11](https://github.com/signal11)).
+
+It was moved to [libusb/hidapi](https://github.com/libusb/hidapi) on June 4th, 2019, in order to merge important bugfixes and continue development of the library.
+
+## Table of Contents
+
+* [About](#about)
+* [What Does the API Look Like?](#what-does-the-api-look-like)
+* [License](#license)
+* [Download](#download)
+* [Build Instructions](#build-instructions)
+    * [Prerequisites](#prerequisites)
+    * [Linux](#linux)
+    * [FreeBSD](#freebsd)
+    * [Mac](#mac)
+    * [Windows](#windows)
+    * [Building HIDAPI into a shared library on Unix Platforms](#building-hidapi-into-a-shared-library-on-unix-platforms)
+    * [Building the manual way on Unix platforms](#building-the-manual-way-on-unix-platforms)
+    * [Building on Windows](#building-on-windows)
+* [Cross Compiling](#cross-compiling)
+    * [Prerequisites](#prerequisites-1)
+    * [Building HIDAPI](#building-hidapi)
+
+## About
+
 HIDAPI has five back-ends:
-* Windows (using hid.dll)
+* Windows (using `hid.dll`)
 * Linux/hidraw (using the Kernel's hidraw driver)
 * Linux/libusb (using libusb-1.0)
 * FreeBSD (using libusb-1.0)
@@ -22,7 +41,8 @@ HIDAPI has five back-ends:
 On Linux, either the hidraw or the libusb back-end can be used. There are
 tradeoffs, and the functionality supported is slightly different.
 
-Linux/hidraw (`linux/hid.c`):
+__Linux/hidraw__ (`linux/hid.c`):
+
 This back-end uses the hidraw interface in the Linux kernel.  While this
 back-end will support both USB and Bluetooth, it has some limitations on
 kernels prior to 2.6.39, including the inability to send or receive feature
@@ -31,12 +51,13 @@ hidraw nodes associated with them.  Keyboards, mice, and some other devices
 which are blacklisted from having hidraw nodes will not work. Fortunately,
 for nearly all the uses of hidraw, this is not a problem.
 
-Linux/FreeBSD/libusb (`libusb/hid.c`):
+__Linux/FreeBSD/libusb__ (`libusb/hid.c`):
+
 This back-end uses libusb-1.0 to communicate directly to a USB device. This
 back-end will of course not work with Bluetooth devices.
 
 HIDAPI also comes with a Test GUI. The Test GUI is cross-platform and uses
-Fox Toolkit (http://www.fox-toolkit.org).  It will build on every platform
+Fox Toolkit <http://www.fox-toolkit.org>.  It will build on every platform
 which HIDAPI supports.  Since it relies on a 3rd party library, building it
 is optional but recommended because it is so useful when debugging hardware.
 
@@ -112,17 +133,11 @@ int main(int argc, char* argv[])
 }
 ```
 
-If you have your own simple test programs which communicate with standard
-hardware development boards (such as those from Microchip, TI, Atmel,
-FreeScale and others), please consider sending me something like the above
-for inclusion into the HIDAPI source.  This will help others who have the
-same hardware as you do.
-
 ## License
-HIDAPI may be used by one of three licenses as outlined in LICENSE.txt.
+HIDAPI may be used by one of three licenses as outlined in [LICENSE.txt](LICENSE.txt).
 
 ## Download
-HIDAPI can be downloaded from github
+HIDAPI can be downloaded from GitHub
 ```sh
 git clone git://github.com/libusb/hidapi.git
 ```
@@ -138,8 +153,8 @@ HIDAPI can be built in several different ways. If you elect to build a
 shared library, you will need to build it from the HIDAPI source
 distribution.  If you choose instead to embed HIDAPI directly into your
 application, you can skip the building and look at the provided platform
-Makefiles for guidance.  These platform Makefiles are located in linux/
-libusb/ mac/ and windows/ and are called Makefile-manual.  In addition,
+Makefiles for guidance.  These platform Makefiles are located in `linux/`,
+`libusb/`, `mac/` and `windows/` and are called `Makefile-manual`.  In addition,
 Visual Studio projects are provided.  Even if you're going to embed HIDAPI
 into your project, it is still beneficial to build the example programs.
 
@@ -193,7 +208,7 @@ ports X11 libraries which are not compatible with the Apple X11
 libraries.  If you install Fox with ports and then try to distribute
 your built app bundle, it will simply fail to run on other systems.
 To install Fox-Toolkit manually, download the source package from
-http://www.fox-toolkit.org, extract it, and run the following from
+<http://www.fox-toolkit.org>, extract it, and run the following from
 within the extracted source:
 ```sh
 ./configure && make && make install
@@ -201,9 +216,9 @@ within the extracted source:
 
 #### Windows:
 On Windows, if you want to build the test GUI, you will need to get
-the hidapi-externals.zip package from the download site.  This
+the `hidapi-externals.zip` package from the download site.  This
 contains pre-built binaries for Fox-toolkit.  Extract
-hidapi-externals.zip just outside of hidapi, so that
+`hidapi-externals.zip` just outside of hidapi, so that
 hidapi-externals and hidapi are on the same level, as shown:
 ```
      Parent_Folder
@@ -217,8 +232,8 @@ test GUI.
 
 ### Building HIDAPI into a shared library on Unix Platforms:
 
-On Unix-like systems such as Linux, FreeBSD, Mac, and even Windows, using
-Mingw or Cygwin, the easiest way to build a standard system-installed shared
+On Unix-like systems such as Linux, FreeBSD, macOS, and even Windows, using
+MinGW or Cygwin, the easiest way to build a standard system-installed shared
 library is to use the GNU Autotools build system.  If you checked out the
 source from the git repository, run the following:
 
@@ -229,7 +244,7 @@ make
 make install # as root, or using sudo
 ```
 
-If you downloaded a source package (ie: if you did not run git clone), you
+If you downloaded a source package (i.e.: if you did not run git clone), you
 can skip the `./bootstrap` step.
 
 `./configure` can take several arguments which control the build. The two most
@@ -253,7 +268,7 @@ to build a program which embeds HIDAPI directly inside of it. These should
 really be used as examples only. If you want to build a system-wide shared
 library, use the Autotools method described above.
 
-To build HIDAPI using the manual makefiles, change to the directory
+To build HIDAPI using the manual Makefiles, change to the directory
 of your platform and run make. For example, on Linux run:
 ```sh
 cd linux/
@@ -269,19 +284,20 @@ make -f Makefile-manual
 ### Building on Windows:
 
 To build the HIDAPI DLL on Windows using Visual Studio, build the `.sln` file
-in the windows/ directory.
+in the `windows/` directory.
 
 To build the Test GUI on windows using Visual Studio, build the `.sln` file in
-the testgui/ directory.
+the `testgui/` directory.
 
 To build HIDAPI using MinGW or Cygwin using Autotools, use the instructions
-in the section titled "Building HIDAPI into a shared library on Unix
-Platforms" above.  Note that building the Test GUI with MinGW or Cygwin will
-require the Windows procedure in the Prerequisites section above (ie:
-hidapi-externals.zip).
+in the section [Building HIDAPI into a shared library on Unix Platforms](#building-hidapi-into-a-shared-library-on-unix-platforms)
+above.  Note that building the Test GUI with MinGW or Cygwin will
+require the Windows procedure in the [Prerequisites](#prerequisites-1) section
+above (i.e.: `hidapi-externals.zip`).
 
 To build HIDAPI using MinGW using the Manual Makefiles, see the section
-"Building the manual way on Unix platforms" above.
+[Building the manual way on Unix platforms](#building-the-manual-way-on-unix-platforms)
+above.
 
 HIDAPI can also be built using the Windows DDK (now also called the Windows
 Driver Kit or WDK). This method was originally required for the HIDAPI build
@@ -293,16 +309,16 @@ not. To build using the DDK:
    2. From the Start menu, in the Windows Driver Kits folder, select Build
       Environments, then your operating system, then the x86 Free Build
       Environment (or one that is appropriate for your system).
-   3. From the console, change directory to the windows/ddk_build/ directory,
+   3. From the console, change directory to the `windows/ddk_build/` directory,
       which is part of the HIDAPI distribution.
    4. Type build.
    5. You can find the output files (DLL and LIB) in a subdirectory created
       by the build system which is appropriate for your environment. On
-      Windows XP, this directory is objfre_wxp_x86/i386.
+      Windows XP, this directory is `objfre_wxp_x86/i386`.
 
 ## Cross Compiling
 
-This section talks about cross compiling HIDAPI for Linux using autotools.
+This section talks about cross compiling HIDAPI for Linux using Autotools.
 This is useful for using HIDAPI on embedded Linux targets.  These
 instructions assume the most raw kind of embedded Linux build, where all
 prerequisites will need to be built first.  This process will of course vary
@@ -322,7 +338,7 @@ $ export HOST=arm-linux
 
 Note that the build of libudev is the very basic configuration.
 
-Build Libusb. From the libusb source directory, run:
+Build libusb. From the libusb source directory, run:
 ```sh
 ./configure --host=$HOST --prefix=$STAGING
 make
@@ -346,10 +362,3 @@ PKG_CONFIG_LIBDIR=$STAGING/lib/pkgconfig:$STAGING/share/pkgconfig \
 PKG_CONFIG_SYSROOT_DIR=$STAGING \
 ./configure --host=$HOST --prefix=$STAGING
 ```
-
-Signal 11 Software \
-2010-04-11 \
-2010-07-28 \
-2011-09-10 \
-2012-05-01 \
-2012-07-03
