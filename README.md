@@ -1,5 +1,9 @@
 # HIDAPI library for Windows, Linux, FreeBSD and Mac OS X
 
+HIDAPI library was originally developed by Alan Ott ([signal11](https://github.com/signal11)).
+
+HIDAPI was moved to [libusb/hidapi](https://github.com/libusb/hidapi) on June 4th, 2019, in order to merge important bugfixes and continue development of the library.
+
 ## About
 
 HIDAPI is a multi-platform library which allows an application to interface
@@ -120,7 +124,7 @@ HIDAPI may be used by one of three licenses as outlined in LICENSE.txt.
 ## Download
 HIDAPI can be downloaded from github
 ```sh
-git clone git://github.com/signal11/hidapi.git
+git clone git://github.com/libusb/hidapi.git
 ```
 
 ## Build Instructions
