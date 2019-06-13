@@ -8,7 +8,7 @@ HIDAPI was moved to [libusb/hidapi](https://github.com/libusb/hidapi) on June 4t
 
 HIDAPI is a multi-platform library which allows an application to interface
 with USB and Bluetooth HID-Class devices on Windows, Linux, FreeBSD, and Mac
-OS X.  HIDAPI can be either built as a shared library (.so or .dll) or
+OS X.  HIDAPI can be either built as a shared library (`.so` or `.dll`) or
 can be embedded directly into a target application by adding a single source
 file (per platform) and a single header.
 
@@ -22,7 +22,7 @@ HIDAPI has five back-ends:
 On Linux, either the hidraw or the libusb back-end can be used. There are
 tradeoffs, and the functionality supported is slightly different.
 
-Linux/hidraw (linux/hid.c):
+Linux/hidraw (`linux/hid.c`):
 This back-end uses the hidraw interface in the Linux kernel.  While this
 back-end will support both USB and Bluetooth, it has some limitations on
 kernels prior to 2.6.39, including the inability to send or receive feature
@@ -31,7 +31,7 @@ hidraw nodes associated with them.  Keyboards, mice, and some other devices
 which are blacklisted from having hidraw nodes will not work. Fortunately,
 for nearly all the uses of hidraw, this is not a problem.
 
-Linux/FreeBSD/libusb (libusb/hid.c):
+Linux/FreeBSD/libusb (`libusb/hid.c`):
 This back-end uses libusb-1.0 to communicate directly to a USB device. This
 back-end will of course not work with Bluetooth devices.
 
@@ -232,7 +232,7 @@ make install # as root, or using sudo
 If you downloaded a source package (ie: if you did not run git clone), you
 can skip the `./bootstrap` step.
 
-./configure can take several arguments which control the build. The two most
+`./configure` can take several arguments which control the build. The two most
 likely to be used are:
 ```sh
 	--enable-testgui
@@ -268,10 +268,10 @@ make -f Makefile-manual
 
 ### Building on Windows:
 
-To build the HIDAPI DLL on Windows using Visual Studio, build the .sln file
+To build the HIDAPI DLL on Windows using Visual Studio, build the `.sln` file
 in the windows/ directory.
 
-To build the Test GUI on windows using Visual Studio, build the .sln file in
+To build the Test GUI on windows using Visual Studio, build the `.sln` file in
 the testgui/ directory.
 
 To build HIDAPI using MinGW or Cygwin using Autotools, use the instructions
@@ -347,8 +347,9 @@ PKG_CONFIG_SYSROOT_DIR=$STAGING \
 ./configure --host=$HOST --prefix=$STAGING
 ```
 
-Signal 11 Software - 2010-04-11
-                     2010-07-28
-                     2011-09-10
-                     2012-05-01
-                     2012-07-03
+Signal 11 Software \
+2010-04-11 \
+2010-07-28 \
+2011-09-10 \
+2012-05-01 \
+2012-07-03
