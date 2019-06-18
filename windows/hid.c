@@ -195,8 +195,8 @@ static void register_error(hid_device *dev, const char *op)
 
 	/* Store the message off in the Device entry so that
 	   the hid_error() function can pick it up. */
-	LocalFree(device->last_error_str);
-	device->last_error_str = msg;
+	LocalFree(dev->last_error_str);
+	dev->last_error_str = msg;
 }
 
 #ifndef HIDAPI_USE_DDK
