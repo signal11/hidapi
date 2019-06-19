@@ -4,7 +4,7 @@ AC_PREREQ(2.63)
 m4_define([HIDAPI_MAJOR],   0)
 m4_define([HIDAPI_MINOR],   9)
 m4_define([HIDAPI_RELEASE], 0)
-m4_define([HIDAPI_RC],      -rc1)
+m4_define([HIDAPI_RC],       )
 m4_define([VERSION_STRING], HIDAPI_MAJOR[.]HIDAPI_MINOR[.]HIDAPI_RELEASE[]HIDAPI_RC)
 
 AC_INIT([hidapi],[VERSION_STRING],[alan@signal11.us])
