@@ -573,7 +573,7 @@ static void hid_report_callback(void *context, IOReturn result, void *sender,
 	hid_device *dev = (hid_device*) context;
 
 	/* Make a new Input Report object */
-	rpt = (input_report*) calloc(1, sizeof(struct input_report));
+	rpt = (struct input_report*) calloc(1, sizeof(struct input_report));
 	rpt->data = (uint8_t*) calloc(1, report_length);
 	memcpy(rpt->data, report, report_length);
 	rpt->len = report_length;
