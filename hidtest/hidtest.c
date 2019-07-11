@@ -107,7 +107,7 @@ int main(int argc, char* argv[])
 	// Set the hid_read() function to be non-blocking.
 	hid_set_nonblocking(handle, 1);
 	
-	// Try to read from the device. There shoud be no
+	// Try to read from the device. There should be no
 	// data here, but execution should not block.
 	res = hid_read(handle, buf, 17);
 

@@ -204,7 +204,7 @@ static void free_hid_device(hid_device *dev)
 }
 
 #if 0
-/*TODO: Implement this funciton on hidapi/libusb.. */
+/*TODO: Implement this function on hidapi/libusb.. */
 static void register_error(hid_device *dev, const char *op)
 {
 
@@ -1352,7 +1352,7 @@ static struct lang_map_entry lang_map[] = {
 	LANG("English - Ireland", "en_ie", 0x1809),
 	LANG("English - Jamaica", "en_jm", 0x2009),
 	LANG("English - New Zealand", "en_nz", 0x1409),
-	LANG("English - Phillippines", "en_ph", 0x3409),
+	LANG("English - Philippines", "en_ph", 0x3409),
 	LANG("English - Southern Africa", "en_za", 0x1C09),
 	LANG("English - Trinidad", "en_tt", 0x2C09),
 	LANG("English - Great Britain", "en_gb", 0x0809),

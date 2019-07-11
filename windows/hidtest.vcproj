@@ -84,7 +84,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				Description="Copying hidapi.dll to the local direcotry."
+				Description="Copying hidapi.dll to the local directory."
 				CommandLine=""
 			/>
 		</Configuration>
@@ -160,7 +160,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				Description="Copying hidapi.dll to the local direcotry."
+				Description="Copying hidapi.dll to the local directory."
 				CommandLine=""
 			/>
 		</Configuration>

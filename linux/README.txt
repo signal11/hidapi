@@ -39,7 +39,7 @@ Bugs (hidraw implementation only):
 -----------------------------------
 On Kernel versions < 2.6.34, if your device uses numbered reports, an extra
 byte will be returned at the beginning of all reports returned from read()
-for hidraw devices. This is worked around in the libary. No action should be
+for hidraw devices. This is worked around in the library. No action should be
 necessary in the client library.
 
 On Kernel versions < 2.6.35, reports will only be sent using a Set_Report
@@ -51,7 +51,7 @@ endpoint.
 
 On Kernel versions < 2.6.36, add an extra byte containing the report number
 to sent reports if numbered reports are used, and the device does not
-contain an INTERRPUT OUT endpoint for OUTPUT transfers.  For example, if
+contain an INTERRUPT OUT endpoint for OUTPUT transfers.  For example, if
 your device uses numbered reports and wants to send {0x2 0xff 0xff 0xff} to
 the device (0x2 is the report number), you must send {0x2 0x2 0xff 0xff
 0xff}. If your device has the optional Interrupt OUT endpoint, this does not
