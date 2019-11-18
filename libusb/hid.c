@@ -45,7 +45,7 @@
 
 /* GNU / LibUSB */
 #include <libusb.h>
-#ifndef __ANDROID__
+#if !defined(__ANDROID__) && !defined(NO_ICONV)
 #include <iconv.h>
 #endif
 
@@ -390,7 +390,7 @@ static wchar_t *get_usb_string(libusb_device_handle *dev, uint8_t idx)
 	int len;
 	wchar_t *str = NULL;
 
-#ifndef __ANDROID__ /* we don't use iconv on Android */
+#if !defined(__ANDROID__) && !defined(NO_ICONV) /* we don't use iconv on Android */
 	wchar_t wbuf[256];
 	/* iconv variables */
 	iconv_t ic;
@@ -420,7 +420,7 @@ static wchar_t *get_usb_string(libusb_device_handle *dev, uint8_t idx)
 	if (len < 0)
 		return NULL;
 
-#ifdef __ANDROID__
+#if defined(__ANDROID__) || defined(NO_ICONV)
 
 	/* Bionic does not have iconv support nor wcsdup() function, so it
 	   has to be done manually.  The following code will only work for
