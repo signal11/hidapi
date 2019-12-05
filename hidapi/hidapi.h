@@ -131,6 +131,31 @@ extern "C" {
 		*/
 		struct hid_device_info HID_API_EXPORT * HID_API_CALL hid_enumerate(unsigned short vendor_id, unsigned short product_id);
 
+
+		/** @brief Enumerate the HID Devices.
+
+			This function returns a linked list of all the HID devices
+			attached to the system which match any of the specified 
+			vendor_ids and product_ids.
+			If @p vendor_id is set to 0 then any vendor matches.
+			If @p product_id is set to 0 then any product matches.
+			If @p vendor_id and @p product_id are both set to 0, then
+			all HID devices will be returned.
+
+			@ingroup API
+			@param vendor_ids An array of Vendor ID (VID) of the types of 
+				device to open.
+			@param product_ids An array of Product ID (PID) of the types 
+				of device to open.
+
+			@returns
+				This function returns a pointer to a linked list of type
+				struct #hid_device, containing information about the HID devices
+				attached to the system, or NULL in the case of failure. Free
+				this linked list by calling hid_free_enumeration().
+		*/
+		struct hid_device_info HID_API_EXPORT* HID_API_CALL hid_enumerate_m(unsigned short vendor_ids[], unsigned short product_ids[]);
+
 		/** @brief Free an enumeration Linked List
 
 		    This function frees a linked list created by hid_enumerate().
