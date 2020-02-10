@@ -287,6 +287,20 @@ not. To build using the DDK:
       by the build system which is appropriate for your environment. On
       Windows XP, this directory is objfre_wxp_x86/i386.
 
+Distributing on MacOS:
+----------------------
+Deploying hidapi for USB with MacOS Catalina (10.15 or higher) requires you
+to add the following entitlement to your application's entitlements file:
+
+   com.apple.security.device.usb
+
+If you are also targeting the Hardened Runtime, you must add the DYLD
+Environement Variable exception. This is due to hidapi's use of dlopen in
+the MacOS backend.
+
+   com.apple.security.cs.allow-dyld-environment-variables
+
+
 Cross Compiling
 ================
 
