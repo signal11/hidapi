@@ -704,7 +704,7 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 	}
 
 	/* Open the IOHIDDevice */
-	IOReturn ret = IOHIDDeviceOpen(dev->device_handle, kIOHIDOptionsTypeSeizeDevice);
+	IOReturn ret = IOHIDDeviceOpen(dev->device_handle, kIOHIDOptionsTypeNone);
 	if (ret == kIOReturnSuccess) {
 		char str[32];
 
@@ -991,7 +991,7 @@ void HID_API_EXPORT hid_close(hid_device *dev)
 	   been unplugged. If it's been unplugged, then calling
 	   IOHIDDeviceClose() will crash. */
 	if (!dev->disconnected) {
-		IOHIDDeviceClose(dev->device_handle, kIOHIDOptionsTypeSeizeDevice);
+		IOHIDDeviceClose(dev->device_handle, kIOHIDOptionsTypeNone);
 	}
 
 	/* Clear out the queue of received reports. */
