@@ -13,6 +13,9 @@ elseif( "${CMAKE_SYSTEM_NAME}" STREQUAL "Linux" )
     set( SRCS
          linux/hid.c
     )
+    set( LINK_LIBS
+         udev
+    )
 else( )
     set( SRCS
          mac/hid.c
