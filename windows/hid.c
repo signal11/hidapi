@@ -64,7 +64,7 @@ extern "C" {
 #include <stdlib.h>
 
 
-#include "hidapi.h"
+#include <hidapi.h>
 
 #undef MIN
 #define MIN(x,y) ((x) < (y)? (x): (y))

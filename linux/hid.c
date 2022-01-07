@@ -43,7 +43,7 @@
 #include <linux/input.h>
 #include <libudev.h>
 
-#include "hidapi.h"
+#include <hidapi.h>
 
 /* Definitions from linux/hidraw.h. Since these are new, some distros
    may not have header files which contain them. */

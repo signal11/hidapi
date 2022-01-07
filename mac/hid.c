@@ -33,7 +33,7 @@
 #include <unistd.h>
 #include <dlfcn.h>
 
-#include "hidapi.h"
+#include <hidapi.h>
 
 /* Barrier implementation because Mac OSX doesn't have pthread_barrier.
    It also doesn't have clock_gettime(). So much for POSIX and SUSv2.
