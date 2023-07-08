@@ -18,7 +18,6 @@ lt_revision="0"
 lt_age="0"
 LTLDFLAGS="-version-info ${lt_current}:${lt_revision}:${lt_age}"
 
-AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([foreign -Wall -Werror])
 AC_CONFIG_MACRO_DIR([m4])
 
