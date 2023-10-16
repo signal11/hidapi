@@ -20,7 +20,6 @@ LTLDFLAGS="-version-info ${lt_current}:${lt_revision}:${lt_age}"
 
 AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([foreign -Wall -Werror])
-AC_CONFIG_MACRO_DIR([m4])
 
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 LT_INIT
