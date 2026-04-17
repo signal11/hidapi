@@ -1,0 +1,46 @@
+name: Docs
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Install Doxygen
+        run: sudo apt satisfy "doxygen (>= 1.9.6)"
+
+      - uses: actions/checkout@v4
+
+      - run: doxygen
+        working-directory: doxygen
+
+      - name: Save doxygen docs as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: HIDAPI_doxygen_docs
+          path: ${{ github.workspace }}/doxygen/html
+
+  deploy-docs:
+    runs-on: ubuntu-24.04
+    needs: [build]
+    if: github.ref_type == 'branch' && github.ref_name == 'master'
+    concurrency:
+      group: "github-pages-deploy"
+      cancel-in-progress: true
+    steps:
+      - name: downlod artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: HIDAPI_doxygen_docs
+          path: docs
+
+      - name: upload to github pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs
+          force_orphan: true

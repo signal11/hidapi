@@ -31,6 +31,10 @@ if OS_KFREEBSD
 SUBDIRS += libusb
 endif
 
+if OS_HAIKU
+SUBDIRS += libusb
+endif
+
 if OS_WINDOWS
 SUBDIRS += windows
 endif
@@ -44,7 +48,7 @@ endif
 EXTRA_DIST = udev doxygen
 
 dist_doc_DATA = \
- README.txt \
+ README.md \
  AUTHORS.txt \
  LICENSE-bsd.txt \
  LICENSE-gpl3.txt \
